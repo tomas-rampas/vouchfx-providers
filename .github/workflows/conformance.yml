@@ -66,7 +66,10 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: tomas-rampas/vouchfx
-          ref: 26d4fa5  # Sprint 11 — Tooling & hardening (M4 stabilisation); track the engine release tag once v1.0 is tagged
+          # Full 40-char SHA required: actions/checkout treats a short SHA as a branch/tag
+          # glob (refs/heads/<ref>*) and fails the cross-repo fetch. This is engine main =
+          # 26d4fa5 (Sprint 11, M4 stabilisation); track the engine release tag once v1.0 is tagged.
+          ref: 26d4fa5ad67910c13808a2d6d0c9386901a8cd00
           path: engine
 
       # ── Step 3: Set up .NET SDK (version from global.json: 8.0.400) ──────────
