@@ -1,0 +1,19 @@
+# CODEOWNERS — require maintainer review for Verified submissions, registry
+# changes, and any governance or CI/CD file.
+#
+# Rules are evaluated last-match-wins (bottom of file wins), so the specific
+# path overrides below the catch-all are intentionally listed after it.
+#
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Catch-all: every file requires at least one maintainer approval.
+*                    @tomas-rampas
+
+# Verified-tier submissions — explicit sign-off required for provider promotion.
+/verified/           @tomas-rampas
+
+# Registry index — controls what is publicly discoverable.
+/registry/           @tomas-rampas
+
+# Governance and CI/CD changes — workflows, templates, CODEOWNERS, labels.
+/.github/            @tomas-rampas

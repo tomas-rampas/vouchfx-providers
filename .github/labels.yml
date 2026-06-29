@@ -1,0 +1,29 @@
+# .github/labels.yml — canonical label definitions for vouchfx-providers.
+#
+# These labels MUST be created in the repository before the issue forms are
+# enabled.  GitHub silently drops `labels:` entries in issue form YAML when
+# the named label does not exist, which would cause every form submission to
+# arrive label-less and be incorrectly auto-closed by triage-auto-close.yml.
+#
+# Create them at repository provisioning time with:
+#
+#   gh label create "provider-listing" \
+#       --color "0075ca" \
+#       --description "Filed via the Provider Listing issue form"
+#
+#   gh label create "verified-proposal" \
+#       --color "e4e669" \
+#       --description "Filed via the Verified Proposal issue form"
+#
+# The triage-auto-close workflow uses both the label AND the issue title prefix
+# as dual signals, so a race between label creation and the first form submission
+# is safe — but creating the labels at provisioning time is still required for
+# correct form behaviour (filtering, auto-assignment, etc.).
+
+- name: provider-listing
+  color: "0075ca"
+  description: "Filed via the Provider Listing issue form"
+
+- name: verified-proposal
+  color: "e4e669"
+  description: "Filed via the Verified Proposal issue form"

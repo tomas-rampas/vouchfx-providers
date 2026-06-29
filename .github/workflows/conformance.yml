@@ -1,0 +1,147 @@
+# .github/workflows/conformance.yml — build, format, and conformance gate
+#
+# Triggers: push and pull_request to main.
+#
+# NOTE ON SDK BOOTSTRAP
+# ---------------------
+# Platform.Sdk and Platform.Sdk.Testing v1.0.0 are not yet published to nuget.org
+# (they ship with the vouchfx v1.0 engine release — S12-D-01).  Until that
+# release, this workflow checks out the engine repo alongside and packs only the
+# five SDK-closure projects individually into packages-local/ so the providers
+# solution can restore and build.  Aspire AppHost projects are deliberately
+# excluded — building them would require the Aspire workload.
+#
+# Once Platform.Sdk 1.0.0 is published to nuget.org the two steps labelled
+# "REMOVE AFTER SDK PUBLISHED" can be deleted and restore will come straight
+# from nuget.org.
+#
+# NOTE ON VERSION MATRIX
+# ----------------------
+# This workflow runs against the engine main SDK only.  The Verified-tier rubric
+# requires that a provider's integration-test fixture also passes on the engine
+# main branch plus the two preceding minor releases; that multi-version matrix is
+# a human-gate requirement validated at Verified-tier review time — it is not
+# automated here and no fake matrix is added.
+
+name: Conformance
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+
+jobs:
+  conformance:
+    name: Build, format, and conformance tests
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+
+    steps:
+      # ── Step 1: Checkout this repo (vouchfx-providers) ───────────────────────
+      - name: Checkout vouchfx-providers
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # ── Step 2: Checkout the engine into engine/ [REMOVE AFTER SDK PUBLISHED] ─
+      # Provides the SDK-closure source projects so they can be packed below.
+      # ref is pinned to a specific commit SHA rather than the moving `main` ref
+      # so that a force-push or compromised commit on the engine repo cannot
+      # silently alter what gets packed into the community-provider CI job.
+      # Update this SHA when pulling in a new engine release; once the engine
+      # publishes v1.0 to nuget.org this entire step is removed (see note above).
+      - name: Checkout engine (tomas-rampas/vouchfx → engine/)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: tomas-rampas/vouchfx
+          ref: 26d4fa5  # Sprint 11 — Tooling & hardening (M4 stabilisation); track the engine release tag once v1.0 is tagged
+          path: engine
+
+      # ── Step 3: Set up .NET SDK (version from global.json: 8.0.400) ──────────
+      - name: Set up .NET SDK (reads global.json)
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          dotnet-version-file: global.json
+
+      # ── Step 4: Pack SDK-closure projects into packages-local/ ───────────────
+      # [REMOVE AFTER SDK PUBLISHED]
+      #
+      # Packs exactly five projects — the minimal closure the template provider
+      # and tests depend on.  Order follows the dependency graph (Abstractions
+      # first) to keep each pack's implicit restore efficient.  Aspire AppHost
+      # projects are intentionally excluded: they embed the DCP binary path at
+      # build time and require the Aspire workload, neither of which belongs in
+      # a community-provider CI job.
+      - name: Pack SDK-closure projects into packages-local/
+        run: |
+          set -euo pipefail
+          for csproj in \
+            engine/src/Engine/Platform.Engine.Abstractions/Platform.Engine.Abstractions.csproj \
+            engine/src/Engine/Platform.Engine.Authoring/Platform.Engine.Authoring.csproj \
+            engine/src/Engine/Platform.Engine.Compilation/Platform.Engine.Compilation.csproj \
+            engine/src/Sdk/Platform.Sdk/Platform.Sdk.csproj \
+            engine/src/Sdk/Platform.Sdk.Testing/Platform.Sdk.Testing.csproj ; do
+            echo "::group::pack $csproj"
+            dotnet pack "$csproj" -c Release -o packages-local/ --nologo
+            echo "::endgroup::"
+          done
+          echo "Packages staged in packages-local/:"
+          ls packages-local/*.nupkg
+
+      # ── Restore (providers solution, now that local feed is populated) ────────
+      - name: Restore dependencies
+        run: dotnet restore vouchfx-providers.sln
+
+      # ── Step 5: Build (0-warning gate) ───────────────────────────────────────
+      # TreatWarningsAsErrors is enforced by Directory.Build.props; -warnaserror
+      # is added here as belt-and-suspenders per the CI contract.
+      - name: Build (Release, 0-warning gate)
+        run: dotnet build vouchfx-providers.sln -c Release --no-restore -warnaserror
+
+      # ── Step 6: Format gate ───────────────────────────────────────────────────
+      - name: Format gate (dotnet format --verify-no-changes)
+        run: dotnet format vouchfx-providers.sln --verify-no-changes --no-restore
+
+      # ── Step 7a: Template provider conformance test (always required) ─────────
+      # Community.Steps.Hello.Tests contains the ProviderTestHarness conformance
+      # test — the canonical gate every provider must pass.
+      - name: Test — template provider conformance
+        run: >
+          dotnet test template/Community.Steps.Hello.Tests
+          -c Release
+          --no-build
+          --logger "console;verbosity=normal"
+
+      # ── Step 7b: Verified submission tests (shell-glob; no-op if none exist) ──
+      # When a Verified submission lands under verified/<provider>/
+      # its .Tests.csproj is automatically discovered and run here.
+      # nullglob ensures an empty glob expands to nothing rather than a literal
+      # string, so this step exits 0 with a diagnostic message if no submissions
+      # are present yet.
+      - name: Test — verified submissions (no-op until first submission)
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          found=0
+          for csproj in verified/**/*.Tests.csproj; do
+            echo "::group::Running verified test project: $csproj"
+            dotnet test "$csproj" -c Release --no-build --logger "console;verbosity=normal"
+            echo "::endgroup::"
+            found=1
+          done
+          if [[ "$found" -eq 0 ]]; then
+            echo "No verified/**/*.Tests.csproj found — no Verified submissions yet. (Expected.)"
+          fi

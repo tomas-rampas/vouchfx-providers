@@ -1,0 +1,130 @@
+# .github/workflows/triage-auto-close.yml — politely close off-topic issues
+#
+# This repository is for community provider listings and Verified-tier submissions
+# only.  Engine bugs, feature requests, and general questions belong in the main
+# engine repository at https://github.com/tomas-rampas/vouchfx.
+#
+# Logic
+# -----
+# When an issue is opened, check whether it was filed through one of our GitHub
+# Issue Forms using TWO independent signals:
+#
+#   Signal A — labels
+#     - provider-listing     → filed via .github/ISSUE_TEMPLATE/provider-listing.yml
+#     - verified-proposal    → filed via .github/ISSUE_TEMPLATE/verified-proposal.yml
+#
+#   Signal B — title prefix (case-insensitive, leading/trailing space tolerant)
+#     - "[Provider listing]"    → matches the form's default title:
+#     - "[Verified proposal]"   → matches the form's default title:
+#
+# Both signals are checked because GitHub silently DROPS `labels:` entries in
+# issue forms when those labels do not yet exist in the repository.  On a
+# brand-new repo the labels won't exist until they are created at provisioning
+# time (see .github/labels.yml), so a legitimately filed form issue would arrive
+# label-less and be incorrectly auto-closed if we relied on labels alone.
+#
+# An issue is treated as a legitimate form submission if EITHER signal is present.
+# The workflow is conservative: when in doubt, do NOT close.
+#
+# If neither signal matches, the issue was not filed through a recognised form
+# (e.g. someone bypassed blank_issues_enabled: false via the API or direct URL)
+# and is therefore off-topic.  The workflow posts a polite redirect comment and
+# closes the issue as not_planned.
+#
+# SECURITY NOTE — script-injection prevention
+# -------------------------------------------
+# github.event.issue.title and github.event.issue.body are attacker-controlled
+# strings.  They are NEVER interpolated inside a run: shell via ${{ }}.
+# All access to issue data goes through the actions/github-script JavaScript
+# context object (context.payload.issue.*) which treats values as data, not
+# as shell commands.  This exactly mirrors the class of injection the
+# peer-review-critic caught on the engine's release.yml version step.
+
+name: Triage — auto-close off-topic issues
+
+on:
+  issues:
+    types:
+      - opened
+
+permissions:
+  issues: write   # comment + close; no other permission required
+
+jobs:
+  triage:
+    name: Auto-close off-topic issues
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check labels and close if off-topic
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          # SECURITY: all issue data (title, body) is accessed only through the
+          # context object inside JavaScript — never via ${{ }} in a run: shell.
+          script: |
+            const issue = context.payload.issue;
+
+            // Signal A: label-based detection.
+            const labels = issue.labels.map(l => l.name);
+            const hasFormLabel = labels.includes('provider-listing') ||
+                                 labels.includes('verified-proposal');
+
+            // Signal B: title-prefix detection (case-insensitive, trims surrounding
+            // whitespace before comparing).  These prefixes match the `title:` defaults
+            // set in .github/ISSUE_TEMPLATE/provider-listing.yml and verified-proposal.yml
+            // respectively.  This catches legitimate form submissions that arrive without
+            // labels because the labels don't exist in a brand-new repo yet.
+            const title = (issue.title || '').trim().toLowerCase();
+            const hasFormTitlePrefix =
+              title.startsWith('[provider listing]') ||
+              title.startsWith('[verified proposal]');
+
+            const isFormFiled = hasFormLabel || hasFormTitlePrefix;
+
+            if (isFormFiled) {
+              const signal = hasFormLabel
+                ? `label(s): ${labels.join(', ')}`
+                : `title prefix: "${issue.title.trim()}"`;
+              core.info(`Issue #${issue.number} recognised as a form submission (${signal}). No action taken.`);
+              return;
+            }
+
+            // Issue carries neither a form label nor a recognised title prefix —
+            // it was not filed through our forms.  Redirect and close.
+            core.info(`Issue #${issue.number} has no form label and no recognised title prefix. Posting redirect comment and closing.`);
+
+            const body = [
+              'Thank you for reaching out!',
+              '',
+              'This repository is dedicated to **community provider listings** and **Verified-tier submissions** for the vouchfx provider ecosystem.',
+              'It does not accept engine bug reports, feature requests, or general questions.',
+              '',
+              'Please direct your issue to the right place:',
+              '',
+              '| What | Where |',
+              '|------|-------|',
+              '| Engine bug or defect | [tomas-rampas/vouchfx → Issues](https://github.com/tomas-rampas/vouchfx/issues/new/choose) |',
+              '| Feature request for the engine | [tomas-rampas/vouchfx → Issues](https://github.com/tomas-rampas/vouchfx/issues/new/choose) |',
+              '| Questions about writing a provider | [tomas-rampas/vouchfx → Discussions](https://github.com/tomas-rampas/vouchfx/discussions) |',
+              '| List a community provider | Use the [Provider Listing form](../../issues/new?template=provider-listing.yml) |',
+              '| Seek Verified-tier endorsement | Use the [Verified Proposal form](../../issues/new?template=verified-proposal.yml) |',
+              '',
+              'This issue has been closed automatically. Feel free to re-open it in the correct repository.',
+            ].join('\n');
+
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              body,
+            });
+
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issue.number,
+              state: 'closed',
+              state_reason: 'not_planned',
+            });
+
+            core.info(`Issue #${issue.number} closed as not_planned.`);
