@@ -1,0 +1,16 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <LangVersion>12.0</LangVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <AnalysisLevel>latest-recommended</AnalysisLevel>
+    <Deterministic>true</Deterministic>
+    <!-- This repo hosts the community provider index + the Verified-tier submission gate.
+         Provider authors pack and publish their OWN NuGet packages; nothing here is packed
+         by this repo. The template under template/ is a copyable skeleton, not a package. -->
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+</Project>

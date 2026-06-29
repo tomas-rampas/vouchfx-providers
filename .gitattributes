@@ -1,0 +1,12 @@
+# Normalise text files to LF in the repository; check out native on each platform.
+* text=auto
+
+# Keep these explicitly LF even in the working tree.
+*.sh    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+
+# Golden conformance fixtures (if any are added under a Fixtures/ folder) are byte-exact —
+# never convert line endings, or a hash/parity check could break on checkout/CI. Treat as
+# binary. This rule is LAST so it wins over `* text=auto`.
+**/Fixtures/** -text

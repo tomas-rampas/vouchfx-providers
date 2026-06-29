@@ -1,0 +1,63 @@
+# ---------------------------------------------------------------------------
+# .gitignore for vouchfx-providers (community index + Verified-tier submissions)
+# ---------------------------------------------------------------------------
+
+## .NET build output
+bin/
+obj/
+out/
+[Dd]ebug/
+[Rr]elease/
+artifacts/
+publish/
+*.dll
+*.exe
+*.pdb
+project.lock.json
+
+## NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+## Local pre-release SDK feed — the .nupkg artifacts packed from the engine for
+## building against Platform.Sdk before v1.0 is published to nuget.org. The folder
+## itself is kept (packages-local/.gitkeep) so the nuget.config source path resolves.
+packages-local/*.nupkg
+packages-local/*.snupkg
+
+## Test results & coverage
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+coverage*.json
+coverage*.xml
+TestResults/
+
+## IDEs
+.vs/
+.idea/
+*.user
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+
+## Local secrets & environment
+*.secrets
+secrets.json
+.env
+.env.*
+!.env.example
+
+## OS / temp
+.DS_Store
+Thumbs.db
+*.log
+*.tmp
+*.swp
+*~
+
+## Agent / tooling scratch
+.claude/
+.serena/
