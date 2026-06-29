@@ -78,7 +78,7 @@ If your provider meets the [Verified-tier rubric](VERIFIED_TIER_CHECKLIST.md), y
    - Complete the PR checklist in the pull-request template (mirrors the Verified rubric)
    - Ensure `dotnet test verified/<your-provider-id>/` passes locally
 
-3. **CI Conformance Gate** — the CI pipeline runs your provider's conformance tests against the official matrix (engine main + two preceding minor versions). All tests must pass.
+3. **CI Conformance Gate** — the CI pipeline runs your provider's conformance tests against the engine `main`/pinned SDK. The two preceding minor versions are validated by a maintainer at review time.
 
 4. **Security Review** — a maintainer conducts security sign-off per the rubric.
 

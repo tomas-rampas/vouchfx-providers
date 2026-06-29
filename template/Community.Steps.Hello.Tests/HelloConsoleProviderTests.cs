@@ -19,6 +19,7 @@
 // then the real Emit was implemented to make it pass (GREEN).
 
 using Community.Steps.Hello;
+using Platform.Engine.Abstractions;
 using Platform.Sdk;
 using Platform.Sdk.Testing;
 using Platform.Sdk.Testing.Contexts;
@@ -97,7 +98,7 @@ public sealed class HelloConsoleProviderTests
 
         Assert.Empty(result.SchemaErrors);
         Assert.Empty(result.ValidationErrors);
-        Assert.False(result.IsPass, "A mismatched expect must yield Fail, not Pass.");
+        Assert.Equal(Verdict.Fail, result.Verdict);
     }
 
     /// <summary>

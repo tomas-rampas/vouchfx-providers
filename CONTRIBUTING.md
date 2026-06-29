@@ -148,7 +148,7 @@ done
 This repository's `nuget.config` already points to `packages-local`:
 
 ```xml
-<add key="local" value="./packages-local" />
+<add key="local" value="packages-local" />
 ```
 
 Local builds will consume the locally packed SDK.

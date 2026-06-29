@@ -10,7 +10,7 @@ Please confirm that your provider meets all six Verified-tier rubric items:
 
 ### 1. Conformance Matrix: Integration Tests Pass
 - [ ] Integration-test fixture passes locally: `dotnet test verified/<provider-id>/tests/ -c Release`
-- [ ] I understand that CI will run the fixture on the official matrix (engine main + 2 preceding minors)
+- [ ] I understand that CI runs the fixture against the engine `main`/pinned SDK, and that the multi-version matrix (engine main + 2 preceding minors) is validated by maintainers at review time
 - [ ] All tests pass without failures, flakes, or skips
 
 ### 2. Documentation: README with Use Cases and Known Limitations
@@ -124,7 +124,8 @@ Any known limitations, edge cases, or areas where the provider deviates from sta
 
 ## Checklist for Merge
 
-- [ ] CI conformance tests pass on all versions in the official matrix
+- [ ] CI conformance test passes against the engine `main`/pinned SDK
+- [ ] Maintainer has verified the fixture passes on the official matrix (engine main + 2 preceding minor versions)
 - [ ] Security review approved by a maintainer
 - [ ] CSX review approved by a maintainer
 - [ ] No merge conflicts with the `main` branch

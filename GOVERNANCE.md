@@ -54,7 +54,7 @@ Verified providers have passed a published rubric, are endorsed by the platform 
 
 **Support:** Community support. Issues are tracked in this repository. The platform team allocates one half-day per week for provider triage and community support (ringfenced, sustainable rate).
 
-**Path to Verified:** A Community provider meets the rubric above and submits a pull request to this repository with its conformance tests and security sign-off. CI runs the official matrix, maintainers conduct security and CSX review, and the PR merges upon approval.
+**Path to Verified:** A Community provider meets the rubric above and submits a pull request to this repository with its conformance tests and security sign-off. CI runs the conformance tests against the engine `main`/pinned SDK; maintainers validate the fixture also passes on the engine main branch plus the two preceding minor releases. Upon passing CI, security review, and CSX review, the PR merges and the provider is promoted to Verified.
 
 ### Tier 3: Community
 **Status:** Community-authored, independently versioned, no platform-team endorsement.

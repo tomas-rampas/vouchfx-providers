@@ -138,7 +138,7 @@ jobs:
           found=0
           for csproj in verified/**/*.Tests.csproj; do
             echo "::group::Running verified test project: $csproj"
-            dotnet test "$csproj" -c Release --no-build --logger "console;verbosity=normal"
+            dotnet test "$csproj" -c Release --logger "console;verbosity=normal"
             echo "::endgroup::"
             found=1
           done
