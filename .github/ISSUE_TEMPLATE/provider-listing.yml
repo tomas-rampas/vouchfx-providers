@@ -1,0 +1,101 @@
+name: Request a Community Provider Listing
+description: List your provider in the community index
+title: "[Provider listing] [Your Provider Name]"
+labels:
+  - provider-listing
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # Community Provider Listing Request
+
+        Use this form to request a listing in the vouchfx community provider index.
+
+        **Before submitting**, ensure your provider:
+        - Is authored, tested, and published on NuGet
+        - Is licenced under Apache-2.0 (or compatible)
+        - Follows the [provider contract](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) and uses a non-reserved namespace
+        - Has a README with at least basic documentation
+
+        If your provider meets the [Verified-tier rubric](../VERIFIED_TIER_CHECKLIST.md), consider submitting for Verified endorsement instead.
+
+  - type: input
+    id: provider-name
+    attributes:
+      label: Provider Name
+      description: Human-readable name (e.g. "Snowflake Assertion", "Redis Pub/Sub")
+      placeholder: "Snowflake Assertion"
+    validations:
+      required: true
+
+  - type: input
+    id: step-kind-id
+    attributes:
+      label: Step Type (family.provider)
+      description: The step type identifier (e.g. "db-assert.snowflake", "cache-get.redis")
+      placeholder: "db-assert.snowflake"
+    validations:
+      required: true
+
+  - type: input
+    id: repository-url
+    attributes:
+      label: Repository URL
+      description: URL to your provider's repository (must be HTTPS)
+      placeholder: "https://github.com/myorg/vouchfx-snowflake-provider"
+    validations:
+      required: true
+
+  - type: input
+    id: nuget-package
+    attributes:
+      label: NuGet Package ID
+      description: Exact package identifier on NuGet.org
+      placeholder: "MyOrg.Steps.Snowflake"
+    validations:
+      required: true
+
+  - type: input
+    id: min-engine-version
+    attributes:
+      label: Minimum Engine Version
+      description: Minimum vouchfx engine version required (SemVer, e.g. "1.0.0", "1.1.0")
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A one-line summary of what your provider does
+      placeholder: "Asserts state in a Snowflake data warehouse using SQL queries"
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: |
+        Any additional information (optional).
+
+        Examples:
+        - Links to documentation or examples
+        - Information about infrastructure requirements
+        - A brief note if this is a pre-Verified submission
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      description: Please confirm these statements
+      options:
+        - label: My provider is licenced under Apache-2.0 (or a compatible licence)
+          required: true
+        - label: My provider follows the vouchfx provider contract and uses a non-reserved namespace (not `Platform.Engine.*` or `Platform.Steps.*`)
+          required: true
+        - label: My provider is published on NuGet.org and is publicly resolvable
+          required: true
+        - label: I have read the vouchfx [provider authoring guide](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md)
+          required: true

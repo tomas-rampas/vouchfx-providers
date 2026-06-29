@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://vouchfx.dev/schema/community-providers.schema.json",
+  "title": "vouchfx Community Provider Registry",
+  "description": "JSON Schema for the vouchfx community provider index (community-providers.json)",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "title": "Provider Entry",
+    "description": "A single provider listed in the community registry",
+    "properties": {
+      "name": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 100,
+        "description": "Human-readable name of the provider (e.g. 'Snowflake Assertion')"
+      },
+      "stepKindId": {
+        "type": "string",
+        "pattern": "^[a-z0-9](-?[a-z0-9])*\\.[a-z0-9](-?[a-z0-9])*$",
+        "description": "Step type identifier in the form 'family.provider' (e.g. 'db-assert.snowflake', 'mq-publish.redis')"
+      },
+      "repo": {
+        "type": "string",
+        "format": "uri",
+        "pattern": "^https://",
+        "description": "URL to the provider's repository (must be HTTPS)"
+      },
+      "nuget": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 256,
+        "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$",
+        "description": "NuGet package identifier (e.g. 'MyOrg.Steps.Snowflake')"
+      },
+      "author": {
+        "type": "string",
+        "minLength": 3,
+        "maxLength": 100,
+        "description": "Author or organisation name"
+      },
+      "minEngineVersion": {
+        "type": "string",
+        "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
+        "description": "Minimum vouchfx engine version (SemVer format, e.g. '1.0.0', '1.1.0')"
+      },
+      "tier": {
+        "type": "string",
+        "enum": [
+          "community",
+          "verified"
+        ],
+        "description": "Governance tier: 'community' (no endorsement) or 'verified' (platform-team endorsed)"
+      },
+      "description": {
+        "type": "string",
+        "minLength": 10,
+        "maxLength": 200,
+        "description": "One-line summary of the provider's purpose"
+      }
+    },
+    "required": [
+      "name",
+      "stepKindId",
+      "repo",
+      "nuget",
+      "author",
+      "minEngineVersion",
+      "tier",
+      "description"
+    ],
+    "additionalProperties": false
+  },
+  "uniqueItems": true
+}
