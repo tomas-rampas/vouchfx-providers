@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- §5.6 ASSEMBLY-GRAPH HYGIENE: keep this namespace in the Community.Steps.*
+         space — never Platform.Steps.* or Platform.Engine.* (both reserved and refused
+         at startup). Rename to your own namespace when you copy this template. -->
+    <RootNamespace>Community.Steps.Hello</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- A community provider depends ONLY on the frozen v1 SDK contract.
+         No reference to Platform.Engine.* is needed or permitted: the engine drives
+         the provider through these interfaces, and cross-step state reaches the run
+         environment solely through the engine-injected Vars global. -->
+    <PackageReference Include="Platform.Sdk" Version="1.0.0" />
+  </ItemGroup>
+
+</Project>
