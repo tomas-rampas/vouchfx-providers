@@ -23,15 +23,9 @@ For an in-depth guide to writing a provider, including worked examples, see the 
 All vouchfx providers are licensed under Apache-2.0 and are governed in three tiers:
 
 ### Core
-Six providers shipped by the vouchfx team as part of the engine release:
-- `http.rest`
-- `db-assert.postgres`
-- `script.csharp`
-- `mq-publish.kafka`
-- `mq-expect.kafka`
-- `webhook-listen.http`
+The providers shipped by the vouchfx team as part of the engine release — currently eighteen across eight families (`http`, `db-assert` for Postgres/MySQL/SQL Server/MongoDB, `mq-publish`/`mq-expect` for Kafka/RabbitMQ/NATS/Azure Service Bus, `cache-assert` for Redis/Elasticsearch, `mail-expect`, `webhook-listen`, `script`). The authoritative, always-current list lives in the [engine repository's README](https://github.com/tomas-rampas/vouchfx#providers).
 
-Core providers are bundled with the engine, versioned together, fully supported by the platform team, and reference implementations of the provider contract.
+Core providers are bundled with the engine, versioned together, fully supported by the platform team, and reference implementations of the provider contract. Real-world usage of the Core set is showcased in the [vouchfx-samples](https://github.com/tomas-rampas/vouchfx-samples) repository.
 
 ### Verified
 Community providers that have passed a published rubric and are endorsed by the platform team. Verified providers:
@@ -42,7 +36,7 @@ Community providers that have passed a published rubric and are endorsed by the 
 - Declare MinEngineVersion compatibility
 - Have their emitted CSX reviewed for CsxFragment composition correctness (§13.3.1 of the architecture blueprint)
 
-Verified providers are listed on the project website and discoverable via NuGet, but **not** bundled with the engine.
+Verified providers are listed on the [project website](https://tomas-rampas.github.io/vouchfx/) and discoverable via NuGet, but **not** bundled with the engine.
 
 ### Community
 All other providers, with no platform-team endorsement. Community providers:
@@ -84,7 +78,7 @@ If your provider meets the [Verified-tier rubric](VERIFIED_TIER_CHECKLIST.md), y
 
 5. **CSX Review** — a maintainer reads the emitted C# code for your representative steps and confirms it follows the CsxFragment composition rules.
 
-6. **Merge and Promote** — upon approval, your PR merges and your provider is promoted to Verified. It is listed on the project website and added to the public registry.
+6. **Merge and Promote** — upon approval, your PR merges and your provider is promoted to Verified. It is listed on the [project website](https://tomas-rampas.github.io/vouchfx/) and added to the public registry.
 
 ## How the Conformance Gate Works
 

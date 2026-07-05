@@ -68,8 +68,8 @@ jobs:
           repository: tomas-rampas/vouchfx
           # Full 40-char SHA required: actions/checkout treats a short SHA as a branch/tag
           # glob (refs/heads/<ref>*) and fails the cross-repo fetch. This is engine main =
-          # 26d4fa5 (Sprint 11, M4 stabilisation); track the engine release tag once v1.0 is tagged.
-          ref: 26d4fa5ad67910c13808a2d6d0c9386901a8cd00
+          # f374f26 (Sprint 12: 18 Core providers + SUT env-configuration surface); track the engine release tag once v1.0 is tagged.
+          ref: f374f2603a6de9e0a759257ad9d5c29e430efd29
           path: engine
 
       # ── Step 3: Set up .NET SDK (version from global.json: 8.0.400) ──────────
