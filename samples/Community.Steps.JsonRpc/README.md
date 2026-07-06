@@ -57,6 +57,14 @@ envelope's `result` value. `capture` (the engine-standard field, DSL §6.1) read
 **full** envelope — hence `"$.result.sum"`, not `"$.sum"` — and writes `total` into
 `Vars` for a later step.
 
+`url`, `method`, and every **string leaf** of `params` are resolved at
+step-execution time through the same `{placeholder}` + `${secret:source/path}`
+mechanism (`Secret_Helpers.ResolveTemplate`, §17) — see examples 3 and 4 below,
+where `params` carries a `{orderId}` placeholder. `params` is parsed into a JSON
+tree first and each string value is resolved individually, never by
+template-substituting the raw JSON text before parsing, so a resolved value can
+never corrupt the surrounding JSON structure.
+
 ### 2. Negative test — asserting a specific JSON-RPC error
 
 ```yaml
@@ -101,6 +109,10 @@ honours is: write exactly one `StepOutcome` on every invocation, and use `Fail` 
 `Inconclusive`) for a not-yet-satisfied assertion. The engine converts a sustained
 `Fail` into `Inconclusive` once the window elapses; see the table below.
 
+The `{orderId}` inside `params.orderId` above is a genuine substitution, not a
+literal: it is resolved from `Vars` on every poll, exactly like `{projector-host}`
+in `url`.
+
 ### 4. Fire-and-forget notification
 
 ```yaml
@@ -114,7 +126,8 @@ steps:
 ```
 
 `params` is a YAML **sequence** here, so it becomes a JSON-RPC **positional** params
-array (`["order.shipped", "<orderId>"]`). `notification: true` omits the request `id`
+array (`["order.shipped", "<orderId>"]`, with `{orderId}` resolved from `Vars` the
+same way as the mapping form above). `notification: true` omits the request `id`
 entirely; the step asserts only that the transport call succeeded (a 2xx HTTP status)
 and never parses a response envelope — there usually isn't one. `notification` is
 incompatible with `expect` (rejected at model validation) and with `capture` (there is
@@ -146,8 +159,10 @@ scratch.
 | Bare call, clean success envelope with matching `id` | `Pass` | |
 | `notification: true`, HTTP status is 2xx | `Pass` | No envelope is parsed. |
 | `notification: true`, HTTP status is not 2xx | `Fail` | |
-| `capture:` declared, JSONPath yields no match against the full envelope | `Inconclusive` | `{"captureUnmet":"<varName>"}` — mirrors `http.rest`'s "upstream-capture-unmet" convention exactly; only evaluated when the primary assertion above already resolved to `Pass`. |
-| `notification: true` **and** `capture:` both declared | `Inconclusive` | Rejected at compile (`Emit`) time, not validation time — see "Known limitations". |
+| `capture:` declared, JSONPath yields no match against the full envelope | `Inconclusive` | `{"captureUnmet":"<varName>"}` — mirrors `http.rest`'s "upstream-capture-unmet" convention exactly; only evaluated when the primary assertion above did not already resolve to `Fail`. |
+| `notification: true` **and** `capture:` both declared | `Fail` | Rejected at compile (`Emit`) time, not validation time — see "Known limitations". An author misconfiguration (a step shape that can never do what it declares), not a timing uncertainty, so it deliberately does **not** use `Inconclusive` (which would not break CI by default and could hide the mistake). |
+| `expect.result` declared as an empty list (`result: []`) | *(rejected)* | Model-validation error, not a runtime verdict — an empty list would otherwise silently degrade to bare-call semantics; see "Known limitations". |
+| `params` is present but not a mapping or a sequence (a scalar) | *(rejected)* | Schema **and** model-validation error — JSON-RPC 2.0 §4.2 requires `params` to be structured when present. |
 | `verifyMode: RETRY`, the assertion never converges before `timeout` | `Inconclusive` | Written entirely by the **engine's** `RetryRunner`, not by this provider — a sustained `Fail` (or `Inconclusive`) is converted once the polling window elapses. |
 
 Two of the `Fail` shapes above — `resultMismatch` and `errorCodeMismatch` — implement
@@ -165,15 +180,17 @@ expected-vs-observed table in supporting renderers, exactly as the Core
 - **No `headers` field.** Unlike `http.rest`, this sample's model has no way to set
   arbitrary request headers (e.g. `Authorization`). The engine's canonical pattern for
   a header *value* is `Secret_Helpers.ResolveTemplate` inside the emitted helper's
-  guarded region (exactly as this provider already does for `url`) — adding `headers`
-  would cost only a small, mechanical amount of extra Bind/Emit plumbing (parallel
-  name/value-template arrays, mirroring `http.rest`'s own header handling almost
-  verbatim). It is omitted here to keep the teaching surface focused on the JSON-RPC
-  envelope semantics themselves; `url` already demonstrates the full
-  `{placeholder}` + `${secret:...}` resolution path.
-- **`url` *does* support `${secret:...}`**, even though the brief for this sample only
-  asked for `{placeholder}` support — `Secret_Helpers.ResolveTemplate` gives both in a
-  single call, at no extra cost, so it was included.
+  guarded region (exactly as this provider already does for `url`, `method`, and every
+  string leaf of `params`) — adding `headers` would cost only a small, mechanical
+  amount of extra Bind/Emit plumbing (parallel name/value-template arrays, mirroring
+  `http.rest`'s own header handling almost verbatim). It is omitted here to keep the
+  teaching surface focused on the JSON-RPC envelope semantics themselves.
+- **`url`, `method`, and `params` all support `${secret:...}`**, even though the brief
+  for this sample only asked for `{placeholder}` support — `Secret_Helpers.ResolveTemplate`
+  gives both in a single call, at no extra cost, so it was included throughout. `params`
+  is parsed into a JSON tree and each STRING LEAF is resolved individually (never by
+  template-substituting the raw JSON text before parsing), so a resolved value can never
+  corrupt the surrounding JSON structure, even if it contains a quote or a brace.
 - **Captures are always evaluated as JSONPath**, regardless of an explicit
   `{xpath: ...}` capture form — a JSON-RPC envelope is never XML, so an XPath-typed
   capture is simply passed through as raw expression text (it will normally just fail
@@ -182,8 +199,24 @@ expected-vs-observed table in supporting renderers, exactly as the Core
   author-facing error). **`notification: true` + `capture`** cannot be rejected there —
   `IProjectContext` (available in `Validate`) carries no view of the step's `capture`
   map; only `ICompileContext` (available in `Emit`) does. That combination is instead
-  short-circuited at `Emit` time to a trivial `Inconclusive` block that skips the HTTP
-  call entirely, with a `{"error": "..."}` observation explaining why.
+  short-circuited at `Emit` time to a trivial `Fail` block that skips the HTTP call
+  entirely, with a `{"error": "..."}` observation explaining why. `Fail`, not
+  `Inconclusive`: this is an author misconfiguration, not a timing uncertainty, and
+  `Inconclusive` does not break CI by default (§12.1) — using it here would let the
+  mistake hide.
+- **`expect.result` must be non-empty when declared.** Writing `expect.result: []`
+  is rejected at model validation rather than silently degrading to bare-call
+  semantics — an author who writes an empty list almost certainly means "assert a
+  result exists," which is a stronger claim than a bare call actually checks.
+- **`params` must be structured.** Per JSON-RPC 2.0 §4.2, `params` must be a mapping
+  or a sequence when present; a bare scalar (`params: 5`, `params: "x"`) is rejected
+  both by the JSON Schema and by `Validate`.
+- **Response `id` matching is string-only.** This provider always sends the request
+  `id` as a JSON *string* (the step id) and matches the response `id` with an ordinal
+  string comparison. Some JSON-RPC ecosystems — Ethereum and Bitcoin Core's RPC APIs
+  among them — conventionally use integer ids, and a server that coerces or echoes a
+  numeric id back will fail the id-match check even though the call itself succeeded.
+  There is no per-step way to opt into numeric ids in this sample.
 - **No `IResourceContributor`.** This provider declares no Aspire-managed
   infrastructure — the target is whatever absolute URL the author supplies, resolved
   entirely at execution time. There is consequently no dependency-reconciliation check

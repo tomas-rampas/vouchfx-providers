@@ -159,7 +159,8 @@ public sealed class JsonRpcProvider
               "type": "string"
             },
             "params": {
-              "description": "JSON-RPC params. A YAML mapping becomes a named params object; a YAML sequence becomes a positional params array."
+              "description": "JSON-RPC params. A YAML mapping becomes a named params object; a YAML sequence becomes a positional params array. Per JSON-RPC 2.0 §4.2, params MUST be structured (an object or an array) when present — a bare scalar is rejected.",
+              "type": ["object", "array"]
             },
             "notification": {
               "description": "When true, sends a JSON-RPC notification (no id, fire-and-forget): only transport-level success (a 2xx status) is asserted, and the response body is never parsed. Incompatible with 'expect' and with 'capture'. Defaults to false.",
@@ -391,8 +392,36 @@ public sealed class JsonRpcProvider
         if (string.IsNullOrWhiteSpace(model.Method))
             errors.Add("rpc.json-rpc: 'method' must not be empty.");
 
+        // JSON-RPC 2.0 §4.2: params MUST be structured (an object or an array) when
+        // present. The schema fragment already constrains this at the YAML/JSON-Schema
+        // layer (SchemaFragment, above); this is defence-in-depth at the bound-model
+        // layer, mirroring how other structural constraints here are enforced twice.
+        if (model.ParamsJson is not null)
+        {
+            var paramsNode = JsonNode.Parse(model.ParamsJson);
+            if (paramsNode is not JsonObject && paramsNode is not JsonArray)
+            {
+                errors.Add(
+                    "rpc.json-rpc: 'params' must be a mapping (named params) or a " +
+                    "sequence (positional params) per JSON-RPC 2.0 §4.2 — a scalar " +
+                    "value is not permitted.");
+            }
+        }
+
         var hasResult = model.Expect?.Result is { Count: > 0 };
         var hasError = model.Expect?.ErrorCode is not null;
+
+        // An explicit but EMPTY 'expect.result: []' silently degraded to bare-call
+        // semantics before this check existed (hasResult above requires Count > 0), which
+        // is weaker than what an author writing an empty list almost certainly intended
+        // ("assert a result exists"). Reject it with a clear diagnostic instead of
+        // quietly downgrading it.
+        if (model.Expect?.Result is { Count: 0 })
+        {
+            errors.Add(
+                "rpc.json-rpc: 'expect.result' must contain at least one assertion; " +
+                "omit 'expect' entirely for a bare call.");
+        }
 
         if (hasResult && hasError)
         {
@@ -496,13 +525,29 @@ public sealed class JsonRpcProvider
                             "rpc.json-rpc: resolved url scheme '" + uri.Scheme + "' is not http/https.");
                     }
 
+                    // Resolve `method` the same way as `url` — a single ResolveTemplate
+                    // pass inside the guarded region (§17) — so a {placeholder} or
+                    // ${secret:...} token in the method name is honoured, not sent literally.
+                    var resolvedMethod = Secret_Helpers.ResolveTemplate(secrets, vars, method);
+
                     var envelope = new System.Text.Json.Nodes.JsonObject
                     {
                         ["jsonrpc"] = "2.0",
-                        ["method"] = method,
+                        ["method"] = resolvedMethod,
                     };
                     if (paramsJson is not null)
-                        envelope["params"] = System.Text.Json.Nodes.JsonNode.Parse(paramsJson);
+                    {
+                        // `params` is parsed into a JsonNode tree FIRST, then every STRING
+                        // LEAF value is resolved in place via ResolveParamsLeaves — never by
+                        // template-substituting the raw JSON text before parsing. Per-leaf
+                        // assignment through JsonNode is injection-safe: a resolved value can
+                        // only ever replace one JSON string value with another, so a
+                        // substituted value containing a quote or brace cannot corrupt the
+                        // envelope the way raw-text substitution could.
+                        var paramsNode = System.Text.Json.Nodes.JsonNode.Parse(paramsJson);
+                        ResolveParamsLeaves(paramsNode, secrets, vars);
+                        envelope["params"] = paramsNode;
+                    }
                     if (!notification)
                         envelope["id"] = requestId;
 
@@ -685,7 +730,12 @@ public sealed class JsonRpcProvider
                                 }
 
                                 // ── engine-standard `capture:` — JSONPath against the FULL envelope.
-                                if (captureVarNames.Length > 0 && verdict == Platform.Engine.Abstractions.Verdict.Pass)
+                                // Gated on `!= Fail` (not `== Pass`) to read identically to the
+                                // Core http.rest provider's own capture gate — the two are
+                                // equivalent at this point in the control flow (verdict can only
+                                // be Pass or Fail here), but this sample is the reference pattern
+                                // contributors copy.
+                                if (captureVarNames.Length > 0 && verdict != Platform.Engine.Abstractions.Verdict.Fail)
                                 {
                                     var matchedFlags = new bool[captureVarNames.Length];
                                     for (int ci = 0; ci < captureVarNames.Length; ci++)
@@ -753,6 +803,49 @@ public sealed class JsonRpcProvider
                 vars[Platform.Engine.Abstractions.VarKeys.Outcome(stepId)] =
                     new Platform.Engine.Abstractions.StepOutcome(verdict, sw.ElapsedMilliseconds, observation);
             }
+
+            // Resolves every STRING LEAF in a parsed `params` JsonNode tree (object or
+            // array, recursively — JSON-RPC 2.0 §4.2 already guarantees the ROOT is one
+            // of those two shapes, enforced by JsonRpcProvider.Validate) via
+            // Secret_Helpers.ResolveTemplate, mutating the tree in place. Non-string
+            // leaves (numbers/bools/null) are left untouched — only a string value can
+            // carry a {placeholder} or ${secret:...} token. This never template-
+            // substitutes the raw JSON TEXT before parsing: a resolved value containing a
+            // quote or brace would otherwise corrupt the envelope. Per-leaf assignment via
+            // JsonNode is injection-safe by construction — a resolved value can only ever
+            // replace one JSON string value with another, never inject structure.
+            private static void ResolveParamsLeaves(
+                System.Text.Json.Nodes.JsonNode? node,
+                Platform.Engine.Abstractions.Secrets.ISecretAccessor secrets,
+                System.Collections.Generic.IDictionary<string, object?> vars)
+            {
+                if (node is System.Text.Json.Nodes.JsonObject obj)
+                {
+                    var keys = new System.Collections.Generic.List<string>();
+                    foreach (var kv in obj)
+                        keys.Add(kv.Key);
+
+                    foreach (var key in keys)
+                    {
+                        var child = obj[key];
+                        if (child is System.Text.Json.Nodes.JsonValue leaf && leaf.TryGetValue<string>(out var s))
+                            obj[key] = System.Text.Json.Nodes.JsonValue.Create(Secret_Helpers.ResolveTemplate(secrets, vars, s));
+                        else
+                            ResolveParamsLeaves(child, secrets, vars);
+                    }
+                }
+                else if (node is System.Text.Json.Nodes.JsonArray arr)
+                {
+                    for (var i = 0; i < arr.Count; i++)
+                    {
+                        var child = arr[i];
+                        if (child is System.Text.Json.Nodes.JsonValue leaf && leaf.TryGetValue<string>(out var s))
+                            arr[i] = System.Text.Json.Nodes.JsonValue.Create(Secret_Helpers.ResolveTemplate(secrets, vars, s));
+                        else
+                            ResolveParamsLeaves(child, secrets, vars);
+                    }
+                }
+            }
         }
         """;
 
@@ -768,6 +861,11 @@ public sealed class JsonRpcProvider
         // ICompileContext does, here).  Rather than silently ignoring the capture or
         // making a call whose result can never be captured, short-circuit to a trivial
         // block that skips the HTTP call entirely and records WHY.
+        //
+        // Verdict.Fail, not Inconclusive: this is an AUTHOR MISCONFIGURATION (a step
+        // shape that can never do what it declares), not a timing uncertainty.
+        // Inconclusive does not break CI by default (§12.1), so classifying a
+        // misconfiguration that way would let the mistake hide silently.
         if (model.Notification && ctx.CaptureExprs.Count > 0)
         {
             const string reason =
@@ -780,7 +878,7 @@ public sealed class JsonRpcProvider
                 {
                     Vars[Platform.Engine.Abstractions.VarKeys.Outcome({{JsonSerializer.Serialize(safeId)}})] =
                         new Platform.Engine.Abstractions.StepOutcome(
-                            Platform.Engine.Abstractions.Verdict.Inconclusive,
+                            Platform.Engine.Abstractions.Verdict.Fail,
                             0,
                             {{observationLiteral}});
                 }

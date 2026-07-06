@@ -44,6 +44,7 @@
 // ProviderTestHarness.RunSingleStepAsync instead — see
 // JsonRpcProviderTests.Conformance_MissingUrlAndMethod_FailsSchemaValidation.
 using Platform.Engine.Abstractions;
+using Platform.Engine.Abstractions.Secrets;
 using Platform.Engine.Compilation;
 using Platform.Sdk;
 using Platform.Sdk.Testing.Contexts;
@@ -96,12 +97,27 @@ internal static class JsonRpcHarness
     /// <param name="captures">
     /// The step's <c>capture</c> map, or <see langword="null"/> for none.
     /// </param>
+    /// <param name="preSeedVars">
+    /// Variables to seed into <c>Vars</c> BEFORE the step runs — mirrors how the real
+    /// engine pipeline pre-loads the scenario's top-level <c>variables:</c> section
+    /// (DSL §3) before any step executes. <see langword="null"/> (the default) seeds
+    /// nothing, matching every pre-existing caller of this method.
+    /// </param>
+    /// <param name="secrets">
+    /// The <see cref="ISecretAccessor"/> to expose via <c>ScriptGlobalVariables.Secrets</c>,
+    /// or <see langword="null"/> (the default) to fall back to the legacy
+    /// <see cref="ScriptGlobalVariables(IDictionary{string, object?})"/> constructor
+    /// (a <c>NullSecretAccessor</c> that throws on any resolution attempt) — matching
+    /// every pre-existing caller of this method exactly.
+    /// </param>
     public static async Task<Result> RunAsync(
         JsonRpcModel model,
         string stepId,
         bool retry = false,
         long? timeoutMs = null,
         IReadOnlyDictionary<string, CaptureExpr>? captures = null,
+        IReadOnlyDictionary<string, object?>? preSeedVars = null,
+        ISecretAccessor? secrets = null,
         CancellationToken cancellationToken = default)
     {
         var provider = new JsonRpcProvider();
@@ -130,7 +146,15 @@ internal static class JsonRpcHarness
             additionalReferencePaths: AdditionalReferencePaths);
 
         var vars = new Dictionary<string, object?>(StringComparer.Ordinal);
-        var globals = new ScriptGlobalVariables(vars);
+        if (preSeedVars is not null)
+        {
+            foreach (var (key, value) in preSeedVars)
+                vars[key] = value;
+        }
+
+        var globals = secrets is null
+            ? new ScriptGlobalVariables(vars)
+            : new ScriptGlobalVariables(vars, new Dictionary<string, object>(StringComparer.Ordinal), secrets);
 
         await RoslynScriptCompiler
             .RunIsolatedAsync(compiled, globals, runLabel: stepId, cancellationToken: cancellationToken)

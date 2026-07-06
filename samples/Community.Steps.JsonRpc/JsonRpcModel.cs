@@ -80,7 +80,11 @@ public sealed record JsonRpcExpect(
 /// </param>
 /// <param name="ParamsJson">
 /// The JSON-RPC <c>params</c> value, pre-serialised at bind time to a JSON object
-/// (from a YAML mapping) or JSON array (from a YAML sequence) literal.
+/// (from a YAML mapping) or JSON array (from a YAML sequence) literal. Per JSON-RPC
+/// 2.0 §4.2, <c>params</c> MUST be structured when present — <see cref="JsonRpcProvider.Validate"/>
+/// rejects a scalar. Every STRING LEAF in this JSON tree may contain a
+/// <c>{placeholder}</c> token or a <c>${secret:source/path}</c> reference, both
+/// resolved at step-execution time, exactly like <see cref="Url"/>.
 /// <see langword="null"/> when the step declares no <c>params</c> field, in which case
 /// the emitted request envelope omits <c>params</c> entirely.
 /// </param>

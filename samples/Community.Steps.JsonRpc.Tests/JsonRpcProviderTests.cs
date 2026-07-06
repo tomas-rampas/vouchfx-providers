@@ -16,6 +16,7 @@
 // All conformance tests are Docker-free: JsonRpcTestServerFixture self-hosts a minimal
 // JSON-RPC 2.0 responder on loopback (see JsonRpcTestServer.cs).
 using Platform.Engine.Abstractions;
+using Platform.Engine.Abstractions.Secrets;
 using Platform.Sdk;
 using Platform.Sdk.Testing;
 using Platform.Sdk.Testing.Contexts;
@@ -156,6 +157,132 @@ public sealed class JsonRpcProviderTests : IClassFixture<JsonRpcTestServerFixtur
         Assert.Equal("10", captured);
     }
 
+    // ── Substitution: {placeholder} / ${secret:...} resolution ───────────────
+    //
+    // MINOR-1 follow-up: the original sample only ever ran `url` through
+    // Secret_Helpers.ResolveTemplate; `method` and every string leaf of `params` were
+    // emitted raw. These tests exercise the fix from the OUTSIDE — asserting on what
+    // actually reached the server or on the server's own resolved response — rather
+    // than inspecting the emitted CSX text, so they would have caught the original bug.
+
+    // (a) `url` entirely a {placeholder}, pre-seeded into Vars (mirrors how the real
+    // engine pipeline pre-loads the scenario's `variables:` section before any step
+    // runs). If the placeholder were NOT resolved, `new Uri("{rpcBaseUrl}", Absolute)`
+    // throws UriFormatException -> caught by the generic catch -> EnvironmentError, not
+    // Pass — so a Pass here is only possible when substitution genuinely happened.
+    [Fact]
+    public async Task Conformance_UrlPlaceholder_PreSeededVariable_ResolvesAndCalls()
+    {
+        var model = new JsonRpcModel(
+            Url: "{rpcBaseUrl}",
+            Method: "sum",
+            ParamsJson: "{\"a\":2,\"b\":3}",
+            Notification: false,
+            Expect: new JsonRpcExpect(Result: new[]
+            {
+                new JsonRpcResultAssertion("$.sum", "5"),
+            }));
+
+        var preSeed = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["rpcBaseUrl"] = _server.BaseUrl,
+        };
+
+        var result = await JsonRpcHarness.RunAsync(model, "url-placeholder", preSeedVars: preSeed);
+
+        Assert.Equal(Verdict.Pass, result.Verdict);
+    }
+
+    // (b1) `params` as a named-params OBJECT (README example 1/3 shape) carrying a
+    // {placeholder} leaf. Calls the test server's "echo" method, which returns
+    // result = the params it received verbatim — so asserting on $.orderId proves what
+    // the SERVER actually saw, not what the provider intended to send. Before the fix
+    // this would Fail with a resultMismatch against the literal string "{orderId}".
+    [Fact]
+    public async Task Conformance_ParamsObjectLeaf_Placeholder_ResolvesBeforeSend()
+    {
+        var model = new JsonRpcModel(
+            Url: _server.BaseUrl,
+            Method: "echo",
+            ParamsJson: "{\"orderId\":\"{orderId}\"}",
+            Notification: false,
+            Expect: new JsonRpcExpect(Result: new[]
+            {
+                new JsonRpcResultAssertion("$.orderId", "\"ORD-42\""),
+            }));
+
+        var preSeed = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["orderId"] = "ORD-42",
+        };
+
+        var result = await JsonRpcHarness.RunAsync(model, "params-object-leaf", preSeedVars: preSeed);
+
+        Assert.Equal(Verdict.Pass, result.Verdict);
+    }
+
+    // (b2) `params` as a positional-params ARRAY (README example 4 shape) carrying a
+    // {placeholder} leaf alongside a literal element — proves the walker recurses
+    // correctly into an array and leaves non-placeholder leaves untouched.
+    [Fact]
+    public async Task Conformance_ParamsArrayLeaf_Placeholder_ResolvesBeforeSend()
+    {
+        var model = new JsonRpcModel(
+            Url: _server.BaseUrl,
+            Method: "echo",
+            ParamsJson: "[\"order.shipped\",\"{orderId}\"]",
+            Notification: false,
+            Expect: new JsonRpcExpect(Result: new[]
+            {
+                new JsonRpcResultAssertion("$[0]", "\"order.shipped\""),
+                new JsonRpcResultAssertion("$[1]", "\"ORD-99\""),
+            }));
+
+        var preSeed = new Dictionary<string, object?>(StringComparer.Ordinal)
+        {
+            ["orderId"] = "ORD-99",
+        };
+
+        var result = await JsonRpcHarness.RunAsync(model, "params-array-leaf", preSeedVars: preSeed);
+
+        Assert.Equal(Verdict.Pass, result.Verdict);
+    }
+
+    // (c) `${secret:env/...}` in `url`, resolved through a REAL SecretAccessor wired to
+    // the published EnvironmentSecretResolver (Platform.Engine.Abstractions.Secrets) —
+    // usable here because both types are published (not engine-internal), unlike the
+    // Vault resolver. Proves the secret-token half of ResolveTemplate end to end, not
+    // just the placeholder half.
+    [Fact]
+    public async Task Conformance_UrlSecretToken_EnvSource_ResolvesAndCalls()
+    {
+        const string envVarName = "VOUCHFX_JSONRPC_SAMPLE_TEST_URL";
+        Environment.SetEnvironmentVariable(envVarName, _server.BaseUrl);
+        try
+        {
+            var model = new JsonRpcModel(
+                Url: $"${{secret:env/{envVarName}}}",
+                Method: "sum",
+                ParamsJson: "{\"a\":10,\"b\":5}",
+                Notification: false,
+                Expect: new JsonRpcExpect(Result: new[]
+                {
+                    new JsonRpcResultAssertion("$.sum", "15"),
+                }));
+
+            var secrets = new SecretAccessor(
+                new SecretSourceCatalog(new ISecretResolver[] { new EnvironmentSecretResolver() }));
+
+            var result = await JsonRpcHarness.RunAsync(model, "url-secret-env", secrets: secrets);
+
+            Assert.Equal(Verdict.Pass, result.Verdict);
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(envVarName, null);
+        }
+    }
+
     // ── 7. verifyMode: RETRY converging on the flaky method -> Pass ──────────
 
     [Fact]
@@ -273,6 +400,73 @@ public sealed class JsonRpcProviderTests : IClassFixture<JsonRpcTestServerFixtur
         Assert.Null(result.Verdict);
     }
 
+    // An explicit but EMPTY 'expect.result: []' must be rejected rather than silently
+    // degrading to bare-call semantics (peer-review follow-up finding #1).
+    [Fact]
+    public async Task Conformance_EmptyExpectResultList_FailsModelValidation()
+    {
+        const string yaml = """
+            steps:
+              - id: empty-result
+                type: rpc.json-rpc
+                url: "http://localhost:1/rpc"
+                method: sum
+                expect:
+                  result: []
+            """;
+
+        var result = await ProviderTestHarness.RunSingleStepAsync(
+            yaml,
+            typeof(JsonRpcProvider).Assembly,
+            "empty-result");
+
+        Assert.NotEmpty(result.ValidationErrors);
+        Assert.Null(result.Verdict);
+    }
+
+    // MINOR-2: JSON-RPC 2.0 §4.2 requires params to be structured (an object or an
+    // array) when present — rejected at the SCHEMA layer, before Bind/Validate ever run.
+    [Fact]
+    public async Task Conformance_ScalarParams_FailsSchemaValidation()
+    {
+        const string yaml = """
+            steps:
+              - id: scalar-params
+                type: rpc.json-rpc
+                url: "http://localhost:1/rpc"
+                method: sum
+                params: 42
+            """;
+
+        var result = await ProviderTestHarness.RunSingleStepAsync(
+            yaml,
+            typeof(JsonRpcProvider).Assembly,
+            "scalar-params");
+
+        Assert.NotEmpty(result.SchemaErrors);
+        Assert.Null(result.Verdict);
+    }
+
+    // MINOR-2 defence-in-depth: the same constraint enforced directly at
+    // JsonRpcProvider.Validate, exercised via a hand-built model (bypassing the schema
+    // layer entirely) so the model-level check is proven independently of the schema one.
+    [Fact]
+    public void Unit_Validate_ScalarParams_Rejected()
+    {
+        var provider = new JsonRpcProvider();
+        var model = new JsonRpcModel(
+            Url: "http://localhost/rpc",
+            Method: "sum",
+            ParamsJson: "42",
+            Notification: false,
+            Expect: null);
+
+        var result = provider.Validate(model, new TestProjectContext());
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.Contains("params", StringComparison.OrdinalIgnoreCase));
+    }
+
     // ── Emit-shape unit tests (mirrors the template/Core pattern) ────────────
 
     [Fact]
@@ -331,7 +525,7 @@ public sealed class JsonRpcProviderTests : IClassFixture<JsonRpcTestServerFixtur
     }
 
     [Fact]
-    public void Unit_Emit_NotificationWithCapture_ShortCircuitsToInconclusive()
+    public void Unit_Emit_NotificationWithCapture_ShortCircuitsToFail()
     {
         var provider = new JsonRpcProvider();
         var model = new JsonRpcModel("http://localhost/rpc", "ping", null, true, null);
@@ -344,9 +538,11 @@ public sealed class JsonRpcProviderTests : IClassFixture<JsonRpcTestServerFixtur
         var fragment = provider.Emit(model, ctx);
 
         // notification + capture cannot be rejected in Validate (IProjectContext has no
-        // capture view) — Emit instead short-circuits to a trivial Inconclusive block
-        // with no HTTP call and no helper class required.
-        Assert.Contains("Verdict.Inconclusive", fragment.StatementBlock, StringComparison.Ordinal);
+        // capture view) — Emit instead short-circuits to a trivial Fail block with no
+        // HTTP call and no helper class required. Fail, not Inconclusive: this is an
+        // author misconfiguration (MINOR-5), not a timing uncertainty, and Inconclusive
+        // does not break CI by default (§12.1).
+        Assert.Contains("Verdict.Fail", fragment.StatementBlock, StringComparison.Ordinal);
         Assert.Empty(fragment.RequiredHelpers);
     }
 }
