@@ -137,6 +137,8 @@ The vouchfx maintainers allocate **one half-day per week** (4 hours) for provide
 │   ├── community-providers.json        (the index)
 │   └── community-providers.schema.json (JSON Schema)
 ├── template/                           (starter provider scaffold)
+├── samples/                            (richer worked examples, hub-CI-tested; not a submission tier)
+│   └── Community.Steps.JsonRpc/        (JSON-RPC 2.0 over HTTP — see its README)
 ├── verified/                           (Verified-tier submissions)
 │   └── <provider-id>/                  (one folder per submission)
 │       ├── src/                        (provider source code)

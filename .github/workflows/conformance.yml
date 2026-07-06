@@ -134,7 +134,20 @@ jobs:
           --no-build
           --logger "console;verbosity=normal"
 
-      # ── Step 7b: Verified submission tests (shell-glob; no-op if none exist) ──
+      # ── Step 7b: Samples conformance test (Community.Steps.JsonRpc) ───────────
+      # samples/ hosts richer, hub-CI-tested worked examples (alongside template/'s
+      # copyable skeleton and verified/'s submission gate) — not themselves a
+      # governance-tier submission. Same restore/build flow as the template step
+      # above; the sln already globs both sample projects into the single
+      # restore/build done earlier in this job.
+      - name: Test — samples (Community.Steps.JsonRpc conformance)
+        run: >
+          dotnet test samples/Community.Steps.JsonRpc.Tests
+          -c Release
+          --no-build
+          --logger "console;verbosity=normal"
+
+      # ── Step 7c: Verified submission tests (shell-glob; no-op if none exist) ──
       # When a Verified submission lands under verified/<provider>/
       # its .Tests.csproj is automatically discovered and run here.
       # nullglob ensures an empty glob expands to nothing rather than a literal

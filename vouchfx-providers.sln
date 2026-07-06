@@ -9,6 +9,12 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Community.Steps.Hello", "te
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Community.Steps.Hello.Tests", "template\Community.Steps.Hello.Tests\Community.Steps.Hello.Tests.csproj", "{0AB8D6BA-384D-4352-934D-234A7F6968A6}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "samples", "samples", "{7060A965-8A2B-44AD-B5FE-E488438CFB40}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Community.Steps.JsonRpc", "samples\Community.Steps.JsonRpc\Community.Steps.JsonRpc.csproj", "{9E69ABEC-DD40-49C9-94D1-F23E0721B486}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Community.Steps.JsonRpc.Tests", "samples\Community.Steps.JsonRpc.Tests\Community.Steps.JsonRpc.Tests.csproj", "{95C37014-DACA-4902-95AF-D1BA1E8BD260}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -26,9 +32,19 @@ Global
 		{0AB8D6BA-384D-4352-934D-234A7F6968A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0AB8D6BA-384D-4352-934D-234A7F6968A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0AB8D6BA-384D-4352-934D-234A7F6968A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9E69ABEC-DD40-49C9-94D1-F23E0721B486}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9E69ABEC-DD40-49C9-94D1-F23E0721B486}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9E69ABEC-DD40-49C9-94D1-F23E0721B486}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9E69ABEC-DD40-49C9-94D1-F23E0721B486}.Release|Any CPU.Build.0 = Release|Any CPU
+		{95C37014-DACA-4902-95AF-D1BA1E8BD260}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95C37014-DACA-4902-95AF-D1BA1E8BD260}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95C37014-DACA-4902-95AF-D1BA1E8BD260}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95C37014-DACA-4902-95AF-D1BA1E8BD260}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{3F2D8D74-3FDE-4544-8434-19F621316C5B} = {14E3172B-5055-4481-AB79-352E6E1EF16A}
 		{0AB8D6BA-384D-4352-934D-234A7F6968A6} = {14E3172B-5055-4481-AB79-352E6E1EF16A}
+		{9E69ABEC-DD40-49C9-94D1-F23E0721B486} = {7060A965-8A2B-44AD-B5FE-E488438CFB40}
+		{95C37014-DACA-4902-95AF-D1BA1E8BD260} = {7060A965-8A2B-44AD-B5FE-E488438CFB40}
 	EndGlobalSection
 EndGlobal
