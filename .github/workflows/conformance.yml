@@ -68,8 +68,15 @@ jobs:
           repository: tomas-rampas/vouchfx
           # Full 40-char SHA required: actions/checkout treats a short SHA as a branch/tag
           # glob (refs/heads/<ref>*) and fails the cross-repo fetch. This is engine main =
-          # f374f26 (Sprint 12: 18 Core providers + SUT env-configuration surface); track the engine release tag once v1.0 is tagged.
-          ref: f374f2603a6de9e0a759257ad9d5c29e430efd29
+          # f5bf109 (Sprint 12: 18 Core providers + SUT env-configuration surface); track the engine release tag once v1.0 is tagged.
+          # Repinned 2026-07-06: the engine repo's main branch history was rewritten
+          # (de-published internal plan/ + docs/reviews/ material, redacted a few commit
+          # messages) and force-pushed, orphaning the previous SHA. The old and new SHAs
+          # point at the same logical commit — same author, timestamp, message, and an
+          # identical src/ subtree (git rev-parse <sha>:src is unchanged) — only non-code
+          # paths (plan/, docs/reviews/, docs/03_MVP_Project_Plan.md) differ. See the
+          # engine-sha-repin PR for the full verification.
+          ref: f5bf109651bd5ea4c2f3653d4a62d34fe2ba1011
           path: engine
 
       # ── Step 3: Set up .NET SDK (version from global.json: 8.0.400) ──────────
