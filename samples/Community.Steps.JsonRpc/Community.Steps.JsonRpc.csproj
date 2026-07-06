@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <!-- §5.6 ASSEMBLY-GRAPH HYGIENE: keep this namespace in the Community.Steps.*
+         space — never Platform.Steps.* or Platform.Engine.* (both reserved and refused
+         at startup). -->
+    <RootNamespace>Community.Steps.JsonRpc</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- A community provider depends on the frozen v1 SDK contract. No reference to
+         Platform.Engine.* is taken here: the engine drives the provider through these
+         interfaces, and the emitted CSX reaches the run environment solely through the
+         engine-injected Vars/Secrets globals (referenced by fully-qualified name in the
+         emitted text — see JsonRpcProvider.Emit). -->
+    <PackageReference Include="Platform.Sdk" Version="1.0.0" />
+
+    <!-- DEVIATION FROM THE MINIMAL "BCL-only, zero new packages" STARTING ASSUMPTION —
+         verified necessary, not guessed (see README "Known limitations" + the delivery
+         report for the file:line evidence trail):
+         the DSL's `capture:` field (§6.1) is evaluated with JSONPath *inside the
+         provider's own emitted CSX* — engine Core providers (http.rest, mq-expect.*)
+         all call Json.Path.JsonPath.Parse(...).Evaluate(...) from their own helper
+         source, never from an engine-side evaluator. Supporting `capture` (and this
+         provider's own `expect.result` JSONPath assertions) therefore requires:
+           (a) this compile-time PackageReference, so JsonRpcProvider.cs can name the
+               Json.Path.JsonPath type for ICompileReferenceContributor, and
+           (b) ICompileReferenceContributor itself (see JsonRpcProvider.cs), so Roslyn
+               can resolve Json.Path.JsonPath in the assembled script at run time.
+         Version pinned to match the engine's own Directory.Packages.props entry. -->
+    <PackageReference Include="JsonPath.Net" Version="3.0.2" />
+  </ItemGroup>
+
+</Project>

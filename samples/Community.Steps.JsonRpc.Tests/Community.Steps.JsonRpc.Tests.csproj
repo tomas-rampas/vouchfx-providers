@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.11.1" />
+    <PackageReference Include="xunit" Version="2.9.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="2.8.2">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Provider under test. -->
+    <ProjectReference Include="..\Community.Steps.JsonRpc\Community.Steps.JsonRpc.csproj" />
+
+    <!-- Published harness packages — Platform.Engine.Abstractions / Authoring /
+         Compilation (CsxAssembler, RoslynScriptCompiler, StepCompilePlan, Verdict,
+         StepOutcome, VarKeys, ScriptGlobalVariables) flow in TRANSITIVELY through
+         Platform.Sdk.Testing's own package dependencies — mirroring exactly how the
+         template's Community.Steps.Hello.Tests.csproj consumes Platform.Engine.Abstractions
+         with no explicit reference to it. See JsonRpcHarness.cs for why this sample
+         needs a small custom harness alongside the published ProviderTestHarness. -->
+    <PackageReference Include="Platform.Sdk" Version="1.0.0" />
+    <PackageReference Include="Platform.Sdk.Testing" Version="1.0.0" />
+  </ItemGroup>
+
+</Project>
