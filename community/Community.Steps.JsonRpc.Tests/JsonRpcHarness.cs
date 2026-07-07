@@ -19,7 +19,7 @@
 // mail-expect.smtp providers — see JsonRpcProvider's ICompileReferenceContributor).
 // Driven through the plain ProviderTestHarness, every execution test below would throw
 // a Platform.Engine.Compilation.ScriptCompilationException (CS0246, type not found) —
-// not a soft Verdict. This is a genuine, cited SDK/tooling gap this sample surfaces,
+// not a soft Verdict. This is a genuine, cited SDK/tooling gap this provider surfaces,
 // not a guess: the engine's OWN docker-free test for http.rest
 // (tests/Platform.Engine.Compilation.Tests/HttpRestExecutionTests.cs) works around the
 // identical limitation by driving Emit -> CsxAssembler.Assemble ->

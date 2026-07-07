@@ -14,6 +14,8 @@ The registry is human-readable and machine-consumable. It powers:
 - Automated tools that discover and install providers
 - Community feedback and discoverability
 
+The first entry is [`rpc.json-rpc`](../community/Community.Steps.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package (`Community.Steps.JsonRpc`) ships alongside the engine's v1.0 release; until then it is built from source here, which is why it is listed ahead of its package being resolvable on NuGet.org.
+
 ## How to Add an Entry
 
 ### Option 1: Submit a Pull Request

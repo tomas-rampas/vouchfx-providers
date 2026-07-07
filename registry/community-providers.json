@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "name": "JSON-RPC 2.0 Invocation",
+    "stepKindId": "rpc.json-rpc",
+    "repo": "https://github.com/tomas-rampas/vouchfx-providers",
+    "nuget": "Community.Steps.JsonRpc",
+    "author": "Tomas Rampas",
+    "minEngineVersion": "1.0.0",
+    "tier": "community",
+    "description": "Invokes a JSON-RPC 2.0 method over HTTP and asserts on the result or error envelope"
+  }
+]
