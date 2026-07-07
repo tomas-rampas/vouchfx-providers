@@ -117,7 +117,7 @@ If you own a provider that is already listed:
 ## Verification
 
 When a new entry is added or updated, the maintainers verify:
-- The NuGet package exists and is publicly resolvable
+- The NuGet package exists and is publicly resolvable (sole exception: the hub-hosted reference implementation, `rpc.json-rpc`, is built from source in this repository until its package ships alongside engine v1.0)
 - The repository URL is valid and accessible
 - The entry validates against the schema
 - The `stepKindId` does not conflict with existing entries (duplicates are rejected)
