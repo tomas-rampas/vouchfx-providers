@@ -50,10 +50,11 @@ Your provider talks directly to a service the test author supplies as an absolut
 Your provider observes a dependency type the engine **already manages** via Aspire. The engine's orchestration already knows how to start the container, health-gate it, and expose its connection details via `ScriptGlobalVariables`.
 
 **Managed dependency types (the engine orchestration already supports these):**
-- Relational databases: `postgres`, `mysql`, `sqlserver`, `mongodb`
-- In-memory stores: `redis`, `elasticsearch`
+- Relational databases: `postgres`, `mysql`, `sqlserver`
+- Document database: `mongodb`
+- Key-value & search: `redis`, `elasticsearch`
 - Message brokers: `kafka`, `rabbitmq`, `nats`, `azureservicebus`
-- File/HTTP services: `mailpit` (SMTP test server)
+- Mail sink: `mailpit` (SMTP test server)
 
 **Examples:**
 - `db-assert.postgres` — executes SQL assertions against PostgreSQL
@@ -69,14 +70,9 @@ Your provider observes a dependency type the engine **already manages** via Aspi
 
 Your provider needs Aspire to manage a **new container type** not in the list above (for example, a custom gRPC server, a proprietary database, a third-party cloud emulator). **This requires engine-side support.**
 
-The orchestration dependency registry (`Platform.Engine.Orchestration` / `AspireResourceProvider`) is closed. To add support for a new infrastructure type:
+The orchestration layer's dependency registry (`EnvironmentMapper`'s internal `s_dependencyRegistry` in `Platform.Engine.Orchestration`) is a fixed table of eleven supported dependency types; supporting a new one means adding an entry there plus the matching validator/schema surface — it is not something a provider package can extend from outside the engine. That change therefore arrives via a contribution to, and release of, the engine itself (https://github.com/tomas-rampas/vouchfx), not from your provider repository.
 
-1. Fork or clone the engine repository (https://github.com/tomas-rampas/vouchfx)
-2. Add a new `AspireResourceProvider<TDependency>` implementation to `src/Engine/Platform.Engine.Orchestration/`
-3. Register it in `AspireResourceProviderRegistry`
-4. Submit a pull request to the engine repository
-
-This is not a blocker — it is a deliberate separation of concerns. The engine's orchestration layer is the single source of truth for topology setup; providers plug into it, not the other way around. If you need help, ask on GitHub Discussions or open an issue.
+This is not a blocker — it is a deliberate separation of concerns. The engine's orchestration layer is the single source of truth for topology setup; providers plug into it, not the other way around. If you need a new dependency type, open an issue or pull request against the engine repository; in the meantime, a protocol provider that talks to an already-running instance by URL (see "Protocol Providers" above) needs no orchestration change at all.
 
 ## 3. Project Setup
 
@@ -210,9 +206,9 @@ This maps to YAML like:
 4. **Nested structures are nested records.** In the example above, `JsonRpcExpect` and `JsonRpcResultAssertion` are records, not dictionaries.
 5. **Strings for template-resolved values.** Fields that support `{placeholder}` or `${secret:source/path}` substitution are strings; their resolution happens at step-execution time, not bind time.
 
-## 5. The Five Contract Surfaces
+## 5. The Contract Surfaces
 
-Your provider class implements up to five interfaces. Four are mandatory; one is optional per step kind.
+Your provider class implements four mandatory `Platform.Sdk` interfaces: `IStepProvider`, `IStepBinder<TModel>`, `IStepValidator<TModel>`, and `IStepCompiler<TModel>`. Beyond those, the SDK exposes six further **optional** extension interfaces that a provider implements only when it needs the capability: `ICompileReferenceContributor`, `IResourceContributor<TModel>`, `IHostResourceContributor<TModel>`, `IRuntimeServiceContributor`, `IStepDiffRenderer`, and `IProviderModule`. Adding any of these to a provider does not change the frozen v1 contract — they are additive-only extensions (§13.8.1). This guide details three of them below: `ICompileReferenceContributor`, `IResourceContributor<TModel>`, and `IStepDiffRenderer`.
 
 ### Mandatory Interface 1: `IStepProvider`
 
@@ -339,7 +335,7 @@ public CsxFragment Emit(MyKindModel model, ICompileContext ctx)
     var block = $$"""
         {
             var __sw_{{safeId}} = System.Diagnostics.Stopwatch.StartNew();
-            var __value_{{safeId}} = {{JsonSerializer.Serialize(model.Value)}};
+            var __value_{{safeId}} = {{JsonSerializer.Serialize(model.Method)}};
             __sw_{{safeId}}.Stop();
 
             var __verdict_{{safeId}} =
@@ -395,29 +391,43 @@ The JsonRpc sample implements this because its emitted code calls `HttpClient`, 
 Declare which Aspire-managed infrastructure dependency your provider needs. The engine reconciles your declarations against `environment.dependencies` before starting the topology:
 
 ```csharp
-public IResourceBuilder? ContributeResource(MyKindModel model, IHostResourceContext ctx)
+public IEnumerable<ResourceRequirement> Resources(MyKindModel model)
 {
-    // Your step says it needs "postgres:my-db". Tell the engine to wait for that
-    // resource and health-gate it before running any steps.
-    return ctx.GetManagedResource("my-db");
+    // This step targets the dependency named "my-db", declared under
+    // environment.dependencies as `type: postgres`. Family must name one of
+    // the engine's own eleven engine-managed dependency types (§2 above);
+    // Image is conventionally left null today, so the engine uses its own
+    // default image for that family (see EnvironmentMapper's dependency
+    // registry, in the engine repository).
+    yield return new ResourceRequirement(
+        Family: "postgres",
+        Name: "my-db",
+        Image: null);
 }
 ```
+
+`ResourceRequirement` is a plain record: `ResourceRequirement(string Family, string Name, string? Image)`. This interface only lets your provider *observe* a dependency type the engine's orchestration already manages (§2, "Infrastructure Providers") — it cannot introduce a brand-new dependency type; that requires an engine-side change (§2, "Providers Requiring New Infrastructure").
 
 **When to implement:** Only if your provider needs Aspire-managed infrastructure (databases, brokers, etc.). Protocol providers (talking to URLs) do not implement this.
 
 ### Optional Interface: `IStepDiffRenderer`
 
-Render an expected-vs-observed diff for display in terminals and HTML reports. Implement this if your provider produces observation objects that have a natural "expected" and "actual" shape:
+Render an expected-vs-observed diff for display in terminals and HTML reports, computed by the renderer at *render time* — never by the engine when it records the event, which keeps the schema-versioned JSON Lines event stream pure structured data. Implement this if your provider produces observation objects that have a natural "expected" and "actual" shape. The interface has two members, both over `System.Text.Json.JsonElement`:
 
 ```csharp
-public string? RenderDiff(string? observation)
+public bool CanRender(System.Text.Json.JsonElement observation) =>
+    TryReadResultMismatch(observation, out _, out _, out _);
+
+public string? RenderDiff(System.Text.Json.JsonElement observation)
 {
-    // If observation is JSON with an expected/actual shape, render it nicely
-    // as a markdown table or diff. Return null to use the default observation display.
-    // See the Core mail-expect.smtp provider for a worked example.
+    if (TryReadResultMismatch(observation, out var path, out var expected, out var actual))
+        return $"  path     {path}{Environment.NewLine}  expected {expected}{Environment.NewLine}  actual   {actual}";
+
     return null;
 }
 ```
+
+`CanRender` returns `true` only when `RenderDiff` would return a non-null diff for that same observation shape; a renderer that does not recognise the shape returns `false`/`null` and the caller falls back to the plain verdict line. Mirrors `JsonRpcProvider.cs:981-995`, which recognises its own `{"resultMismatch": {...}}` and `{"errorCodeMismatch": {...}}` Fail-observation shapes.
 
 This is rarely needed. Only implement it if your step produces structured assertions where a diff makes sense (e.g., "expected 5, got 7").
 
@@ -465,14 +475,16 @@ RequiredHelpers: new[] {
 var block = $$"""
 {
     var __sw_{{safeId}} = System.Diagnostics.Stopwatch.StartNew();
-    // ... step-specific code ...
+    // ... step-specific code, ending by assigning these two ...
+    var __verdict_{{safeId}} = Platform.Engine.Abstractions.Verdict.Pass;
+    var __observation_{{safeId}} = "{}";
     __sw_{{safeId}}.Stop();
 
     Vars[Platform.Engine.Abstractions.VarKeys.Outcome("{{safeId}}")] =
         new Platform.Engine.Abstractions.StepOutcome(
             __verdict_{{safeId}},
             __sw_{{safeId}}.ElapsedMilliseconds,
-            observation);
+            __observation_{{safeId}});
 }
 """;
 ```
@@ -600,43 +612,43 @@ Wrap your operation in a try-catch and map exceptions to verdicts:
 var block = $$"""
 {
     var __sw_{{safeId}} = System.Diagnostics.Stopwatch.StartNew();
+    var __verdict_{{safeId}} = Platform.Engine.Abstractions.Verdict.EnvironmentError;
+    var __observation_{{safeId}} = "{\"error\":\"unexpected\"}";
 
     try
     {
         // Your provider-specific operation
-        var response = await MyKind_Helpers.DoSomethingAsync(…);
+        var response = await MyKind_Helpers.DoSomethingAsync();
 
         // Assertion logic
         var __pass_{{safeId}} = response.IsSuccess;
-        __sw_{{safeId}}.Stop();
-
-        var __verdict_{{safeId}} = __pass_{{safeId}}
+        __verdict_{{safeId}} = __pass_{{safeId}}
             ? Platform.Engine.Abstractions.Verdict.Pass
             : Platform.Engine.Abstractions.Verdict.Fail;
-
-        var __observation_{{safeId}} = /* structured JSON string */;
+        __observation_{{safeId}} = __pass_{{safeId}} ? "{\"matched\":true}" : "{\"matched\":false}";
     }
     catch (System.Net.Http.HttpRequestException ex)
     when (ex.InnerException is System.Net.Sockets.SocketException)
     {
         // Connection refused / DNS failure → environment error
-        __sw_{{safeId}}.Stop();
         __verdict_{{safeId}} = Platform.Engine.Abstractions.Verdict.EnvironmentError;
-        __observation_{{safeId}} = {{ JsonSerializer.Serialize(new {{ error = "network unreachable" }}) }};
+        __observation_{{safeId}} = "{\"error\":\"network unreachable\"}";
     }
     catch (System.OperationCanceledException)
     {
         // Client-side timeout → inconclusive
-        __sw_{{safeId}}.Stop();
         __verdict_{{safeId}} = Platform.Engine.Abstractions.Verdict.Inconclusive;
-        __observation_{{safeId}} = {{ JsonSerializer.Serialize(new {{ timeout = true }}) }};
+        __observation_{{safeId}} = "{\"timeout\":true}";
     }
     catch (System.Text.Json.JsonException)
     {
         // Response body is not valid JSON → environment error
-        __sw_{{safeId}}.Stop();
         __verdict_{{safeId}} = Platform.Engine.Abstractions.Verdict.EnvironmentError;
-        __observation_{{safeId}} = {{ JsonSerializer.Serialize(new {{ badJson = true }}) }};
+        __observation_{{safeId}} = "{\"badJson\":true}";
+    }
+    finally
+    {
+        __sw_{{safeId}}.Stop();
     }
 
     Vars[Platform.Engine.Abstractions.VarKeys.Outcome("{{safeId}}")] =
@@ -647,6 +659,8 @@ var block = $$"""
 }
 """;
 ```
+
+Declaring `__verdict_{{safeId}}` and `__observation_{{safeId}}` **before** the `try` (mirroring `JsonRpcProvider.cs`'s own `verdict`/`observation` locals, declared ahead of its `try` around line 507) is what makes the catch clauses' plain assignments (no `var`) legal — declaring them inside the `try` and assigning from a `catch` would be a compile error (CS0103, the name would not exist in the catch's scope). Each `__observation_{{safeId}}` value is a literal escaped-JSON string spliced directly into the emitted source (single braces are literal in a `$$"""` raw string), never an emit-time `JsonSerializer.Serialize(new { ... })` call nested inside a `{{ }}` hole — nesting object-initialiser braces inside an interpolation hole does not parse.
 
 **Guidelines:**
 - Network errors (socket exceptions, DNS failures, TLS failures, timeouts) → `EnvironmentError` or `Inconclusive`
@@ -673,111 +687,138 @@ YAML fields may contain template references resolved at step-execution time:
 - `{placeholder}` — replaced from `Vars`
 - `${secret:source/path}` — replaced from the secrets subsystem
 
-Your provider must resolve **every string field** the author might write (url, method, params values, headers, etc.) using `Secret_Helpers.ResolveTemplate`:
+Your provider must resolve **every string field** the author might write (url, method, params values, headers, etc.). Resolution happens **inside the emitted CSX, at step-execution time** — never in your `Bind`/`Validate`/`Emit` methods, which run at compile time before any secret source is even available. Both kinds of token are resolved together, in a single left-to-right pass, by a helper class your provider splices into the script.
+
+### The `Secret_Helpers` prerequisite
+
+`Secret_Helpers.ResolveTemplate` only exists inside the emitted script because your provider adds its canonical source, `Platform.Sdk.SecretHelper.Source`, to `CsxFragment.RequiredHelpers` — exactly as the JsonRpc sample does:
 
 ```csharp
-// From Platform.Engine.Abstractions (available in emitted code by FQN)
-var resolved = await Platform.Engine.Abstractions.SecretHelper.ResolveTemplate(
-    template: model.Url,  // e.g., "http://{host}:{port}/api"
-    vars: Vars,
-    secrets: Secrets,
-    cancellationToken: cancellationToken);
+return new CsxFragment(
+    RequiredUsings: s_usings,
+    RequiredHelpers: new[] { HelperSource, SecretHelper.Source },
+    StatementBlock: block);
 ```
 
-**Important:** Resolved values **must never reach observations, exceptions, or logs.** If a secret resolves to a password, it must never appear in a failure message or observation JSON.
+(`JsonRpcProvider.cs:942-946`.) `SecretHelper.Source` is byte-identical for every provider that includes it, so the assembler deduplicates it to one copy per suite (§13.3.1) — never write your own copy of this helper.
 
-The engine provides `SecretString` — a type with no value-returning `ToString()` method — for this purpose. But the simpler pattern is: **capture only the reference, never the value**:
+### Resolving inside the emitted CSX
+
+Inside your `RequiredHelpers` method or `StatementBlock` — not in provider C# — resolve a template field with:
 
 ```csharp
-// ❌ WRONG — the password is baked into the observation
-var observation = $"{{\"password\": \"{resolvedSecret}\"}}";
-
-// ✅ CORRECT — record only that a secret was resolved
-var observation = $"{{\"usedSecret\": true}}";
+var url = Secret_Helpers.ResolveTemplate(secrets, vars, urlTemplate);
 ```
 
-If your step must capture a resolved value (e.g., a bearer token used to construct a request header), use `SecretString`:
+This is the real signature (`Platform.Sdk/SecretHelper.cs`): `internal static string ResolveTemplate(ISecretAccessor secrets, IDictionary<string, object?> vars, string template)` — **synchronous**, argument order `(secrets, vars, template)`. It resolves `${secret:source/path}` tokens and `{placeholder}` tokens in a single pass over the *original* text, so a substituted placeholder value is never re-scanned for secret tokens and a revealed secret value is never re-scanned for placeholders (§17). Call it inside your own guarded `try` region: a missing or unknown secret throws `SecretResolutionException`, which your `catch` must map to `Verdict.EnvironmentError` (§7).
+
+**Important:** the revealed value is a transient destined for an injection sink — it is consumed immediately and **is never written back to `Vars`**. Resolved values must never reach observations, exceptions, or logs:
 
 ```csharp
-// Store in Vars — the SecretString prevents accidental disclosure
-var secretToken = new Platform.Engine.Abstractions.Secrets.SecretString(resolvedToken);
-Vars["auth::bearer"] = secretToken;
-```
+// ❌ WRONG — the resolved secret leaks into the observation
+observation = "{\"password\":\"" + resolvedSecret + "\"}";
 
-**Walk string leaves, not raw JSON:** If `model.Params` is a JSON string, parse it into a tree, resolve each string leaf individually, then re-serialise:
-
-```csharp
-var paramsJson = "{ \"key\": \"${secret:api-key}\", \"value\": \"${secret:api-value}\" }";
-
-// ❌ WRONG — template-substitutes the raw JSON text, corrupts structure if value contains quotes
-var resolved = await ResolveTemplate(paramsJson, …);
-
-// ✅ CORRECT — parse tree, resolve leaves, re-serialise
-var paramsNode = JsonNode.Parse(paramsJson);
-foreach (var prop in paramsNode.AsObject())
+// ✅ CORRECT — record only the exception's type name, never its message or the value
+catch (System.Exception ex)
 {
-    if (prop.Value is JsonValue scalar)
-    {
-        var leaf = scalar.GetValue<string>();
-        prop.Value = JsonValue.Create(
-            await ResolveTemplate(leaf, …));
-    }
+    observation = "{\"error\":" + System.Text.Json.JsonSerializer.Serialize(ex.GetType().Name) + "}";
 }
-var resolvedJson = paramsNode.ToJsonString();
+```
+
+(mirrors `JsonRpcProvider.cs:790-795`.) `SecretString` (`Platform.Engine.Abstractions.Secrets.SecretString`) exists for the engine's own secrets subsystem to carry a resolved value with redaction enforced at the source (`ToString()` returns a fixed `***REDACTED***` marker, never the value) — its constructor is `internal`, so neither your provider nor your emitted CSX can construct one. Do not try to cache a revealed value in `Vars` for later reuse: if a later part of the same statement block needs the value again, call `ResolveTemplate` again on its template.
+
+**Walk string leaves, not raw JSON:** when a field like `params` is a JSON string, parse it into a tree, resolve each string leaf individually via `Secret_Helpers.ResolveTemplate`, then re-serialise — never template-substitute the raw JSON text (a resolved value containing a quote or brace would corrupt the structure):
+
+```csharp
+// Inside RequiredHelpers, mirroring JsonRpcProvider.cs:817-848 (ResolveParamsLeaves)
+private static void ResolveParamsLeaves(
+    System.Text.Json.Nodes.JsonNode? node,
+    Platform.Engine.Abstractions.Secrets.ISecretAccessor secrets,
+    System.Collections.Generic.IDictionary<string, object?> vars)
+{
+    if (node is System.Text.Json.Nodes.JsonObject obj)
+    {
+        var keys = new System.Collections.Generic.List<string>();
+        foreach (var kv in obj)
+            keys.Add(kv.Key);
+
+        foreach (var key in keys)
+        {
+            var child = obj[key];
+            if (child is System.Text.Json.Nodes.JsonValue leaf && leaf.TryGetValue<string>(out var s))
+                obj[key] = System.Text.Json.Nodes.JsonValue.Create(Secret_Helpers.ResolveTemplate(secrets, vars, s));
+            else
+                ResolveParamsLeaves(child, secrets, vars);
+        }
+    }
+    // A JsonArray branch mirrors the object branch above — see JsonRpcProvider.cs
+    // for the full method, which also walks array elements the same way.
+}
 ```
 
 The JsonRpc sample implements this pattern for `params`.
 
 ## 9. Capture — JSONPath Evaluation into Vars
 
-The engine's universal `capture` field (DSL §6.1) lets the test author extract values from your step's response into `Vars` for later steps to use.
+The engine's universal `capture` field (DSL §6.1) lets the test author extract values from your step's response into `Vars` for later steps to use. There is no shared runtime facility that evaluates captures for you: your provider's `Emit` method reads the declared captures from `ICompileContext.CaptureExprs` (`Contexts.cs:134-153`) — an `IReadOnlyDictionary<string, CaptureExpr>`, where each `CaptureExpr` carries the extractor `Format` (`CaptureFormat.JsonPath` or `CaptureFormat.XPath`) and the raw `Expression` string — and your provider must itself emit the CSX that evaluates those expressions against the response at step-execution time and downgrades an unmet capture to `Inconclusive`.
 
-Your provider must evaluate `capture` expressions against your response and write the results to `Vars`:
+The two phases run at different times and must not be conflated: `ctx.CaptureExprs` is only in scope inside `Emit` (compile time); the response only exists once the step runs (runtime).
+
+**Emit-time — in `Emit(model, ctx)`, turn the capture map into literal arrays and pass them as arguments** (mirrors `JsonRpcProvider.cs:905-921`):
 
 ```csharp
-// ctx.CaptureExprs is IReadOnlyDictionary<string, CaptureExpr>
-// where each CaptureExpr carries the type (JSONPath or XPath) and the expression
+var captureVarNames = ctx.CaptureExprs.Keys.ToArray();
+var captureExprs = ctx.CaptureExprs.Values.Select(c => c.Expression).ToArray();
 
-foreach (var (varName, captureExpr) in ctx.CaptureExprs)
+var block = $$"""
+    {
+        await MyKind_Helpers.ExecuteAsync(
+            Vars,
+            {{JsonSerializer.Serialize(safeId)}},
+            {{BuildStringArrayLiteral(captureVarNames)}},
+            {{BuildStringArrayLiteral(captureExprs)}});
+    }
+    """;
+```
+
+(`BuildStringArrayLiteral` is the small emit-time helper — JSON-serialising each element into a C# array-initialiser literal — that `JsonRpcProvider.cs:953-967` also defines.)
+
+**Runtime — inside your `RequiredHelpers` method, evaluate each expression against the parsed response** (mirrors `JsonRpcProvider.cs:738-769`, which evaluates over the full response envelope):
+
+```csharp
+for (int ci = 0; ci < captureVarNames.Length; ci++)
 {
+    var matched = false;
     try
     {
-        // For a JSON response, evaluate the JSONPath expression
-        var results = JsonPath.JsonPath.Select(responseJson, captureExpr.Expression);
-        
-        // Write the matched value(s) to Vars
-        // If multiple matches, store as a list or JSON array
-        var matched = results.FirstOrDefault()?.GetValue<object>();
-        if (matched is not null)
+        var pathResult = Json.Path.JsonPath.Parse(captureExprs[ci]).Evaluate(responseNode);
+        var matches = pathResult.Matches;
+        if (matches is not null && matches.Count > 0 && matches[0].Value is not null)
         {
-            Vars[varName] = matched;
-        }
-        else
-        {
-            // No match → this is not a Fail; it downgrades an otherwise-Pass to Inconclusive
-            // Write a flag so the post-step logic can detect this
-            Vars["__captureUnmet::" + varName] = true;
+            vars[captureVarNames[ci]] = matches[0].Value!.ToJsonString();
+            matched = true;
         }
     }
-    catch (Exception ex)
-    {
-        // JSONPath parse error → environment error
-        __verdict_{{safeId}} = Platform.Engine.Abstractions.Verdict.EnvironmentError;
-        __observation_{{safeId}} = …;
-    }
-}
+    catch (System.Exception) { matched = false; }
 
-// After all captures:
-// If any capture was unmet AND the primary assertion passed, downgrade to Inconclusive
-if (__verdict_{{safeId}} == Platform.Engine.Abstractions.Verdict.Pass
-    && Vars.Keys.Any(k => k.StartsWith("__captureUnmet::", StringComparison.Ordinal)))
-{
-    __verdict_{{safeId}} = Platform.Engine.Abstractions.Verdict.Inconclusive;
-    __observation_{{safeId}} = { "captureUnmet": "..." };
+    if (!matched)
+    {
+        // An unmet capture is not a Fail — it downgrades an otherwise-Pass
+        // verdict to Inconclusive (§12.1), mirroring http.rest's own
+        // "upstream-capture-unmet" convention.
+        verdict = Platform.Engine.Abstractions.Verdict.Inconclusive;
+        observation = "{\"captureUnmet\":" + System.Text.Json.JsonSerializer.Serialize(captureVarNames[ci]) + "}";
+    }
 }
 ```
 
-The engine's framework handles capture evaluation for you in many cases, but if your provider does custom response parsing (not just JSON), you may need to implement this yourself. See the Core `http.rest` provider for the full pattern.
+The illustrative observation above is JSON, not C#:
+
+```json
+{ "captureUnmet": "total" }
+```
+
+Your provider must implement this evaluate-and-downgrade pattern itself. See the Core `http.rest` provider, or `JsonRpcProvider.cs`, for the full worked example — note that `Json.Path.JsonPath` must be declared via `ICompileReferenceContributor` (§5 above), since it is not in the engine's minimal default script reference set.
 
 ## 10. Testing Your Provider
 
@@ -936,7 +977,7 @@ Test that your `Emit` produces a well-formed `CsxFragment`:
 public void Unit_Emit_FragmentSatisfiesCompositionRules()
 {
     var provider = new MyKindProvider();
-    var model = new MyKindModel(…);
+    var model = new MyKindModel(Url: "https://example.test/api", Method: "ping");
     var ctx = new TestCompileContext(stepId: "test-step");
 
     var fragment = provider.Emit(model, ctx);
@@ -963,7 +1004,7 @@ public void Unit_Emit_FragmentSatisfiesCompositionRules()
 public void Unit_Emit_HyphenatedStepId_SanitisedInBlock()
 {
     var provider = new MyKindProvider();
-    var model = new MyKindModel(…);
+    var model = new MyKindModel(Url: "https://example.test/api", Method: "ping");
     var ctx = new TestCompileContext(stepId: "my-step-id");
 
     var fragment = provider.Emit(model, ctx);
@@ -976,35 +1017,28 @@ public void Unit_Emit_HyphenatedStepId_SanitisedInBlock()
 
 ### Docker Integration Tests
 
-For infrastructure providers, create integration tests that start a real Docker container:
+For infrastructure providers, create integration tests that start a real Docker container and drive it through your provider. `Platform.Sdk` does not publish a container-lifecycle API of its own — the engine's own Docker-gated fixtures (e.g. `tests/Platform.Engine.Orchestration.Tests/CacheAssertRedisDockerTests.cs`) start containers through its internal `SuiteTopology`/Aspire fixture, which is engine-internal and not part of the published SDK surface your provider package can reference. Outside the engine repository, use whichever container-testing library you prefer (for example, Testcontainers for .NET) to start the container, then exercise your provider through the harness exactly as the conformance tests do:
 
 ```csharp
 [Collection("Docker")]  // Serialise Docker tests
 public sealed class MyKindProviderIntegrationTests : IAsyncLifetime
 {
-    private ITestcontainersContainer? _container;
+    // Container start-up/teardown is your own choice of tooling — not
+    // prescribed by Platform.Sdk. Whatever you use, expose the resulting
+    // base URL so the model below can target it.
+    private string? _baseUrl;
 
     public async Task InitializeAsync()
     {
-        // Start a real container (e.g., PostgreSQL, Kafka)
-        _container = new ContainerBuilder()
-            .WithImage("my-org/my-kind:latest")
-            .WithPortBinding(8080, 8080)
-            .Build();
-
-        await _container.StartAsync();
+        _baseUrl = await StartMyKindContainerAsync();
     }
 
-    public async Task DisposeAsync()
-    {
-        if (_container is not null)
-            await _container.StopAsync();
-    }
+    public Task DisposeAsync() => StopMyKindContainerAsync();
 
     [Fact]
     public async Task Integration_MyKindStep_ConnectsAndAsserts()
     {
-        var model = new MyKindModel(Url: $"http://localhost:8080", …);
+        var model = new MyKindModel(Url: _baseUrl!, Method: "ping");
         var result = await MyKindHarness.RunAsync(model, "test-step");
 
         Assert.Equal(Verdict.Pass, result.Verdict);
