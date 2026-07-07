@@ -24,7 +24,7 @@ on:
       - 'CODE_OF_CONDUCT.md'
       - 'VERIFIED_TIER_CHECKLIST.md'
       - 'registry/README.md'
-      - 'samples/**/README.md'
+      - 'community/**/README.md'
       - 'scripts/build_site.py'
       - '.github/workflows/pages.yml'
   # Manual runs (any branch) for previewing before a change reaches main.

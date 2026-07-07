@@ -9,7 +9,7 @@
 //   JsonRpcModel            — the top-level model: url, method, params, notification,
 //                            and the optional expect block.
 //
-// YAML shape (see the sample README for worked examples):
+// YAML shape (see the provider README for worked examples):
 //   type: rpc.json-rpc
 //   url: "http://{host}:{port}/rpc"
 //   method: sum

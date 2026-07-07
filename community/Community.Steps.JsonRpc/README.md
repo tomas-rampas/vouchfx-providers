@@ -1,10 +1,13 @@
 # `rpc.json-rpc` — JSON-RPC 2.0 over HTTP
 
-A worked **sample** provider for the vouchfx community hub — richer than the
-[copyable `template/`](../../template/) skeleton, but not (yet) a `verified/` submission.
-It exists to demonstrate a *real* HTTP-calling, BCL-plus-JsonPath.Net provider outside
-the engine repo, following exactly the same patterns the engine's own Core `http.rest`
-and `mail-expect.smtp` providers use.
+The **first Community-tier provider** for the vouchfx hub — listed in the
+[community provider registry](../../registry/README.md), hosted in this repository, and
+richer than the [copyable `template/`](../../template/) skeleton (though not a `verified/`
+submission). It doubles as the reference implementation the
+[implementing-a-provider guide](../../docs/implementing-a-provider.md) walks through:
+a *real* HTTP-calling, BCL-plus-JsonPath.Net provider built outside the engine repo,
+following exactly the same patterns the engine's own Core `http.rest` and
+`mail-expect.smtp` providers use.
 
 ## What it is
 
@@ -135,7 +138,7 @@ no response body to capture from — see "Known limitations").
 
 ## Verdict-mapping table
 
-This is the teaching core of the sample — verified against the engine's own exception-
+This is the teaching core of this provider — verified against the engine's own exception-
 to-verdict conventions (`http.rest`, `mail-expect.smtp`) rather than invented from
 scratch.
 
@@ -174,10 +177,10 @@ expected-vs-observed table in supporting renderers, exactly as the Core
 
 - **HTTP transport only.** No WebSocket, no stdio (the LSP transport most editors
   actually use), no raw TCP framing. Adding a transport is a separate provider (or a
-  richer model with a `transport:` discriminator) — out of scope for this sample.
+  richer model with a `transport:` discriminator) — out of scope for this provider.
 - **No batch requests.** The JSON-RPC 2.0 spec allows a request array processed as a
   batch; this provider always sends exactly one request object per step.
-- **No `headers` field.** Unlike `http.rest`, this sample's model has no way to set
+- **No `headers` field.** Unlike `http.rest`, this provider's model has no way to set
   arbitrary request headers (e.g. `Authorization`). The engine's canonical pattern for
   a header *value* is `Secret_Helpers.ResolveTemplate` inside the emitted helper's
   guarded region (exactly as this provider already does for `url`, `method`, and every
@@ -186,7 +189,7 @@ expected-vs-observed table in supporting renderers, exactly as the Core
   `http.rest`'s own header handling almost verbatim). It is omitted here to keep the
   teaching surface focused on the JSON-RPC envelope semantics themselves.
 - **`url`, `method`, and `params` all support `${secret:...}`**, even though the brief
-  for this sample only asked for `{placeholder}` support — `Secret_Helpers.ResolveTemplate`
+  for this provider only asked for `{placeholder}` support — `Secret_Helpers.ResolveTemplate`
   gives both in a single call, at no extra cost, so it was included throughout. `params`
   is parsed into a JSON tree and each STRING LEAF is resolved individually (never by
   template-substituting the raw JSON text before parsing), so a resolved value can never
@@ -216,13 +219,13 @@ expected-vs-observed table in supporting renderers, exactly as the Core
   string comparison. Some JSON-RPC ecosystems — Ethereum and Bitcoin Core's RPC APIs
   among them — conventionally use integer ids, and a server that coerces or echoes a
   numeric id back will fail the id-match check even though the call itself succeeded.
-  There is no per-step way to opt into numeric ids in this sample.
+  There is no per-step way to opt into numeric ids in this provider.
 - **No `IResourceContributor`.** This provider declares no Aspire-managed
   infrastructure — the target is whatever absolute URL the author supplies, resolved
   entirely at execution time. There is consequently no dependency-reconciliation check
   against `environment.services`/`environment.dependencies` the way `http.rest` and
   `mail-expect.smtp` have.
-- **This sample needs a `JsonPath.Net` `PackageReference`** (pinned to `3.0.2`, matching
+- **This provider needs a `JsonPath.Net` `PackageReference`** (pinned to `3.0.2`, matching
   the engine's own `Directory.Packages.props` entry) beyond `Platform.Sdk` — verified,
   not assumed: the engine's `capture:` field (and this provider's own `expect.result`)
   is evaluated with JSONPath.Net **inside the provider's own emitted CSX**, exactly as
@@ -241,11 +244,13 @@ expected-vs-observed table in supporting renderers, exactly as the Core
 
 ## Mapping to the community-hub path
 
-This sample lives under `samples/`, alongside `template/` and `verified/`. It is not
-itself submitted through either governance path in [`CONTRIBUTING.md`](../../CONTRIBUTING.md) —
-it is reference material, built and CI-tested in this repository the same way the
-engine's own worked examples (`examples/Example.Steps.Echo`) are. If you want to build
-on it as a real, independently-shipped provider:
+This provider lives under `community/`, alongside `template/` and `verified/`. It is a
+real Community-tier provider — the first entry in
+[`registry/community-providers.json`](../../registry/community-providers.json) — hosted in
+the hub itself so the tier has a canonical, CI-tested reference implementation (the NuGet
+package ships alongside the engine's v1.0 release; until then, build it from this
+repository). It is deliberately *not* a `verified/` submission: it has not been through the
+Verified rubric. If you want to build on it as your own, independently-shipped provider:
 
 1. Copy `Community.Steps.JsonRpc` to your own repository under your own namespace
    (never `Platform.Steps.*` / `Platform.Engine.*`).

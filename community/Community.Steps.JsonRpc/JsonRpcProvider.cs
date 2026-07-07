@@ -1,9 +1,10 @@
 // Community.Steps.JsonRpc — rpc.json-rpc step provider (JSON-RPC 2.0 over HTTP).
 //
-// A richer worked SAMPLE (not a Verified submission) for the vouchfx community hub:
-// a real BCL-plus-JsonPath.Net transport provider, mirroring the engine's own Core
+// The FIRST Community-tier provider for the vouchfx hub (hub-hosted, listed in
+// registry/community-providers.json; not a Verified submission): a real
+// BCL-plus-JsonPath.Net transport provider, mirroring the engine's own Core
 // http.rest / mail-expect.smtp providers, but living entirely outside the engine repo
-// against the frozen v1 Platform.Sdk contract.  See samples/Community.Steps.JsonRpc/README.md
+// against the frozen v1 Platform.Sdk contract.  See community/Community.Steps.JsonRpc/README.md
 // for worked .e2e.yaml examples, the full verdict-mapping table, and known limitations.
 //
 // §5.6 ASSEMBLY-GRAPH HYGIENE: namespace is Community.Steps.JsonRpc — never
@@ -37,7 +38,7 @@ using YamlDotNet.RepresentationModel;
 namespace Community.Steps.JsonRpc;
 
 /// <summary>
-/// Sample provider for the <c>rpc.json-rpc</c> step kind — JSON-RPC 2.0 requests over
+/// Community provider for the <c>rpc.json-rpc</c> step kind — JSON-RPC 2.0 requests over
 /// HTTP (the wire protocol used by LSP, Ethereum/Bitcoin Core JSON-RPC APIs, and many
 /// internal RPC services).
 /// </summary>
@@ -733,7 +734,7 @@ public sealed class JsonRpcProvider
                                 // Gated on `!= Fail` (not `== Pass`) to read identically to the
                                 // Core http.rest provider's own capture gate — the two are
                                 // equivalent at this point in the control flow (verdict can only
-                                // be Pass or Fail here), but this sample is the reference pattern
+                                // be Pass or Fail here), but this provider is the reference pattern
                                 // contributors copy.
                                 if (captureVarNames.Length > 0 && verdict != Platform.Engine.Abstractions.Verdict.Fail)
                                 {

@@ -47,6 +47,8 @@ All other providers, with no platform-team endorsement. Community providers:
 - Must be Apache-2.0 licensed and follow the reflective-discovery contract
 - Can graduate to Verified by meeting the published rubric
 
+The tier's first entry is [`rpc.json-rpc`](community/Community.Steps.JsonRpc/README.md) (`community/Community.Steps.JsonRpc`), hosted in this repository so the tier has a canonical, CI-tested reference implementation — it is the provider the [implementing-a-provider guide](docs/implementing-a-provider.md) walks through. Community providers normally live in their authors' own repositories; hub hosting is the exception, not the rule.
+
 ## How to Get Your Provider Listed
 
 ### Community Tier (Index Listing)
@@ -139,8 +141,8 @@ The vouchfx maintainers allocate **one half-day per week** (4 hours) for provide
 │   ├── community-providers.json        (the index)
 │   └── community-providers.schema.json (JSON Schema)
 ├── template/                           (starter provider scaffold)
-├── samples/                            (richer worked examples, hub-CI-tested; not a submission tier)
-│   └── Community.Steps.JsonRpc/        (JSON-RPC 2.0 over HTTP — see its README)
+├── community/                          (hub-hosted Community-tier providers, hub-CI-tested)
+│   └── Community.Steps.JsonRpc/        (rpc.json-rpc — the first community provider; see its README)
 ├── verified/                           (Verified-tier submissions)
 │   └── <provider-id>/                  (one folder per submission)
 │       ├── src/                        (provider source code)

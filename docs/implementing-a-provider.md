@@ -36,7 +36,7 @@ Your provider talks directly to a service the test author supplies as an absolut
 
 **Examples:**
 - `http.rest` — sends HTTP requests to an absolute URL
-- `rpc.json-rpc` (the community sample) — sends JSON-RPC 2.0 requests over HTTP
+- `rpc.json-rpc` (the first community provider) — sends JSON-RPC 2.0 requests over HTTP
 - Any provider that connects to a system by hostname/port/URL with no Aspire dependency management
 
 **What you need:**
@@ -149,7 +149,7 @@ Your step model is an immutable `record` implementing `IStepModel`. It represent
 
 ### Example: JsonRpc Model
 
-From the community sample `Community.Steps.JsonRpc`:
+From the first community provider, `Community.Steps.JsonRpc`:
 
 ```csharp
 using Platform.Sdk;
@@ -384,7 +384,7 @@ public IEnumerable<System.Reflection.Assembly> CompileReferenceAssemblies
 
 The engine's `RoslynScriptCompiler` includes your declared assemblies when compiling the joined CSX. **You must declare every type your helper methods or statement block reference by fully-qualified name.**
 
-The JsonRpc sample implements this because its emitted code calls `HttpClient`, `JsonNode`, and `JsonPath.Net`.
+The JsonRpc provider implements this because its emitted code calls `HttpClient`, `JsonNode`, and `JsonPath.Net`.
 
 ### Optional Interface: `IResourceContributor<TModel>`
 
@@ -467,7 +467,7 @@ RequiredHelpers: new[] {
 
 **Why the prefix?** If two providers both emit `static class Helpers { }`, the assembly linker sees a collision. The prefix prevents it: `MyKind_Helpers` and `OtherKind_Helpers` are distinct.
 
-**Why byte-identical?** The engine de-duplicates on exact string match. If step 1 emits `static class MyKind_Helpers { public static void Foo() => Bar(1); }` and step 2 emits `static class MyKind_Helpers { public static void Foo() => Bar(2); }`, the engine sees a class-name collision and de-duplicates to one definition — resulting in incorrect behaviour. **Always put step-specific data into the statement block, never into the helper source.** The JsonRpc sample shows this pattern: the helper is `byte-identical` across all steps; the block splices in step-specific values.
+**Why byte-identical?** The engine de-duplicates on exact string match. If step 1 emits `static class MyKind_Helpers { public static void Foo() => Bar(1); }` and step 2 emits `static class MyKind_Helpers { public static void Foo() => Bar(2); }`, the engine sees a class-name collision and de-duplicates to one definition — resulting in incorrect behaviour. **Always put step-specific data into the statement block, never into the helper source.** The JsonRpc provider shows this pattern: the helper is `byte-identical` across all steps; the block splices in step-specific values.
 
 ### Rule 3: `StatementBlock` — One Brace-Enclosed Block, C# 11 Double-Dollar Raw Strings
 
@@ -668,7 +668,7 @@ Declaring `__verdict_{{safeId}}` and `__observation_{{safeId}}` **before** the `
 - Assertion mismatches (expected 5, got 7) → `Fail`
 - Timeouts (client-side, external cancellation, step timeout) → `Inconclusive`
 
-See the JsonRpc sample's README "Verdict-mapping table" for a comprehensive decision tree.
+See the JsonRpc provider's README "Verdict-mapping table" for a comprehensive decision tree.
 
 ### Engine-Owned RETRY
 
@@ -691,7 +691,7 @@ Your provider must resolve **every string field** the author might write (url, m
 
 ### The `Secret_Helpers` prerequisite
 
-`Secret_Helpers.ResolveTemplate` only exists inside the emitted script because your provider adds its canonical source, `Platform.Sdk.SecretHelper.Source`, to `CsxFragment.RequiredHelpers` — exactly as the JsonRpc sample does:
+`Secret_Helpers.ResolveTemplate` only exists inside the emitted script because your provider adds its canonical source, `Platform.Sdk.SecretHelper.Source`, to `CsxFragment.RequiredHelpers` — exactly as the JsonRpc provider does:
 
 ```csharp
 return new CsxFragment(
@@ -756,7 +756,7 @@ private static void ResolveParamsLeaves(
 }
 ```
 
-The JsonRpc sample implements this pattern for `params`.
+The JsonRpc provider implements this pattern for `params`.
 
 ## 9. Capture — JSONPath Evaluation into Vars
 
@@ -912,7 +912,7 @@ public sealed class HelloConsoleProviderTests
 
 If your provider implements `ICompileReferenceContributor` (because your emitted code calls `HttpClient`, `JsonPath.Net`, etc.), `ProviderTestHarness` will fail compilation — it does not include your contributed references.
 
-Use the custom-harness pattern (modelled on the engine's own `HttpRestExecutionTests`), as demonstrated in the JsonRpc sample (`Community.Steps.JsonRpc.Tests/JsonRpcHarness.cs`):
+Use the custom-harness pattern (modelled on the engine's own `HttpRestExecutionTests`), as demonstrated by the JsonRpc provider (`community/Community.Steps.JsonRpc.Tests/JsonRpcHarness.cs`):
 
 ```csharp
 internal static class MyKindHarness

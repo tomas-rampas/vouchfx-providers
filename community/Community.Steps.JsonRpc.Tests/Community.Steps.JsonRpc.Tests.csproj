@@ -18,7 +18,7 @@
          StepOutcome, VarKeys, ScriptGlobalVariables) flow in TRANSITIVELY through
          Platform.Sdk.Testing's own package dependencies — mirroring exactly how the
          template's Community.Steps.Hello.Tests.csproj consumes Platform.Engine.Abstractions
-         with no explicit reference to it. See JsonRpcHarness.cs for why this sample
+         with no explicit reference to it. See JsonRpcHarness.cs for why this provider
          needs a small custom harness alongside the published ProviderTestHarness. -->
     <PackageReference Include="Platform.Sdk" Version="1.0.0" />
     <PackageReference Include="Platform.Sdk.Testing" Version="1.0.0" />

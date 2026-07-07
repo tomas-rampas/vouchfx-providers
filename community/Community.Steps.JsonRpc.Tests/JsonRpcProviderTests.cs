@@ -25,7 +25,7 @@ using Xunit;
 namespace Community.Steps.JsonRpc.Tests;
 
 /// <summary>
-/// Conformance and unit tests for the <c>rpc.json-rpc</c> sample provider.
+/// Conformance and unit tests for the <c>rpc.json-rpc</c> community provider.
 /// </summary>
 public sealed class JsonRpcProviderTests : IClassFixture<JsonRpcTestServerFixture>
 {
@@ -159,7 +159,7 @@ public sealed class JsonRpcProviderTests : IClassFixture<JsonRpcTestServerFixtur
 
     // ── Substitution: {placeholder} / ${secret:...} resolution ───────────────
     //
-    // MINOR-1 follow-up: the original sample only ever ran `url` through
+    // MINOR-1 follow-up: the first draft of this provider only ever ran `url` through
     // Secret_Helpers.ResolveTemplate; `method` and every string leaf of `params` were
     // emitted raw. These tests exercise the fix from the OUTSIDE — asserting on what
     // actually reached the server or on the server's own resolved response — rather
@@ -256,7 +256,7 @@ public sealed class JsonRpcProviderTests : IClassFixture<JsonRpcTestServerFixtur
     [Fact]
     public async Task Conformance_UrlSecretToken_EnvSource_ResolvesAndCalls()
     {
-        const string envVarName = "VOUCHFX_JSONRPC_SAMPLE_TEST_URL";
+        const string envVarName = "VOUCHFX_JSONRPC_PROVIDER_TEST_URL";
         Environment.SetEnvironmentVariable(envVarName, _server.BaseUrl);
         try
         {

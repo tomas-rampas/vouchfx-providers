@@ -34,7 +34,7 @@ OUT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else ROOT / "_site"
 # Markdown files to render, in sidebar order. (source path relative to ROOT, nav group, label)
 DOCS: list[tuple[str, str, str]] = [
     ("docs/implementing-a-provider.md", "Provider authoring", "Implementing a provider"),
-    ("samples/Community.Steps.JsonRpc/README.md", "Provider authoring", "Worked example · rpc.json-rpc"),
+    ("community/Community.Steps.JsonRpc/README.md", "Provider authoring", "rpc.json-rpc · the first community provider"),
     ("CONTRIBUTING.md", "Contributing", "Contributing & the tiers"),
     ("VERIFIED_TIER_CHECKLIST.md", "Contributing", "Verified-tier checklist"),
     ("registry/README.md", "Contributing", "Community registry"),
@@ -263,10 +263,11 @@ PORTAL = """<!DOCTYPE html>
         <p>The comprehensive walkthrough: the contract surfaces, the CSX composition rules, verdicts,
         secrets, capture, testing, and the submission paths — grounded in the real worked example.</p>
       </a>
-      <a class="doc-card" href="samples/Community.Steps.JsonRpc/README.html">
-        <span class="doc-card__k">SAMPLE</span><h3>Worked example · rpc.json-rpc</h3>
-        <p>A complete, real-technology provider — JSON-RPC 2.0 over HTTP — with substitution, capture,
-        negative testing, the four-verdict mapping and a Docker-free conformance suite.</p>
+      <a class="doc-card" href="community/Community.Steps.JsonRpc/README.html">
+        <span class="doc-card__k">PROVIDER</span><h3>rpc.json-rpc · the first community provider</h3>
+        <p>The first Community-tier provider — JSON-RPC 2.0 over HTTP — hosted in this repository as the
+        reference implementation the guide walks through: substitution, capture, negative testing, the
+        four-verdict mapping and a Docker-free conformance suite.</p>
       </a>
     </div>
   </section>
