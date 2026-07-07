@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>vouchfx providers · the community provider hub</title>
+<meta name="description" content="The community hub for vouchfx step providers — implement a custom step type, test it Docker-free, and submit it to the Community or Verified tier." />
+<meta name="theme-color" content="#0b0f1a" />
+<link rel="icon" href="favicon.svg" type="image/svg+xml" />
+<link rel="stylesheet" href="styles.css" />
+<link rel="stylesheet" href="docs.css" />
+</head>
+<body>
+<header class="nav">
+  <div class="nav__inner">
+    <a class="brand" href="index.html" aria-label="vouchfx providers home">
+      <span class="brand__mark" aria-hidden="true"></span>
+      <span class="brand__name">vouchfx providers</span>
+    </a>
+    <nav class="nav__links" aria-label="Primary">
+      <a href="docs.html">Docs</a>
+      <a href="docs/implementing-a-provider.html">The guide</a>
+      <a href="https://tomas-rampas.github.io/vouchfx/">Engine docs</a>
+    </nav>
+    <a class="btn btn--ghost nav__gh" href="https://github.com/tomas-rampas/vouchfx-providers" target="_blank" rel="noopener noreferrer">GitHub</a>
+  </div>
+</header>
+
+<div class="container portal">
+  <div class="portal__head">
+    <p class="eyebrow">The community provider hub</p>
+    <h1 class="section__title">Teach vouchfx a new technology.</h1>
+    <p class="section__lede">Every step type in a vouchfx test file is a <em>provider</em> — a small, compile-time
+      C# plugin that binds a YAML step, validates it, and emits the code that runs it. This hub is where
+      community providers are built, tested and published: the implementation guide, a real worked example,
+      the conformance harness, and the Community and Verified submission paths. All Apache-2.0.</p>
+  </div>
+
+  <section class="portal__group">
+    <h2>Start here</h2>
+    <p>From an empty project to a submitted provider.</p>
+    <div class="doc-cards">
+      <a class="doc-card" href="docs/implementing-a-provider.html">
+        <span class="doc-card__k">1 · GUIDE</span><h3>Implementing a provider</h3>
+        <p>The comprehensive walkthrough — the five contract surfaces, the CSX composition rules, the
+        four-verdict taxonomy, secrets and capture, Docker-free testing, and the submission checklist.</p>
+      </a>
+      <a class="doc-card" href="samples/Community.Steps.JsonRpc/README.html">
+        <span class="doc-card__k">2 · SAMPLE</span><h3>Worked example · rpc.json-rpc</h3>
+        <p>A complete, real-technology provider (JSON-RPC 2.0 over HTTP) you can read side-by-side with the
+        guide — including its loopback test server and conformance suite.</p>
+      </a>
+      <a class="doc-card" href="https://github.com/tomas-rampas/vouchfx-providers/tree/main/template/Community.Steps.Hello" target="_blank" rel="noopener noreferrer">
+        <span class="doc-card__k">3 · TEMPLATE</span><h3>Copy the template</h3>
+        <p><code>template/Community.Steps.Hello</code> is the minimal copyable skeleton: the four mandatory
+        interfaces, a schema fragment, and a passing conformance test.</p>
+      </a>
+      <a class="doc-card" href="CONTRIBUTING.html">
+        <span class="doc-card__k">4 · SUBMIT</span><h3>Contribute it</h3>
+        <p>List it in the Community registry, or submit it in-repo for the Verified tier — the published
+        rubric, not judgement, is the gate.</p>
+      </a>
+    </div>
+  </section>
+
+  <section class="portal__group">
+    <h2>The three tiers</h2>
+    <p>All providers are Apache-2.0 and move between tiers without friction.</p>
+    <div class="doc-cards">
+      <a class="doc-card" href="https://tomas-rampas.github.io/vouchfx/docs/02_YAML_DSL_Specification_and_VSCode_Extension_Design.html" target="_blank" rel="noopener noreferrer">
+        <span class="doc-card__k">CORE</span><h3>Core</h3>
+        <p>Ships with the engine, maintained by the platform team — eighteen providers across eight step
+        families today. The launch catalogue (Table 5.1 of the DSL specification) names what is planned next.</p>
+      </a>
+      <a class="doc-card" href="VERIFIED_TIER_CHECKLIST.html">
+        <span class="doc-card__k">VERIFIED</span><h3>Verified</h3>
+        <p>Community-authored, hosted in this repository under <code>verified/</code>, promoted by meeting the
+        published rubric: conformance fixture, worked examples, security sign-off.</p>
+      </a>
+      <a class="doc-card" href="registry/README.html">
+        <span class="doc-card__k">COMMUNITY</span><h3>Community</h3>
+        <p>Maintained in your own repository, published as a NuGet package, and listed in the hub's
+        schema-validated registry — no gatekeeping beyond licence and discoverability.</p>
+      </a>
+    </div>
+  </section>
+</div>
+
+<footer class="footer">
+  <div class="container footer__inner">
+    <div class="footer__brand">
+      <span class="brand__mark" aria-hidden="true"></span>
+      <div><strong>vouchfx providers</strong><p>The community hub for vouchfx step providers — Verified and Community tiers, all Apache-2.0.</p></div>
+    </div>
+    <div class="footer__links">
+      <a href="docs.html">Documentation</a>
+      <a href="https://github.com/tomas-rampas/vouchfx-providers" target="_blank" rel="noopener noreferrer">Repository</a>
+      <a href="https://tomas-rampas.github.io/vouchfx/" target="_blank" rel="noopener noreferrer">Engine docs</a>
+      <a href="https://github.com/tomas-rampas/vouchfx-providers/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Licence (Apache-2.0)</a>
+    </div>
+  </div>
+</footer>
+</body>
+</html>

@@ -2,6 +2,8 @@
 
 The community provider hub for [vouchfx](https://github.com/tomas-rampas/vouchfx) — the curated **community provider index** and the PR-gated **Verified-tier submission gate** for Apache-2.0 licensed providers.
 
+> **Documentation site:** [tomas-rampas.github.io/vouchfx-providers](https://tomas-rampas.github.io/vouchfx-providers/) — rendered from this repository on every push, with the comprehensive [implementing-a-provider guide](https://tomas-rampas.github.io/vouchfx-providers/docs/implementing-a-provider.html) as its centrepiece.
+
 A vouchfx *provider* is a `<family>.<provider>` step type (e.g. `db-assert.postgres`, `mq-publish.kafka`) that the vouchfx engine discovers and executes. This repository serves two purposes:
 
 1. **Community Provider Index** — a registry of providers authored by the community, vetted only for Apache-2.0 compliance and the reflective-discovery contract.
@@ -16,7 +18,7 @@ A provider is a compile-time, source-level plugin to the vouchfx engine. It expo
 - **`IStepValidator<TModel>`** — validate the model with author-friendly diagnostics
 - **`IStepCompiler<TModel>`** — emit the C# code (a `CsxFragment`) that runs inside the compiled delegate
 
-For an in-depth guide to writing a provider, including worked examples, see the engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) — this repository focuses on how to *list* and *submit* providers, not how to write them.
+For the comprehensive, code-grounded guide to writing a provider — the contract surfaces, the CSX composition rules, verdicts, secrets, capture, testing and the submission checklist — see [`docs/implementing-a-provider.md`](docs/implementing-a-provider.md) (also [rendered on the documentation site](https://tomas-rampas.github.io/vouchfx-providers/docs/implementing-a-provider.html)). The engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) remains the authoritative statement of the frozen v1 SDK contract itself.
 
 ## The Three Governance Tiers
 
