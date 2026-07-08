@@ -9,14 +9,7 @@ All vouchfx providers are licensed under Apache-2.0. They are governed in three 
 ### Tier 1: Core
 **Status:** Platform team–authored, bundled with the engine, fully supported.
 
-Core providers are shipped as part of the vouchfx engine release and are versioned together with the engine. The six Core providers are:
-
-- `http.rest`
-- `db-assert.postgres`
-- `script.csharp`
-- `mq-publish.kafka`
-- `mq-expect.kafka`
-- `webhook-listen.http`
+Core providers are shipped as part of the vouchfx engine release and are versioned together with the engine. The vouchfx v1.0 engine includes twenty-five Core providers across eleven families: `http` (REST, SOAP), `db-assert` (Postgres, MySQL, SQL Server, MongoDB, DynamoDB), `mq-publish` and `mq-expect` (Kafka, RabbitMQ, NATS, Azure Service Bus, Redis Streams), `cache-assert` (Redis, Elasticsearch), `storage-assert` (S3), `metrics-assert` (Prometheus), `trace-expect` (OTLP), `mail-expect`, `webhook-listen`, and `script`. For the authoritative, always-current list of Core providers by family, see the [engine repository's README](https://github.com/tomas-rampas/vouchfx#providers).
 
 **Requirements:**
 - Authored by the vouchfx platform team
@@ -160,4 +153,5 @@ Any major changes to governance will be proposed and debated in the community vi
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — how to submit a provider (Community or Verified flows)
 - [`README.md`](README.md) — the community provider hub overview
 - Engine [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) — how to write a provider
-- Engine [`docs/03_MVP_Project_Plan.md`](https://github.com/tomas-rampas/vouchfx/blob/main/docs/03_MVP_Project_Plan.md) § 9.6 — the governance model in the project plan
+- Engine [`GOVERNANCE.md`](https://github.com/tomas-rampas/vouchfx/blob/main/GOVERNANCE.md) — the project's overall governance model
+- Engine [`docs/roadmap.md`](https://github.com/tomas-rampas/vouchfx/blob/main/docs/roadmap.md) — public roadmap including the planned provider directory loader
