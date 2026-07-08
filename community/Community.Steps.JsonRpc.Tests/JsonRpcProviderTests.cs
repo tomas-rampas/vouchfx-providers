@@ -15,6 +15,8 @@
 //
 // All conformance tests are Docker-free: JsonRpcTestServerFixture self-hosts a minimal
 // JSON-RPC 2.0 responder on loopback (see JsonRpcTestServer.cs).
+using System.Text.Json;
+using System.Text.Json.Nodes;
 using Platform.Engine.Abstractions;
 using Platform.Engine.Abstractions.Secrets;
 using Platform.Sdk;
@@ -467,6 +469,29 @@ public sealed class JsonRpcProviderTests : IClassFixture<JsonRpcTestServerFixtur
         Assert.Contains(result.Errors, e => e.Contains("params", StringComparison.OrdinalIgnoreCase));
     }
 
+    // Copilot review fix: JsonNode.Parse(model.ParamsJson) in Validate previously ran
+    // unguarded, so a hand-constructed model carrying malformed JSON (impossible via
+    // the normal Bind path, which always serialises well-formed JSON from
+    // YamlNodeToJson, but reachable by any caller that builds a JsonRpcModel directly)
+    // made Validate THROW a JsonException instead of returning a validation failure.
+    // Asserts a clean ValidationResult.Failure, not an exception escaping Validate.
+    [Fact]
+    public void Unit_Validate_InvalidParamsJson_FailsValidationInsteadOfThrowing()
+    {
+        var provider = new JsonRpcProvider();
+        var model = new JsonRpcModel(
+            Url: "http://localhost/rpc",
+            Method: "sum",
+            ParamsJson: "not-json",
+            Notification: false,
+            Expect: null);
+
+        var result = provider.Validate(model, new TestProjectContext());
+
+        Assert.False(result.IsValid);
+        Assert.Contains(result.Errors, e => e.Contains("not valid JSON", StringComparison.OrdinalIgnoreCase));
+    }
+
     // ── Emit-shape unit tests (mirrors the template/Core pattern) ────────────
 
     [Fact]
@@ -544,5 +569,71 @@ public sealed class JsonRpcProviderTests : IClassFixture<JsonRpcTestServerFixtur
         // does not break CI by default (§12.1).
         Assert.Contains("Verdict.Fail", fragment.StatementBlock, StringComparison.Ordinal);
         Assert.Empty(fragment.RequiredHelpers);
+    }
+
+    // ── IStepDiffRenderer unit tests ─────────────────────────────────────────
+    //
+    // Copilot review fix: TryReadResultMismatch previously read the `path` property
+    // via GetRawText().Trim('"'), which returns the RAW JSON text (JSON escapes still
+    // intact) rather than the decoded string value — a JSONPath expression containing
+    // an escaped quote or backslash rendered misleadingly. GetString() must be used
+    // for a JsonValueKind.String property so escapes are decoded exactly once.
+
+    [Fact]
+    public void Unit_RenderDiff_ResultMismatch_EscapedPathContent_Unescapes()
+    {
+        var provider = new JsonRpcProvider();
+
+        // The JSONPath expression itself contains a literal double quote and a
+        // literal backslash. Building the observation via JsonObject (rather than a
+        // hand-written JSON string) guarantees the payload is escaped exactly once,
+        // by System.Text.Json itself.
+        const string rawPath = "$.headers[\"X-Trace\\Id\"]";
+        var observation = new JsonObject
+        {
+            ["resultMismatch"] = new JsonObject
+            {
+                ["path"] = rawPath,
+                ["expected"] = "foo",
+                ["actual"] = "bar",
+            },
+        };
+
+        using var doc = JsonDocument.Parse(observation.ToJsonString());
+
+        Assert.True(provider.CanRender(doc.RootElement));
+
+        var diff = provider.RenderDiff(doc.RootElement);
+
+        Assert.NotNull(diff);
+        // GetString() must have decoded the JSON escapes back to the real quote and
+        // backslash characters — the buggy GetRawText().Trim('"') left the escape
+        // sequences (\" and \\) in the rendered text instead.
+        Assert.Contains(rawPath, diff, StringComparison.Ordinal);
+        Assert.DoesNotContain("\\\"", diff, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void Unit_RenderDiff_ResultMismatch_PlainPath_RendersExpectedAndActual()
+    {
+        var provider = new JsonRpcProvider();
+        var observation = new JsonObject
+        {
+            ["resultMismatch"] = new JsonObject
+            {
+                ["path"] = "$.sum",
+                ["expected"] = 5,
+                ["actual"] = 6,
+            },
+        };
+
+        using var doc = JsonDocument.Parse(observation.ToJsonString());
+
+        var diff = provider.RenderDiff(doc.RootElement);
+
+        Assert.NotNull(diff);
+        Assert.Contains("$.sum", diff, StringComparison.Ordinal);
+        Assert.Contains("5", diff, StringComparison.Ordinal);
+        Assert.Contains("6", diff, StringComparison.Ordinal);
     }
 }
