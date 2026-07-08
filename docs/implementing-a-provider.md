@@ -51,9 +51,10 @@ Your provider observes a dependency type the engine **already manages** via Aspi
 
 **Managed dependency types (the engine orchestration already supports these):**
 - Relational databases: `postgres`, `mysql`, `sqlserver`
-- Document database: `mongodb`
+- Document databases: `mongodb`, `dynamodb` (via `amazon/dynamodb-local`)
 - Key-value & search: `redis`, `elasticsearch`
 - Message brokers: `kafka`, `rabbitmq`, `nats`, `azureservicebus`
+- Object storage: `minio` (S3-compatible)
 - Mail sink: `mailpit` (SMTP test server)
 
 **Examples:**
@@ -70,7 +71,7 @@ Your provider observes a dependency type the engine **already manages** via Aspi
 
 Your provider needs Aspire to manage a **new container type** not in the list above (for example, a custom gRPC server, a proprietary database, a third-party cloud emulator). **This requires engine-side support.**
 
-The orchestration layer's dependency registry (`EnvironmentMapper`'s internal `s_dependencyRegistry` in `Platform.Engine.Orchestration`) is a fixed table of eleven supported dependency types; supporting a new one means adding an entry there plus the matching validator/schema surface — it is not something a provider package can extend from outside the engine. That change therefore arrives via a contribution to, and release of, the engine itself (https://github.com/tomas-rampas/vouchfx), not from your provider repository.
+The orchestration layer's dependency registry (`EnvironmentMapper`'s internal `s_dependencyRegistry` in `Platform.Engine.Orchestration`) is a fixed table of thirteen supported dependency types; supporting a new one means adding an entry there plus the matching validator/schema surface — it is not something a provider package can extend from outside the engine. That change therefore arrives via a contribution to, and release of, the engine itself (https://github.com/tomas-rampas/vouchfx), not from your provider repository.
 
 This is not a blocker — it is a deliberate separation of concerns. The engine's orchestration layer is the single source of truth for topology setup; providers plug into it, not the other way around. If you need a new dependency type, open an issue or pull request against the engine repository; in the meantime, a protocol provider that talks to an already-running instance by URL (see "Protocol Providers" above) needs no orchestration change at all.
 
