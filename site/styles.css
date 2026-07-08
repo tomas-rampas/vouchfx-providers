@@ -43,7 +43,8 @@ code { font-family: var(--mono); font-size: .9em; }
   padding: .08em .4em;
   border-radius: 6px;
   color: #c7d0ff;
-  white-space: nowrap;
+  white-space: normal;
+  overflow-wrap: break-word;
 }
 .container { max-width: var(--maxw); margin: 0 auto; padding: 0 24px; }
 .grad {
@@ -350,7 +351,7 @@ code { font-family: var(--mono); font-size: .9em; }
   .flow { grid-template-columns: 1fr 1fr; }
   .split { grid-template-columns: 1fr; }
   .stat-row { grid-template-columns: 1fr; }
-  .nav__links { display: none; }
+  .nav__links { flex-wrap: wrap; gap: 12px; font-size: .84rem; }
 }
 @media (max-width: 560px) {
   .grid--3, .grid--4, .flow { grid-template-columns: 1fr; }

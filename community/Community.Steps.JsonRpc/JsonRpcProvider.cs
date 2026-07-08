@@ -399,8 +399,24 @@ public sealed class JsonRpcProvider
         // layer, mirroring how other structural constraints here are enforced twice.
         if (model.ParamsJson is not null)
         {
-            var paramsNode = JsonNode.Parse(model.ParamsJson);
-            if (paramsNode is not JsonObject && paramsNode is not JsonArray)
+            // A hand-constructed model (bypassing Bind, which always produces
+            // well-formed JSON from YamlNodeToJson) can carry an arbitrary
+            // ParamsJson string. Parse defensively so an invalid value fails
+            // validation with a clear diagnostic rather than throwing out of
+            // Validate.
+            JsonNode? paramsNode = null;
+            var parsedOk = true;
+            try
+            {
+                paramsNode = JsonNode.Parse(model.ParamsJson);
+            }
+            catch (JsonException)
+            {
+                parsedOk = false;
+                errors.Add("rpc.json-rpc: 'params' is not valid JSON.");
+            }
+
+            if (parsedOk && paramsNode is not JsonObject && paramsNode is not JsonArray)
             {
                 errors.Add(
                     "rpc.json-rpc: 'params' must be a mapping (named params) or a " +
@@ -558,103 +574,172 @@ public sealed class JsonRpcProvider
                             envelope.ToJsonString(), System.Text.Encoding.UTF8, "application/json");
 
                         var resp = await client.SendAsync(req).ConfigureAwait(false);
-                        var bodyStr = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
-                        var statusCode = (int)resp.StatusCode;
-
-                        if (notification)
+                        try
                         {
-                            // Fire-and-forget: assert transport success only. No envelope is read.
-                            var ok = statusCode is >= 200 and < 300;
-                            verdict = ok ? Platform.Engine.Abstractions.Verdict.Pass : Platform.Engine.Abstractions.Verdict.Fail;
-                            observation = "{\"notification\":true,\"status\":" + statusCode.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}";
-                        }
-                        else
-                        {
-                            System.Text.Json.Nodes.JsonNode? envNode = null;
-                            try { envNode = System.Text.Json.Nodes.JsonNode.Parse(bodyStr); }
-                            catch (System.Exception) { envNode = null; }
+                            var bodyStr = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            var statusCode = (int)resp.StatusCode;
 
-                            if (envNode is not System.Text.Json.Nodes.JsonObject envObj)
+                            if (notification)
                             {
-                                verdict = Platform.Engine.Abstractions.Verdict.EnvironmentError;
-                                observation = "{\"error\":\"non-json-envelope\"}";
+                                // Fire-and-forget: assert transport success only. No envelope is read.
+                                var ok = statusCode is >= 200 and < 300;
+                                verdict = ok ? Platform.Engine.Abstractions.Verdict.Pass : Platform.Engine.Abstractions.Verdict.Fail;
+                                observation = "{\"notification\":true,\"status\":" + statusCode.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}";
                             }
                             else
                             {
-                                var hasError = envObj.TryGetPropertyValue("error", out var errorNode) && errorNode is not null;
-                                var hasResult = envObj.TryGetPropertyValue("result", out var resultNode);
-                                var idMatches =
-                                    envObj.TryGetPropertyValue("id", out var idNode)
-                                    && idNode is System.Text.Json.Nodes.JsonValue idVal
-                                    && idVal.TryGetValue<string>(out var idStr)
-                                    && string.Equals(idStr, requestId, System.StringComparison.Ordinal);
+                                System.Text.Json.Nodes.JsonNode? envNode = null;
+                                try { envNode = System.Text.Json.Nodes.JsonNode.Parse(bodyStr); }
+                                catch (System.Exception) { envNode = null; }
 
-                                if (resultPaths.Length > 0)
+                                if (envNode is not System.Text.Json.Nodes.JsonObject envObj)
                                 {
-                                    // expect.result declared.
-                                    if (hasError)
+                                    verdict = Platform.Engine.Abstractions.Verdict.EnvironmentError;
+                                    observation = "{\"error\":\"non-json-envelope\"}";
+                                }
+                                else
+                                {
+                                    var hasError = envObj.TryGetPropertyValue("error", out var errorNode) && errorNode is not null;
+                                    var hasResult = envObj.TryGetPropertyValue("result", out var resultNode);
+                                    var idMatches =
+                                        envObj.TryGetPropertyValue("id", out var idNode)
+                                        && idNode is System.Text.Json.Nodes.JsonValue idVal
+                                        && idVal.TryGetValue<string>(out var idStr)
+                                        && string.Equals(idStr, requestId, System.StringComparison.Ordinal);
+
+                                    if (resultPaths.Length > 0)
                                     {
-                                        verdict = Platform.Engine.Abstractions.Verdict.Fail;
-                                        observation = "{\"unexpectedError\":true}";
+                                        // expect.result declared.
+                                        if (hasError)
+                                        {
+                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                            observation = "{\"unexpectedError\":true}";
+                                        }
+                                        else if (!idMatches)
+                                        {
+                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                            observation = "{\"idMismatch\":true}";
+                                        }
+                                        else if (!hasResult)
+                                        {
+                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                            observation = "{\"malformedEnvelope\":\"missing result and error\"}";
+                                        }
+                                        else
+                                        {
+                                            string? mismatchPath = null;
+                                            System.Text.Json.Nodes.JsonNode? mismatchExpected = null;
+                                            System.Text.Json.Nodes.JsonNode? mismatchActual = null;
+
+                                            for (int i = 0; i < resultPaths.Length; i++)
+                                            {
+                                                System.Text.Json.Nodes.JsonNode? actual = null;
+                                                var hasMatch = false;
+                                                try
+                                                {
+                                                    var pathResult = Json.Path.JsonPath.Parse(resultPaths[i]).Evaluate(resultNode);
+                                                    var matches = pathResult.Matches;
+                                                    if (matches is not null && matches.Count > 0)
+                                                    {
+                                                        actual = matches[0].Value;
+                                                        hasMatch = true;
+                                                    }
+                                                }
+                                                catch (System.Exception) { hasMatch = false; }
+
+                                                System.Text.Json.Nodes.JsonNode? expected = null;
+                                                try { expected = System.Text.Json.Nodes.JsonNode.Parse(resultExpectedJson[i]); }
+                                                catch (System.Exception) { expected = null; }
+
+                                                if (!hasMatch || !System.Text.Json.Nodes.JsonNode.DeepEquals(actual, expected))
+                                                {
+                                                    mismatchPath = resultPaths[i];
+                                                    mismatchExpected = expected?.DeepClone();
+                                                    mismatchActual = actual?.DeepClone();
+                                                    break;
+                                                }
+                                            }
+
+                                            if (mismatchPath is not null)
+                                            {
+                                                verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                                var diag = new System.Text.Json.Nodes.JsonObject
+                                                {
+                                                    ["resultMismatch"] = new System.Text.Json.Nodes.JsonObject
+                                                    {
+                                                        ["path"] = mismatchPath,
+                                                        ["expected"] = mismatchExpected,
+                                                        ["actual"] = mismatchActual,
+                                                    },
+                                                };
+                                                observation = diag.ToJsonString();
+                                            }
+                                            else
+                                            {
+                                                verdict = Platform.Engine.Abstractions.Verdict.Pass;
+                                                observation = "{\"matched\":true}";
+                                            }
+                                        }
                                     }
-                                    else if (!idMatches)
+                                    else if (expectedErrorCode.HasValue)
                                     {
-                                        verdict = Platform.Engine.Abstractions.Verdict.Fail;
-                                        observation = "{\"idMismatch\":true}";
-                                    }
-                                    else if (!hasResult)
-                                    {
-                                        verdict = Platform.Engine.Abstractions.Verdict.Fail;
-                                        observation = "{\"malformedEnvelope\":\"missing result and error\"}";
+                                        // expect.error.code declared — a negative test.
+                                        if (hasResult && !hasError)
+                                        {
+                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                            observation = "{\"unexpectedResult\":true}";
+                                        }
+                                        else if (!hasError)
+                                        {
+                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                            observation = "{\"missingError\":true}";
+                                        }
+                                        else
+                                        {
+                                            var errObj = errorNode as System.Text.Json.Nodes.JsonObject;
+                                            int? actualCode = null;
+                                            if (errObj is not null
+                                                && errObj.TryGetPropertyValue("code", out var codeNode)
+                                                && codeNode is System.Text.Json.Nodes.JsonValue codeVal
+                                                && codeVal.TryGetValue<int>(out var codeInt))
+                                            {
+                                                actualCode = codeInt;
+                                            }
+
+                                            if (actualCode.HasValue && actualCode.Value == expectedErrorCode.Value)
+                                            {
+                                                verdict = Platform.Engine.Abstractions.Verdict.Pass;
+                                                observation = "{\"errorCode\":" + actualCode.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}";
+                                            }
+                                            else
+                                            {
+                                                verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                                var diag = new System.Text.Json.Nodes.JsonObject
+                                                {
+                                                    ["errorCodeMismatch"] = new System.Text.Json.Nodes.JsonObject
+                                                    {
+                                                        ["expected"] = expectedErrorCode.Value,
+                                                        ["actual"] = actualCode.HasValue ? System.Text.Json.Nodes.JsonValue.Create(actualCode.Value) : null,
+                                                    },
+                                                };
+                                                observation = diag.ToJsonString();
+                                            }
+                                        }
                                     }
                                     else
                                     {
-                                        string? mismatchPath = null;
-                                        System.Text.Json.Nodes.JsonNode? mismatchExpected = null;
-                                        System.Text.Json.Nodes.JsonNode? mismatchActual = null;
-
-                                        for (int i = 0; i < resultPaths.Length; i++)
-                                        {
-                                            System.Text.Json.Nodes.JsonNode? actual = null;
-                                            var hasMatch = false;
-                                            try
-                                            {
-                                                var pathResult = Json.Path.JsonPath.Parse(resultPaths[i]).Evaluate(resultNode);
-                                                var matches = pathResult.Matches;
-                                                if (matches is not null && matches.Count > 0)
-                                                {
-                                                    actual = matches[0].Value;
-                                                    hasMatch = true;
-                                                }
-                                            }
-                                            catch (System.Exception) { hasMatch = false; }
-
-                                            System.Text.Json.Nodes.JsonNode? expected = null;
-                                            try { expected = System.Text.Json.Nodes.JsonNode.Parse(resultExpectedJson[i]); }
-                                            catch (System.Exception) { expected = null; }
-
-                                            if (!hasMatch || !System.Text.Json.Nodes.JsonNode.DeepEquals(actual, expected))
-                                            {
-                                                mismatchPath = resultPaths[i];
-                                                mismatchExpected = expected?.DeepClone();
-                                                mismatchActual = actual?.DeepClone();
-                                                break;
-                                            }
-                                        }
-
-                                        if (mismatchPath is not null)
+                                        // Bare call: no expect declared. Pass on a clean success
+                                        // envelope with a matching id; Fail when an unexpected
+                                        // JSON-RPC error envelope arrives.
+                                        if (hasError)
                                         {
                                             verdict = Platform.Engine.Abstractions.Verdict.Fail;
-                                            var diag = new System.Text.Json.Nodes.JsonObject
-                                            {
-                                                ["resultMismatch"] = new System.Text.Json.Nodes.JsonObject
-                                                {
-                                                    ["path"] = mismatchPath,
-                                                    ["expected"] = mismatchExpected,
-                                                    ["actual"] = mismatchActual,
-                                                },
-                                            };
-                                            observation = diag.ToJsonString();
+                                            observation = "{\"unexpectedError\":true}";
+                                        }
+                                        else if (!idMatches)
+                                        {
+                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                            observation = "{\"idMismatch\":true}";
                                         }
                                         else
                                         {
@@ -662,113 +747,51 @@ public sealed class JsonRpcProvider
                                             observation = "{\"matched\":true}";
                                         }
                                     }
-                                }
-                                else if (expectedErrorCode.HasValue)
-                                {
-                                    // expect.error.code declared — a negative test.
-                                    if (hasResult && !hasError)
-                                    {
-                                        verdict = Platform.Engine.Abstractions.Verdict.Fail;
-                                        observation = "{\"unexpectedResult\":true}";
-                                    }
-                                    else if (!hasError)
-                                    {
-                                        verdict = Platform.Engine.Abstractions.Verdict.Fail;
-                                        observation = "{\"missingError\":true}";
-                                    }
-                                    else
-                                    {
-                                        var errObj = errorNode as System.Text.Json.Nodes.JsonObject;
-                                        int? actualCode = null;
-                                        if (errObj is not null
-                                            && errObj.TryGetPropertyValue("code", out var codeNode)
-                                            && codeNode is System.Text.Json.Nodes.JsonValue codeVal
-                                            && codeVal.TryGetValue<int>(out var codeInt))
-                                        {
-                                            actualCode = codeInt;
-                                        }
 
-                                        if (actualCode.HasValue && actualCode.Value == expectedErrorCode.Value)
+                                    // ── engine-standard `capture:` — JSONPath against the FULL envelope.
+                                    // Gated on `!= Fail` (not `== Pass`) to read identically to the
+                                    // Core http.rest provider's own capture gate — the two are
+                                    // equivalent at this point in the control flow (verdict can only
+                                    // be Pass or Fail here), but this provider is the reference pattern
+                                    // contributors copy.
+                                    if (captureVarNames.Length > 0 && verdict != Platform.Engine.Abstractions.Verdict.Fail)
+                                    {
+                                        var matchedFlags = new bool[captureVarNames.Length];
+                                        for (int ci = 0; ci < captureVarNames.Length; ci++)
                                         {
-                                            verdict = Platform.Engine.Abstractions.Verdict.Pass;
-                                            observation = "{\"errorCode\":" + actualCode.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}";
-                                        }
-                                        else
-                                        {
-                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
-                                            var diag = new System.Text.Json.Nodes.JsonObject
+                                            var matched = false;
+                                            try
                                             {
-                                                ["errorCodeMismatch"] = new System.Text.Json.Nodes.JsonObject
+                                                var pathResult = Json.Path.JsonPath.Parse(captureExprs[ci]).Evaluate(envObj);
+                                                var matches = pathResult.Matches;
+                                                if (matches is not null && matches.Count > 0 && matches[0].Value is not null)
                                                 {
-                                                    ["expected"] = expectedErrorCode.Value,
-                                                    ["actual"] = actualCode.HasValue ? System.Text.Json.Nodes.JsonValue.Create(actualCode.Value) : null,
-                                                },
-                                            };
-                                            observation = diag.ToJsonString();
-                                        }
-                                    }
-                                }
-                                else
-                                {
-                                    // Bare call: no expect declared. Pass on a clean success
-                                    // envelope with a matching id; Fail when an unexpected
-                                    // JSON-RPC error envelope arrives.
-                                    if (hasError)
-                                    {
-                                        verdict = Platform.Engine.Abstractions.Verdict.Fail;
-                                        observation = "{\"unexpectedError\":true}";
-                                    }
-                                    else if (!idMatches)
-                                    {
-                                        verdict = Platform.Engine.Abstractions.Verdict.Fail;
-                                        observation = "{\"idMismatch\":true}";
-                                    }
-                                    else
-                                    {
-                                        verdict = Platform.Engine.Abstractions.Verdict.Pass;
-                                        observation = "{\"matched\":true}";
-                                    }
-                                }
+                                                    var val = matches[0].Value!;
+                                                    var capturedStr = val is System.Text.Json.Nodes.JsonValue jv && jv.TryGetValue<string>(out var s)
+                                                        ? s
+                                                        : val.ToJsonString();
+                                                    vars[captureVarNames[ci]] = capturedStr;
+                                                    matched = true;
+                                                }
+                                            }
+                                            catch (System.Exception) { matched = false; }
 
-                                // ── engine-standard `capture:` — JSONPath against the FULL envelope.
-                                // Gated on `!= Fail` (not `== Pass`) to read identically to the
-                                // Core http.rest provider's own capture gate — the two are
-                                // equivalent at this point in the control flow (verdict can only
-                                // be Pass or Fail here), but this provider is the reference pattern
-                                // contributors copy.
-                                if (captureVarNames.Length > 0 && verdict != Platform.Engine.Abstractions.Verdict.Fail)
-                                {
-                                    var matchedFlags = new bool[captureVarNames.Length];
-                                    for (int ci = 0; ci < captureVarNames.Length; ci++)
-                                    {
-                                        var matched = false;
-                                        try
-                                        {
-                                            var pathResult = Json.Path.JsonPath.Parse(captureExprs[ci]).Evaluate(envObj);
-                                            var matches = pathResult.Matches;
-                                            if (matches is not null && matches.Count > 0 && matches[0].Value is not null)
+                                            matchedFlags[ci] = matched;
+                                            if (!matched)
                                             {
-                                                var val = matches[0].Value!;
-                                                var capturedStr = val is System.Text.Json.Nodes.JsonValue jv && jv.TryGetValue<string>(out var s)
-                                                    ? s
-                                                    : val.ToJsonString();
-                                                vars[captureVarNames[ci]] = capturedStr;
-                                                matched = true;
+                                                verdict = Platform.Engine.Abstractions.Verdict.Inconclusive;
+                                                observation = "{\"captureUnmet\":" + System.Text.Json.JsonSerializer.Serialize(captureVarNames[ci]) + "}";
                                             }
                                         }
-                                        catch (System.Exception) { matched = false; }
-
-                                        matchedFlags[ci] = matched;
-                                        if (!matched)
-                                        {
-                                            verdict = Platform.Engine.Abstractions.Verdict.Inconclusive;
-                                            observation = "{\"captureUnmet\":" + System.Text.Json.JsonSerializer.Serialize(captureVarNames[ci]) + "}";
-                                        }
+                                        vars[Platform.Engine.Abstractions.VarKeys.CaptureStatus(stepId)] =
+                                            string.Join(",", System.Array.ConvertAll(matchedFlags, f => f ? "1" : "0"));
                                     }
-                                    vars[Platform.Engine.Abstractions.VarKeys.CaptureStatus(stepId)] =
-                                        string.Join(",", System.Array.ConvertAll(matchedFlags, f => f ? "1" : "0"));
                                 }
                             }
+                        }
+                        finally
+                        {
+                            resp.Dispose();
                         }
                     }
                 }
@@ -1007,7 +1030,9 @@ public sealed class JsonRpcProvider
             return false;
         }
 
-        path = diag.TryGetProperty("path", out var p) ? p.GetRawText().Trim('"') : string.Empty;
+        path = diag.TryGetProperty("path", out var p)
+            ? (p.ValueKind == JsonValueKind.String ? p.GetString() ?? string.Empty : p.GetRawText())
+            : string.Empty;
         expected = diag.TryGetProperty("expected", out var e) ? e.GetRawText() : "null";
         actual = diag.TryGetProperty("actual", out var a) ? a.GetRawText() : "null";
         return true;
