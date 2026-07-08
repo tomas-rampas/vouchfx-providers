@@ -6,10 +6,10 @@ This directory contains the **community provider index** — a curated registry 
 
 A common first-read confusion, resolved up front: a community provider consists of **two entirely different artifacts**, and only one of them is JSON.
 
-1. **The provider itself is C# source, shipped as a NuGet package.** It is a small project implementing the frozen `Platform.Sdk` contract (`IStepProvider`, `IStepBinder<T>`, `IStepValidator<T>`, `IStepCompiler<T>`), compiled and published under Apache-2.0. That package is what the engine actually loads and executes. The [implementing-a-provider guide](../docs/implementing-a-provider.md) covers writing one end to end.
+1. **The provider itself is C# source, shipped as a NuGet package.** It is a small project implementing the frozen `Platform.Sdk` contract (`IStepProvider`, `IStepBinder<T>`, `IStepValidator<T>`, `IStepCompiler<T>`), compiled and published under Apache-2.0. Providers are compile-time, source-level plugins: the package is the distribution artifact you consume in a source-level build by referencing the provider project and rebuilding the host. When the planned provider directory loader ships, packages will become runtime-loadable; until then, source-level builds are the distribution model. The [implementing-a-provider guide](../docs/implementing-a-provider.md) covers writing one end to end.
 2. **The registry entry is one JSON object** in the shared `community-providers.json` file below — pure *discovery metadata*: the provider's name, its step kind, where its source lives, which NuGet package to install, and the minimum engine version. Nobody publishes "a JSON file" as their provider; an author adds a single entry to this shared catalogue so users can find the package.
 
-The flow for an author, start to finish: **write** the provider in your own repository (following the guide, with the [`rpc.json-rpc` source](../community/Community.Steps.JsonRpc/README.md) as the worked reference) → **publish** it as an Apache-2.0 NuGet package → **list** it by adding your one entry here (PR or issue) → users discover it through this index and install your package alongside the engine, whose reflective registry picks it up at startup.
+The flow for an author, start to finish: **write** the provider in your own repository (following the guide, with the [`rpc.json-rpc` source](../community/Community.Steps.JsonRpc/README.md) as the worked reference) → **publish** it as an Apache-2.0 NuGet package → **list** it by adding your one entry here (PR or issue) → users discover it through this index. Today, consuming a community provider requires a source-level build: clone the provider repository, reference its project in your build, and rebuild your host to integrate the provider. A one-command install experience (`vouchfx providers install <package>`) is planned and tracked on the [engine's public roadmap](https://tomas-rampas.github.io/vouchfx/docs/roadmap.html).
 
 Two neighbouring things this registry is *not*:
 
@@ -25,8 +25,8 @@ The registry is stored in two files:
 
 The registry is human-readable and machine-consumable. It powers:
 - The project website's provider listing page
-- Automated tools that discover and install providers
 - Community feedback and discoverability
+- Planned tooling for provider discovery and installation (part of the engine roadmap)
 
 The first entry is [`rpc.json-rpc`](../community/Community.Steps.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package (`Community.Steps.JsonRpc`) ships alongside the engine's v1.0 release; until then it is built from source here, which is why it is listed ahead of its package being resolvable on NuGet.org.
 

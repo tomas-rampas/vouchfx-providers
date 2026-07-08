@@ -119,9 +119,9 @@ Here is the minimal structure:
 </Project>
 ```
 
-**Before v1.0 release:** Pack the SDK locally from the engine repository (see `CONTRIBUTING.md` "Building Before v1.0" for the command).
+**Before v1.0 GA release:** Pack the SDK locally from the engine repository (see `CONTRIBUTING.md` "Building Before v1.0 GA" for the command). The v1.0.0-alpha pre-releases include only the vouchfx CLI tool; the SDK packages are not yet on NuGet.
 
-**After v1.0:** Restore from NuGet directly.
+**After v1.0 GA:** Restore from NuGet directly.
 
 ### Assembly-Graph Hygiene
 
@@ -396,7 +396,7 @@ public IEnumerable<ResourceRequirement> Resources(MyKindModel model)
 {
     // This step targets the dependency named "my-db", declared under
     // environment.dependencies as `type: postgres`. Family must name one of
-    // the engine's own eleven engine-managed dependency types (§2 above);
+    // the engine's own thirteen engine-managed dependency types (§2 above);
     // Image is conventionally left null today, so the engine uses its own
     // default image for that family (see EnvironmentMapper's dependency
     // registry, in the engine repository).

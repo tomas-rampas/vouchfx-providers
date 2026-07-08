@@ -129,9 +129,9 @@ Upon approval of CI, security review, and CSX review, the maintainer merges your
 - Added to the public community-providers registry
 - Eligible for inclusion in future platform communications
 
-## Building Before v1.0
+## Building Before v1.0 GA
 
-The `Platform.Sdk` and `Platform.Sdk.Testing` packages are published to NuGet with the vouchfx v1.0 release. Until then, pack the five SDK-closure projects locally from the engine:
+The `Platform.Sdk` and `Platform.Sdk.Testing` packages are published to NuGet with the vouchfx v1.0 **GA** release. The v1.0.0-alpha pre-releases include only the vouchfx CLI tool; the SDK packages are not yet on NuGet. Until the GA release, pack the five SDK-closure projects locally from the engine:
 
 ```bash
 # From the vouchfx-providers repo root, with the engine checked out at <engine>:

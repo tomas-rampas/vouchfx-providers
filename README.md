@@ -40,6 +40,12 @@ Community providers that have passed a published rubric and are endorsed by the 
 
 Verified providers are listed on the [project website](https://tomas-rampas.github.io/vouchfx/) and discoverable via NuGet, but **not** bundled with the engine.
 
+## How to Use Community and Verified Providers Today
+
+A non-Core provider (Community or Verified) is consumed via **source-level build**: clone the provider repository, reference its project in your build, and rebuild your application host to integrate the provider at compile time. This is the distribution model through v1.0 and beyond.
+
+A one-command install experience — `vouchfx providers install <community-provider-package>` — is planned and tracked on the [engine's public roadmap](https://tomas-rampas.github.io/vouchfx/docs/roadmap.html). When this provider directory loader ships, packages will become runtime-loadable without requiring source-level builds.
+
 ### Community
 All other providers, with no platform-team endorsement. Community providers:
 - May be authored and versioned independently
@@ -95,9 +101,9 @@ When you submit a provider to the `verified/` folder, CI automatically runs:
 
 **Note:** CI runs your conformance test against the engine `main` SDK only. The Verified-tier rubric requires you to verify your provider's integration-test fixture also passes on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers at submission time, not an automated CI check.
 
-## Building Before v1.0
+## Building Before v1.0 GA
 
-The vouchfx SDK and Core providers are released to [NuGet.org](https://www.nuget.org) as `Platform.Sdk` and `Platform.Sdk.Testing` with the vouchfx v1.0 release. Until then, to build providers locally, pack the five SDK-closure projects from the engine:
+The vouchfx SDK (`Platform.Sdk` and `Platform.Sdk.Testing`) will be released to [NuGet.org](https://www.nuget.org) with the vouchfx v1.0 **GA** release. The v1.0.0-alpha pre-releases include only the vouchfx CLI tool; the SDK packages are not yet on NuGet. Until the GA release, to build providers locally, pack the five SDK-closure projects from the engine:
 
 ```bash
 # From the vouchfx-providers repo root, with the engine checked out at <engine>:
