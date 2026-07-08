@@ -25,7 +25,7 @@ For the comprehensive, code-grounded guide to writing a provider — the contrac
 All vouchfx providers are licensed under Apache-2.0 and are governed in three tiers:
 
 ### Core
-The providers shipped by the vouchfx team as part of the engine release — currently eighteen across eight families (`http`, `db-assert` for Postgres/MySQL/SQL Server/MongoDB, `mq-publish`/`mq-expect` for Kafka/RabbitMQ/NATS/Azure Service Bus, `cache-assert` for Redis/Elasticsearch, `mail-expect`, `webhook-listen`, `script`). The authoritative, always-current list lives in the [engine repository's README](https://github.com/tomas-rampas/vouchfx#providers).
+The providers shipped by the vouchfx team as part of the engine release — currently twenty-five across eleven families (`http` for REST/SOAP, `db-assert` for Postgres/MySQL/SQL Server/MongoDB/DynamoDB, `mq-publish`/`mq-expect` for Kafka/RabbitMQ/NATS/Azure Service Bus/Redis Streams, `cache-assert` for Redis/Elasticsearch, `storage-assert` for S3, `metrics-assert` for Prometheus expositions, `trace-expect` for OTLP traces, `mail-expect`, `webhook-listen`, `script`). The authoritative, always-current list lives in the [engine repository's README](https://github.com/tomas-rampas/vouchfx#providers).
 
 Core providers are bundled with the engine, versioned together, fully supported by the platform team, and reference implementations of the provider contract. Real-world usage of the Core set is showcased in the [vouchfx-samples](https://github.com/tomas-rampas/vouchfx-samples) repository.
 
