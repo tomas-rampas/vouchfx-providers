@@ -2,6 +2,20 @@
 
 This directory contains the **community provider index** — a curated registry of Community-tier and Verified-tier providers authored by the vouchfx community.
 
+## How the model works — the JSON is a catalogue entry, not the provider
+
+A common first-read confusion, resolved up front: a community provider consists of **two entirely different artifacts**, and only one of them is JSON.
+
+1. **The provider itself is C# source, shipped as a NuGet package.** It is a small project implementing the frozen `Platform.Sdk` contract (`IStepProvider`, `IStepBinder<T>`, `IStepValidator<T>`, `IStepCompiler<T>`), compiled and published under Apache-2.0. That package is what the engine actually loads and executes. The [implementing-a-provider guide](../docs/implementing-a-provider.md) covers writing one end to end.
+2. **The registry entry is one JSON object** in the shared `community-providers.json` file below — pure *discovery metadata*: the provider's name, its step kind, where its source lives, which NuGet package to install, and the minimum engine version. Nobody publishes "a JSON file" as their provider; an author adds a single entry to this shared catalogue so users can find the package.
+
+The flow for an author, start to finish: **write** the provider in your own repository (following the guide, with the [`rpc.json-rpc` source](../community/Community.Steps.JsonRpc/README.md) as the worked reference) → **publish** it as an Apache-2.0 NuGet package → **list** it by adding your one entry here (PR or issue) → users discover it through this index and install your package alongside the engine, whose reflective registry picks it up at startup.
+
+Two neighbouring things this registry is *not*:
+
+- **The hub-hosted `community/` directory** is the deliberate exception, not the pattern: it holds exactly one provider — `rpc.json-rpc`, the tier's CI-tested reference implementation — which is why that entry's `repo` field points back at this repository. Your provider's source belongs in *your* repository; only its JSON entry belongs here.
+- **The [vouchfx-samples](https://github.com/tomas-rampas/vouchfx-samples) repository** has nothing to do with providers or this registry at all — it hosts sample *applications* (systems under test in C#, Python and Java) with complete `.e2e.yaml` suites demonstrating how the engine tests them.
+
 ## About the Registry
 
 The registry is stored in two files:
@@ -46,6 +60,8 @@ Each provider entry in `community-providers.json` is a JSON object with the foll
 
 ### Example Entry
 
+A fictional entry showing the normal shape — source in the author's own repository, package on NuGet.org:
+
 ```json
 {
   "name": "Snowflake Assertion",
@@ -58,6 +74,8 @@ Each provider entry in `community-providers.json` is a JSON object with the foll
   "description": "Asserts state in a Snowflake data warehouse using SQL queries"
 }
 ```
+
+For a live example, see the first entry in [`community-providers.json`](community-providers.json) — the hub-hosted `rpc.json-rpc` reference provider (whose `repo` field points at this repository only because it is the tier's documented in-repo exception).
 
 ### Field Rules
 
