@@ -165,14 +165,20 @@ jobs:
           fi
 
           # Conservative PackageId-shaped pattern for PROVIDER (it IS a .NET
-          # PackageId — see community/Directory.Build.props) — no path
-          # separators, no shell metacharacters, and dots only BETWEEN
-          # alphanumerics (rejects '..', a leading '.x', or a trailing 'x.').
+          # PackageId — see community/Directory.Build.props): one or more
+          # alphanumeric SEGMENTS separated by single dots (the
+          # Community.Steps.<Name> convention). No path separators, no shell
+          # metacharacters, and — critically — no consecutive dots: each dot
+          # must be immediately followed by at least one alphanumeric
+          # character, so '..', a leading '.x', a trailing 'x.', and an
+          # internal 'A..B' are ALL rejected (the previous
+          # `^[A-Za-z0-9]([A-Za-z0-9.]*[A-Za-z0-9])?$` form only anchored the
+          # first/last character and still admitted 'A..B' in the middle).
           # This anchored full-string match transitively defeats path
           # traversal (e.g. "Evil/../thing") and command-injection-shaped
           # strings (e.g. "Foo;rm -rf"), since neither '/' nor ';' nor
           # whitespace is in the allowed character set.
-          if [[ ! "$PROVIDER" =~ ^[A-Za-z0-9]([A-Za-z0-9.]*[A-Za-z0-9])?$ ]]; then
+          if [[ ! "$PROVIDER" =~ ^[A-Za-z0-9]+(\.[A-Za-z0-9]+)*$ ]]; then
             echo "::error::Refusing to publish: provider id '$PROVIDER' does not look like a .NET PackageId."
             exit 1
           fi

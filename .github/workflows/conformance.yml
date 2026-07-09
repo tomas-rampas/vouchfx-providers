@@ -174,10 +174,18 @@ jobs:
       #
       # Discovery mirrors the community-tests glob above: globstar over
       # community/**/*.csproj, filtered by filename suffix (*.Tests.csproj is
-      # excluded) rather than by directory-name heuristics — this is robust to
-      # a provider folder and its .Tests sibling living side by side (the
-      # current rpc.json-rpc layout: community/Community.Steps.JsonRpc/ +
-      # community/Community.Steps.JsonRpc.Tests/), and to any deeper nesting.
+      # excluded) rather than by directory-name heuristics — this finds a
+      # provider's csproj at any nesting depth under community/. A provider's
+      # IDENTITY, however, is always the FIRST path segment after community/
+      # (derived below as `rel="${csproj#community/}"; provider_name="${rel%%/*}"`)
+      # — the top-level folder name — never basename(dirname(csproj)), which
+      # mis-resolves for anything other than the flat
+      # community/<Name>/<Name>.csproj convention (e.g. it would wrongly
+      # derive "src" from a hypothetical community/<Name>/src/<Name>.csproj).
+      # The current rpc.json-rpc layout is flat (community/Community.Steps.JsonRpc/
+      # + community/Community.Steps.JsonRpc.Tests/), where both derivations
+      # happen to agree — this comment documents the general rule, not just
+      # today's one example.
       - name: Pack gate — every hub provider must produce a valid package
         shell: bash
         run: |
@@ -294,7 +302,17 @@ jobs:
           gate_failed=0
 
           for csproj in "${provider_csprojs[@]}"; do
-            provider_name="$(basename "$(dirname "$csproj")")"
+            # Provider identity is the FIRST path segment after community/ —
+            # NOT basename(dirname(csproj)), which mis-resolves for anything
+            # deeper than the flat community/<Name>/<Name>.csproj convention
+            # (e.g. community/<Name>/src/<Name>.csproj would wrongly yield
+            # "src"). This keeps provider_name aligned with the PackageId
+            # convention ($(MSBuildProjectName), set from the provider's own
+            # csproj — see community/Directory.Build.props) and with
+            # publish-provider.yml's community/$PROVIDER/$PROVIDER.csproj
+            # lookup, regardless of how deep the actual csproj file sits.
+            rel="${csproj#community/}"
+            provider_name="${rel%%/*}"
             # Each provider packs into its OWN output subdirectory rather than
             # a shared artifacts/pack-gate/ selected by filename-prefix glob
             # (${provider_name}.*.nupkg): a prefix glob can mis-resolve for
