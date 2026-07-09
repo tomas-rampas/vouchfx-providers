@@ -2,8 +2,8 @@
 
 The **first Community-tier provider** for the vouchfx hub — listed in the
 [community provider registry](../../registry/README.md), hosted in this repository, and
-richer than the [copyable `template/`](../../template/) skeleton (though not a `verified/`
-submission). It doubles as the reference implementation the
+richer than the [copyable `template/`](../../template/) skeleton (though it does not carry
+the Vouched badge). It doubles as the reference implementation the
 [implementing-a-provider guide](../../docs/implementing-a-provider.md) walks through:
 a *real* HTTP-calling, BCL-plus-JsonPath.Net provider built outside the engine repo,
 following exactly the same patterns the engine's own Core `http.rest` and
@@ -244,17 +244,16 @@ expected-vs-observed table in supporting renderers, exactly as the Core
 
 ## Mapping to the community-hub path
 
-This provider lives under `community/`, alongside `template/` and `verified/`. It is a
+This provider lives under `community/`, alongside `template/`. It is a
 real Community-tier provider — the first entry in
 [`registry/community-providers.json`](../../registry/community-providers.json) — hosted in
-the hub itself so the tier has a canonical, CI-tested reference implementation (the NuGet
-package ships alongside the engine's v1.0 release; until then, build it from this
-repository). It is deliberately *not* a `verified/` submission: it has not been through the
-Verified rubric. If you want to build on it as your own, independently-shipped provider:
+the hub itself so the tier has a canonical, CI-tested reference implementation. It does not
+carry the Vouched badge: it has not been through the Vouched rubric. If you want to build on
+it as your own, independently-shipped provider:
 
 1. Copy `Community.Steps.JsonRpc` to your own repository under your own namespace
    (never `Platform.Steps.*` / `Platform.Engine.*`).
 2. Publish it as a NuGet package under Apache-2.0.
 3. List it in the [community provider index](../../registry/README.md) (Community tier),
-   or work towards the [Verified-tier rubric](../../VERIFIED_TIER_CHECKLIST.md) if you
+   or work towards the [Vouched badge rubric](../../VOUCHED_CHECKLIST.md) if you
    want platform-team endorsement — see `CONTRIBUTING.md` for both paths.

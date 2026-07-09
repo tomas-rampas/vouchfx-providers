@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------
-# .gitignore for vouchfx-providers (community index + Verified-tier submissions)
+# .gitignore for vouchfx-providers (community index + hosted community providers)
 # ---------------------------------------------------------------------------
 
 ## .NET build output

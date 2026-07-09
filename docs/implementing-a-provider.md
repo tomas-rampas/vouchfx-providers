@@ -20,11 +20,11 @@ The engine calls your provider at compile time (once per suite), assembles all p
 
 Providers are **compile-time, source-level plugins**. There is no dynamic assembly loading, no sandbox, no inheritance hierarchy you must fit into. Your provider is one of many implementations of a frozen v1 contract; evolution is additive only, via new optional interfaces.
 
-**The three governance tiers** distinguish endorsement and bundling (see `GOVERNANCE.md` for full details):
+**The two governance tiers** distinguish bundling; the optional **Vouched badge** offers platform-team endorsement (see `GOVERNANCE.md` for full details):
 
 - **Core** — platform-team authored, bundled with the engine, versioned with the engine
-- **Verified** — community-authored, independently versioned, platform-team endorsed after passing a published rubric (conformance tests, security review, documentation)
 - **Community** — community-authored, independently versioned, listed in the community registry with no platform endorsement
+- **Vouched badge** — optional, awarded post-listing by a maintainer after security review and rubric validation; does not move the provider to a new tier, remaining community-owned and community-hosted
 
 ## 2. What You Can Build Self-Contained
 
@@ -142,7 +142,7 @@ The engine's `Directory.Build.props` sets strict compiler flags:
 dotnet build your-provider.csproj /p:TreatWarningsAsErrors=true
 ```
 
-Your provider must build with **zero warnings**. This is enforced by CI for Verified-tier submissions.
+Your provider must build with **zero warnings**. This is enforced by CI for all hub submissions.
 
 ## 4. The Model — Strongly-Typed Step Shape
 
@@ -1059,7 +1059,7 @@ dotnet test your-provider.Tests -c Release --filter "requires!=docker"
 
 ## 11. Publishing and Submission
 
-Once your provider is tested and documented, the Community tier offers two hosting options, and the Verified tier a review gate:
+Once your provider is tested and documented, you have two hosting options for listing in the Community tier, plus the optional post-listing Vouched badge review:
 
 ### Community Tier — external hosting (your repository + NuGet)
 
@@ -1084,9 +1084,9 @@ Once your provider is tested and documented, the Community tier offers two hosti
 
 **How to submit:** open one pull request adding `community/<YourProvider>/` + `community/<YourProvider>.Tests/` **and** your registry entry with `"hosting": "hub"` (the `nuget` field is optional). Use the community submission PR template; CI discovers `community/**/*.Tests.csproj` by glob and runs your tests in their own step. The full step-by-step lives in `CONTRIBUTING.md`; `rpc.json-rpc` under `community/` is the worked example of exactly this shape.
 
-### Verified Tier — Platform Endorsement
+### The Vouched Badge — Platform Endorsement
 
-**When to choose this:** Your provider meets (or nearly meets) the Verified-tier rubric (see `VERIFIED_TIER_CHECKLIST.md`). You want platform-team endorsement and website listing.
+**When to pursue this:** Your Community provider (hosted either externally or in the hub) is already listed in the registry and passes its conformance tests. You want to work towards the optional Vouched badge — platform-team review and endorsement.
 
 **The rubric (summary):**
 
@@ -1097,45 +1097,22 @@ Once your provider is tested and documented, the Community tier offers two hosti
 5. `MinEngineVersion` declared in provider metadata
 6. CSX code reviewed for §13.3.1 conformance by a maintainer
 
-**How to submit:**
+**How to request the badge:**
 
-1. **Signal intent (recommended)** — open a GitHub issue using the **Verified Proposal** template. Maintainers will prioritise review bandwidth and give you early feedback.
+1. **Your provider is already listed** — the provider appears in the registry and (if hub-hosted) CI is passing.
 
-2. **Prepare your submission:**
+2. **Open a Vouched request issue** — use [**New Issue → Vouched Request**](.github/ISSUE_TEMPLATE/vouched-request.yml). Link to your provider source and confirm which rubric items are met. Maintainers will prioritise review bandwidth and give you early feedback.
 
-   ```
-   verified/my-kind-provider/
-   ├── src/
-   │   ├── Community.Steps.MyKind.csproj
-   │   ├── MyKindProvider.cs
-   │   ├── MyKindModel.cs
-   │   └── …
-   ├── tests/
-   │   ├── Community.Steps.MyKind.Tests.csproj
-   │   ├── MyKindProviderTests.cs
-   │   └── …
-   └── README.md
-   ```
-
-3. **Open a pull request** — fork this repository, commit your submission, and open a PR using the **Verified Submission** template. Complete the checklist (all six rubric items).
-
-4. **CI conformance gate runs automatically:**
-   - Compile your provider against `Platform.Sdk`
-   - Run your test suite
-   - Validate your JSON Schema fragment
-
-   **All tests must pass.** If any fail, push fixes to your PR branch; CI re-runs automatically.
-
-5. **Maintainer review:**
+3. **Maintainer review:**
    - **Security review** — credentials, CVEs, TLS, telemetry, package signature
    - **CSX review** — read the generated C# code; confirm it follows §13.3.1
-   - **Conformance validation** — verify your fixture also passes on engine main + two preceding minors (human validation; CI runs only main)
+   - **Conformance validation** — verify your fixture passes on engine main + two preceding minors (human validation; CI runs only main)
 
-6. **Merge and promotion** — upon approval, the PR merges. Your provider is now Verified, website-listed, and discoverable via the public registry.
+4. **Badge award** — upon approval, a maintainer opens a one-line registry PR adding `"vouched": true` to your entry. Once merged, the badge is live on your listing. Your provider remains where it is — hub-hosted or externally hosted — with the platform team's endorsement now visible in the registry.
 
 ## 12. Submission Checklist
 
-Before opening a Community or Verified submission:
+Before opening a Community submission or requesting the Vouched badge:
 
 - [ ] **Namespace:** My provider uses a non-reserved namespace (never `Platform.Engine.*` or `Platform.Steps.*`)
 - [ ] **Four interfaces:** My provider implements `IStepProvider`, `IStepBinder<TModel>`, `IStepValidator<TModel>`, `IStepCompiler<TModel>`
@@ -1166,10 +1143,10 @@ Before opening a Community or Verified submission:
 - [ ] **Build:** My provider builds with zero warnings: `dotnet build /p:TreatWarningsAsErrors=true`
 - [ ] **Metadata:** `MinEngineVersion` is declared in provider metadata
 
-For Verified submissions:
+For Vouched badge requests:
 
 - [ ] I have read the CsxFragment composition rules (blueprint §13.3.1) and confirmed my provider follows them
-- [ ] I have read the security review checklist (VERIFIED_TIER_CHECKLIST.md)
+- [ ] I have read the security review checklist (VOUCHED_CHECKLIST.md)
 - [ ] My fixture passes locally and on the engine main branch
 
 ---
