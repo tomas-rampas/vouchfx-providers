@@ -94,7 +94,7 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 - **Schema Validation only** — your registry entry's JSON Schema fragment
 
-**Note:** For hub-hosted submissions, CI runs your conformance tests against the engine `main` SDK only. The Vouched rubric requires you to verify your provider's integration-test fixture also passes on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers during the Vouched review, not an automated CI check.
+**Note:** For hub-hosted submissions, the required CI lane runs your conformance tests against the published pinned SDK (`$(VouchfxSdkVersion)`) — exactly what consumers restore; a separate non-blocking lane also builds them against the engine's `main` branch as an early warning. The Vouched rubric additionally requires your integration-test fixture to pass on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers during the Vouched review, not an automated CI check.
 
 ## Building against the SDK
 

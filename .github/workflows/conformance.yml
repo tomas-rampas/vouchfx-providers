@@ -9,18 +9,24 @@
 # PUBLISHED AND OWNS the Platform.*/vouchfx package IDs on nuget.org —
 # ideally with reserved ID prefixes. Merging or running this lane before
 # then re-opens the dependency-confusion window the previous exclusive-local
-# mapping had closed. Verify POSITIVE OWNERSHIP (nuget.org "Owners" tab /
-# reserved-prefix confirmation for the publishing account) before
-# un-drafting — NOT merely that `dotnet restore` resolves a matching
-# version, since a squatted package under the same ID would resolve
-# identically and this workflow cannot tell the difference.
+# mapping had closed. NOTE: the window applies to EVERY CI RUN of this
+# branch, not just to merging — a pull_request run of Lane A restores
+# Platform.Sdk from nuget.org (today an unowned ID: the restore simply
+# 404s, but a squatted package would build). Verify POSITIVE OWNERSHIP
+# (nuget.org "Owners" tab / reserved-prefix confirmation for the
+# publishing account) BEFORE PUSHING FURTHER COMMITS or re-running CI on
+# this branch, and again before un-drafting — NOT merely that
+# `dotnet restore` resolves a matching version, since a squatted package
+# under the same ID would resolve identically and this workflow cannot
+# tell the difference.
 #
 # TWO LANES
 # ---------
 # Lane A (job `conformance`, the required merge-gate check) restores
 # Platform.Sdk / Platform.Sdk.Testing from nuget.org at the
-# $(VouchfxSdkVersion) pin (root MSBuild property, consumed by all four
-# SDK-closure PackageReferences) — exactly what a real consumer experiences.
+# $(VouchfxSdkVersion) pin (root MSBuild property, consumed by every
+# SDK-closure PackageReference — six across the four consuming projects)
+# — exactly what a real consumer experiences.
 # The "[REMOVE AFTER SDK PUBLISHED]" engine-checkout + source-pack bootstrap
 # steps have been removed from this lane; see the PRECONDITION above before
 # treating that removal as safe to merge.
@@ -49,13 +55,18 @@
 # tagged and its SDK closure published to nuget.org (re-verify ownership per
 # the PRECONDITION above), bump the root <VouchfxSdkVersion> MSBuild property
 # to the new version (Lane A picks it up automatically — no workflow edit
-# needed) and separately re-pin Lane B's engine checkout `ref:` below to the
-# engine's new main SHA, so Lane B keeps tracking "what's coming next" rather
-# than what was just released.
+# needed), update the hardcoded Platform.Sdk version literal in the
+# out-of-repo sample in docs/implementing-a-provider.md (external authors
+# cannot inherit the property, so the guide pins a concrete version), and
+# separately re-pin Lane B's engine checkout `ref:` below to the engine's
+# new main SHA, so Lane B keeps tracking "what's coming next" rather than
+# what was just released.
 #
 # NOTE ON VERSION MATRIX
 # ----------------------
-# This workflow runs against the engine main SDK only.  The Vouched badge rubric's
+# Lane A (the required check) runs against the PUBLISHED pinned SDK
+# ($(VouchfxSdkVersion)); Lane B tracks the engine main SDK non-blockingly.
+# Neither lane is a version matrix: the Vouched badge rubric's
 # multi-version conformance matrix (a provider's integration-test fixture passing
 # on the engine main branch plus the two preceding minor releases) is validated by
 # a maintainer at badge-review time, not by this workflow — it is not automated
