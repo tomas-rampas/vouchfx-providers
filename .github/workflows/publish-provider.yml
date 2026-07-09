@@ -1,0 +1,289 @@
+# .github/workflows/publish-provider.yml — per-provider NuGet publish (hub-hosted)
+# =============================================================================
+# Purpose
+# -------
+# Each hub-hosted community provider under community/<Name>/ ships as its OWN
+# independently versioned NuGet package. This workflow packs, tests, and
+# publishes exactly one provider per run — never the whole repository — so
+# providers can be released on their own schedule.
+#
+# Tag convention (the tag IS the publish trigger)
+# ------------------------------------------------
+#   <ProviderDirName>/v<semver>   e.g.  Community.Steps.JsonRpc/v1.0.0
+#
+# ProviderDirName must equal the provider's directory name under community/
+# (which is also its PackageId — see community/Directory.Build.props and the
+# conformance.yml pack-gate step that enforces <id> == directory name). The
+# trigger glob below ('*/v*') relies on GitHub Actions tag-glob semantics
+# where '*' never matches '/', so it matches exactly one '<segment>/v<segment>'
+# pair — this is what lets many providers version independently from tags in
+# one repository without a dispatcher/matrix step.
+#
+# Trust model
+# -----------
+#   - A NuGet Trusted Publishing policy on nuget.org (Package Owner "Tomas.R")
+#     is scoped to: Repository tomas-rampas/vouchfx-providers, Workflow File
+#     publish-provider.yml, no Environment — mirroring the engine's own
+#     release.yml policy exactly. No NUGET_API_KEY secret is stored; NuGet/login
+#     exchanges a single-use GitHub OIDC token for a short-lived (~1 hour)
+#     nuget.org API key immediately before push.
+#   - The TAG is the publish trigger, so tag-push authorisation IS the security
+#     boundary for this workflow. A GitHub tag-protection ruleset restricting
+#     `*/v*` tag creation/updates to maintainers MUST be configured on this
+#     repository (Settings → Rules → Tag rulesets) — without it, any
+#     contributor with push access could mint a publish tag. Every
+#     tag-derived value is still treated as untrusted input in the steps below
+#     (env-passed, never inlined via ${{ }} into a run: body, and validated by
+#     regex) as defence in depth on top of that ruleset, not instead of it.
+#   - workflow_dispatch is a SMOKE LANE ONLY: it exercises the full
+#     pack/test/pack/attest pipeline against maintainer-supplied provider/
+#     version inputs but NEVER pushes to NuGet.org and never mints a real SLSA
+#     attestation subject that gets published — the push and login steps below
+#     are hard-gated to `github.event_name == 'push'`.
+#   - --skip-duplicate immutability note: nuget.org packages are IMMUTABLE —
+#     a version already published is left untouched by --skip-duplicate, never
+#     overwritten. A bad artifact is never fixed by re-running or re-tagging
+#     the same version: cut a new patch version tag instead.
+#
+# =============================================================================
+
+name: Publish provider (NuGet)
+
+on:
+  push:
+    tags:
+      - "*/v*"
+  # Smoke-test lane: run the full pipeline for a given provider/version WITHOUT
+  # publishing anything. Every push-gated step below is skipped on dispatch.
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: "Provider directory name under community/ (== PackageId), e.g. Community.Steps.JsonRpc"
+        required: true
+        type: string
+      version:
+        description: "Semver string to pack, e.g. 0.0.0-test (no NuGet push)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-provider-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+
+jobs:
+  publish:
+    name: Pack, test, and publish one provider
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write      # mint GitHub OIDC token for NuGet Trusted Publishing + attestation
+      attestations: write  # store the SLSA provenance attestation via the GitHub API
+      # (attestations: write is not part of the minimal contents/id-token pair
+      # a Trusted-Publishing-only job would need, but actions/attest-build-
+      # provenance in step 8 below requires it — omitting it would make that
+      # step fail on every run, including the workflow_dispatch smoke lane.)
+
+    steps:
+      # ── Step 1: Checkout this repo (same SHA-pinned action as conformance.yml) ─
+      - name: Checkout vouchfx-providers
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # ── Step 2: Derive + validate PROVIDER and VERSION from the trigger ──────
+      # Tag refs and dispatch inputs are BOTH untrusted here: a missing or
+      # misconfigured tag-protection ruleset would let any contributor with
+      # push access mint an attacker-controlled tag. Every attacker-influenceable
+      # value is passed through env:, never interpolated directly into the run:
+      # body via ${{ }} — mirroring the engine release.yml "Determine release
+      # version" step's own SECURITY comment.
+      - name: Derive and validate PROVIDER + VERSION from the trigger
+        env:
+          TAG_REF:        ${{ github.ref_name }}
+          INPUT_PROVIDER: ${{ inputs.provider }}
+          INPUT_VERSION:  ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            PROVIDER="$INPUT_PROVIDER"
+            VERSION="$INPUT_VERSION"
+          elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            # TAG_REF is github.ref_name for a tag push, e.g.
+            # "Community.Steps.JsonRpc/v1.0.0". The trigger glob ('*/v*') does
+            # not let '*' cross '/', so the ref is expected to already contain
+            # exactly one '/' — but that expectation is not trusted blindly
+            # (manual re-run, workflow edited elsewhere, ruleset gap); re-derive
+            # and re-validate defensively rather than assume the trigger did it.
+            PROVIDER="${TAG_REF%%/*}"
+            rest="${TAG_REF#*/}"
+            if [[ "$rest" != v* ]]; then
+              echo "::error::Malformed tag '$TAG_REF' — expected <provider>/v<version>."
+              exit 1
+            fi
+            VERSION="${rest#v}"
+          else
+            echo "::error::Unsupported event: $GITHUB_EVENT_NAME"
+            exit 1
+          fi
+
+          # Fail-closed semver validation — copied verbatim from the engine's
+          # release.yml "Determine release version" step (vouchfx repo).
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Refusing to publish: version '$VERSION' is not a valid semver."
+            exit 1
+          fi
+
+          # Conservative PackageId-shaped pattern for PROVIDER (it IS a .NET
+          # PackageId — see community/Directory.Build.props) — no path
+          # separators, no shell metacharacters. This anchored full-string
+          # match transitively defeats path traversal (e.g. "Evil/../thing")
+          # and command-injection-shaped strings (e.g. "Foo;rm -rf"), since
+          # neither '/' nor ';' nor whitespace is in the allowed character set.
+          if [[ ! "$PROVIDER" =~ ^[A-Za-z0-9.]+$ ]]; then
+            echo "::error::Refusing to publish: provider id '$PROVIDER' does not look like a .NET PackageId."
+            exit 1
+          fi
+
+          if [[ ! -f "community/$PROVIDER/$PROVIDER.csproj" ]]; then
+            echo "::error::community/$PROVIDER/$PROVIDER.csproj does not exist — refusing to publish an unknown provider."
+            exit 1
+          fi
+
+          echo "Resolved: provider=$PROVIDER version=$VERSION (event: $GITHUB_EVENT_NAME)"
+          {
+            echo "PROVIDER=$PROVIDER"
+            echo "VERSION=$VERSION"
+          } >> "$GITHUB_ENV"
+
+      # ── Step 3: Governance gate — PROVIDER must be a registered hub entry ────
+      # The registry (registry/community-providers.json) is the authoritative
+      # catalogue: no entry, no package, no exceptions. Requires BOTH the
+      # nuget id and hosting:"hub" — a provider entry that lists as
+      # externally-hosted must not be silently republished from the hub.
+      - name: Governance gate — PROVIDER must be a registered hub-hosted entry
+        run: |
+          set -euo pipefail
+          if ! jq -e --arg p "$PROVIDER" \
+            'any(.[]; .nuget == $p and .hosting == "hub")' \
+            registry/community-providers.json > /dev/null; then
+            echo "::error::No entry in registry/community-providers.json has .nuget == \"$PROVIDER\" and .hosting == \"hub\" — the registry is the authoritative catalogue; add or update the entry before publishing."
+            exit 1
+          fi
+          echo "Governance gate passed: $PROVIDER is a registered hub-hosted provider."
+
+      # ── Step 4: Set up .NET SDK (same pinned action as conformance.yml) ──────
+      - name: Set up .NET SDK (reads global.json)
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          global-json-file: global.json
+
+      # ── Step 5: Bootstrap the SDK-closure local feed [REMOVE AFTER SDK PUBLISHED] ─
+      # Platform.Sdk / Platform.Sdk.Testing v1.0.0 are not yet on nuget.org (they
+      # ship with the vouchfx v1.0 GA release). Until then this workflow needs
+      # the exact same local-feed bootstrap conformance.yml uses so that
+      # `dotnet test`/`dotnet pack` below can restore Platform.Sdk — identical
+      # engine checkout SHA and pack-5-projects loop, kept byte-for-byte
+      # equivalent so the eventual repin PR can delete both in one sweep.
+      - name: Checkout engine (tomas-rampas/vouchfx → engine/) [REMOVE AFTER SDK PUBLISHED]
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: tomas-rampas/vouchfx
+          # Full 40-char SHA required: actions/checkout treats a short SHA as a
+          # branch/tag glob (refs/heads/<ref>*) and fails the cross-repo fetch.
+          # Kept identical to conformance.yml's pinned engine SHA — update both
+          # together.
+          ref: f5bf109651bd5ea4c2f3653d4a62d34fe2ba1011
+          path: engine
+
+      - name: Pack SDK-closure projects into packages-local/ [REMOVE AFTER SDK PUBLISHED]
+        run: |
+          set -euo pipefail
+          for csproj in \
+            engine/src/Engine/Platform.Engine.Abstractions/Platform.Engine.Abstractions.csproj \
+            engine/src/Engine/Platform.Engine.Authoring/Platform.Engine.Authoring.csproj \
+            engine/src/Engine/Platform.Engine.Compilation/Platform.Engine.Compilation.csproj \
+            engine/src/Sdk/Platform.Sdk/Platform.Sdk.csproj \
+            engine/src/Sdk/Platform.Sdk.Testing/Platform.Sdk.Testing.csproj ; do
+            echo "::group::pack $csproj"
+            dotnet pack "$csproj" -c Release -o packages-local/ --nologo
+            echo "::endgroup::"
+          done
+          echo "Packages staged in packages-local/:"
+          ls packages-local/*.nupkg
+
+      # ── Step 6: Test the provider (required — no test project, no publish) ───
+      - name: Test — community/$PROVIDER.Tests
+        run: |
+          set -euo pipefail
+          test_csproj="community/$PROVIDER.Tests/$PROVIDER.Tests.csproj"
+          if [[ ! -f "$test_csproj" ]]; then
+            echo "::error::$test_csproj does not exist — a sibling test project is required before publishing $PROVIDER."
+            exit 1
+          fi
+          dotnet test "$test_csproj" -c Release --logger "console;verbosity=normal"
+
+      # ── Step 7: Pack the provider at the requested version ───────────────────
+      - name: Pack community/$PROVIDER
+        run: |
+          set -euo pipefail
+          dotnet pack "community/$PROVIDER/$PROVIDER.csproj" \
+            -c Release \
+            -p:Version="$VERSION" \
+            -o artifacts/nuget
+          ls -lh artifacts/nuget/
+
+      # ── Step 8: SLSA build provenance attestation ─────────────────────────────
+      # NOTE: the engine's own release.yml references this action as
+      # actions/attest-build-provenance@v4 WITHOUT a pinned SHA (verified by
+      # inspection — it is the one action in that workflow left unpinned), so
+      # there is no engine SHA to copy here. Resolved independently to the
+      # commit the v4 tag currently points at (v4.1.1) to keep this repo's own
+      # full-SHA-pinning convention (see conformance.yml) intact regardless.
+      - name: Attest provenance (SLSA build provenance)
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: |
+            artifacts/nuget/*.nupkg
+            artifacts/nuget/*.snupkg
+
+      # ── Step 9: Publish to NuGet.org — Trusted Publishing (push-only) ────────
+      # Gated on BOTH github.event_name == 'push' and the exact repository, so
+      # the workflow_dispatch smoke lane never pushes and a fork can never
+      # publish (a fork also has no matching Trusted Publishing policy, so the
+      # OIDC exchange would fail there anyway — the explicit condition just
+      # fails fast/skips instead of erroring mid-job, matching release.yml).
+      - name: NuGet login (OIDC → short-lived API key) — Trusted Publishing
+        id: nuget-login
+        if: ${{ github.event_name == 'push' && github.repository == 'tomas-rampas/vouchfx-providers' }}
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: Tomas.R
+
+      - name: Publish nupkg to NuGet.org — Trusted Publishing
+        if: ${{ github.event_name == 'push' && github.repository == 'tomas-rampas/vouchfx-providers' }}
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: |
+          set -euo pipefail
+          for nupkg in artifacts/nuget/*.nupkg; do
+            echo "Pushing: $nupkg"
+            dotnet nuget push "$nupkg" \
+              --api-key "$NUGET_API_KEY" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      # ── Step 10: Smoke-test summary (dispatch-only, nothing was pushed) ──────
+      - name: Smoke-test summary — nothing was pushed
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "Smoke-test run for $PROVIDER $VERSION — dispatch runs never push. On a real '$PROVIDER/v$VERSION' tag push, this would have been published to NuGet.org:"
+          ls -lh artifacts/nuget/ || echo "(no artifacts/nuget/ contents found)"

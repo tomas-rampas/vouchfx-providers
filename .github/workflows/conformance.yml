@@ -161,6 +161,161 @@ jobs:
             exit 1
           fi
 
+      # ── Step 7b1: Pack gate — every hub provider must produce a valid package ─
+      # publish-provider.yml (the separate tag-triggered NuGet publish workflow)
+      # assumes every community/<Name>/<Name>.csproj packs cleanly with real,
+      # conformant metadata — it does not re-derive or re-check any of this at
+      # publish time beyond running the same `dotnet pack`. This step is what
+      # actually protects that assumption on every push/PR, well before a
+      # maintainer ever cuts a publish tag: it packs each provider exactly as
+      # the publish workflow will (Release, no -p:Version — this gate validates
+      # metadata, not version) and inspects the resulting .nuspec + package
+      # contents for the shape community/Directory.Build.props promises.
+      #
+      # Discovery mirrors the community-tests glob above: globstar over
+      # community/**/*.csproj, filtered by filename suffix (*.Tests.csproj is
+      # excluded) rather than by directory-name heuristics — this is robust to
+      # a provider folder and its .Tests sibling living side by side (the
+      # current rpc.json-rpc layout: community/Community.Steps.JsonRpc/ +
+      # community/Community.Steps.JsonRpc.Tests/), and to any deeper nesting.
+      - name: Pack gate — every hub provider must produce a valid package
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+
+          # validate_nupkg <provider_name> <nupkg-path>
+          # Checks one packed provider nupkg against the metadata shape
+          # community/Directory.Build.props + the per-provider csproj promise.
+          # Emits a named ::error:: per violation; returns non-zero if any
+          # check failed so the caller can accumulate failures across every
+          # provider before exiting (one bad provider must not hide a second).
+          validate_nupkg() {
+            local provider_name="$1"
+            local nupkg="$2"
+            local failed=0
+
+            local nuspec_path="${provider_name}.nuspec"
+            local nuspec_content
+            nuspec_content="$(unzip -p "$nupkg" "$nuspec_path" 2>/dev/null || true)"
+            if [[ -z "$nuspec_content" ]]; then
+              echo "::error::$nupkg — could not read $nuspec_path from the package (nuspec missing or misnamed)."
+              return 1
+            fi
+
+            local zip_listing
+            zip_listing="$(unzip -l "$nupkg")"
+
+            # <license type="expression">Apache-2.0</license> — exact form (not
+            # a licenseUrl-only or file-based license).
+            if ! grep -qF '<license type="expression">Apache-2.0</license>' <<<"$nuspec_content"; then
+              echo "::error::$nupkg — missing or non-conforming <license type=\"expression\">Apache-2.0</license>."
+              failed=1
+            fi
+
+            # <readme> element AND the file it names actually present in the
+            # package.
+            local readme_file
+            readme_file="$(grep -oP '(?<=<readme>)[^<]+(?=</readme>)' <<<"$nuspec_content" || true)"
+            if [[ -z "$readme_file" ]]; then
+              echo "::error::$nupkg — missing <readme> element in the nuspec."
+              failed=1
+            elif ! grep -qF "$readme_file" <<<"$zip_listing"; then
+              echo "::error::$nupkg — <readme>$readme_file</readme> is declared but that file is not present in the package."
+              failed=1
+            fi
+
+            # Non-empty <description>.
+            local description
+            description="$(grep -oP '(?<=<description>).*(?=</description>)' <<<"$nuspec_content" || true)"
+            if [[ -z "$description" ]]; then
+              echo "::error::$nupkg — <description> is missing or empty."
+              failed=1
+            fi
+
+            # <repository> pointing at THIS hub repo — not a fork, not the
+            # engine repo.
+            if ! grep -qE '<repository[^>]*\burl="https://github\.com/tomas-rampas/vouchfx-providers"' <<<"$nuspec_content"; then
+              echo "::error::$nupkg — <repository> element missing or its url does not point at https://github.com/tomas-rampas/vouchfx-providers."
+              failed=1
+            fi
+
+            # Non-empty <tags>.
+            local tags
+            tags="$(grep -oP '(?<=<tags>).*(?=</tags>)' <<<"$nuspec_content" || true)"
+            if [[ -z "$tags" ]]; then
+              echo "::error::$nupkg — <tags> is missing or empty."
+              failed=1
+            fi
+
+            # <id> equal to the provider directory name — publish-provider.yml
+            # derives PROVIDER from the tag and looks up
+            # community/$PROVIDER/$PROVIDER.csproj directly, so a mismatch here
+            # would silently publish a package under the wrong id.
+            local pkg_id
+            pkg_id="$(grep -oP '(?<=<id>).*(?=</id>)' <<<"$nuspec_content" || true)"
+            if [[ "$pkg_id" != "$provider_name" ]]; then
+              echo "::error::$nupkg — <id>$pkg_id</id> does not match its provider directory name '$provider_name'."
+              failed=1
+            fi
+
+            return "$failed"
+          }
+
+          mkdir -p artifacts/pack-gate
+
+          declare -a provider_csprojs=()
+          for csproj in community/**/*.csproj; do
+            case "$(basename "$csproj")" in
+              *.Tests.csproj) continue ;;
+            esac
+            provider_csprojs+=("$csproj")
+          done
+
+          if [[ "${#provider_csprojs[@]}" -eq 0 ]]; then
+            echo "::error::No provider csproj found under community/ (excluding *.Tests.csproj) — rpc.json-rpc should always be present, so this means the checkout/glob is broken, not 'no providers'."
+            exit 1
+          fi
+
+          gate_failed=0
+
+          for csproj in "${provider_csprojs[@]}"; do
+            provider_name="$(basename "$(dirname "$csproj")")"
+            echo "::group::Pack gate — $csproj"
+
+            dotnet pack "$csproj" -c Release -o artifacts/pack-gate --nologo
+
+            # No -p:Version is passed, so the version segment of the produced
+            # filename is whatever the csproj resolves to by default — glob it
+            # rather than assume 1.0.0.
+            nupkg=""
+            for candidate in artifacts/pack-gate/"${provider_name}".*.nupkg; do
+              nupkg="$candidate"
+              break
+            done
+
+            if [[ -z "$nupkg" || ! -f "$nupkg" ]]; then
+              echo "::error::$csproj produced no .nupkg in artifacts/pack-gate/ — possible IsPackable regression. Every hub-hosted provider must produce a package."
+              gate_failed=1
+              echo "::endgroup::"
+              continue
+            fi
+
+            echo "Validating package metadata: $nupkg"
+            if ! validate_nupkg "$provider_name" "$nupkg"; then
+              gate_failed=1
+            fi
+
+            echo "::endgroup::"
+          done
+
+          if [[ "$gate_failed" -ne 0 ]]; then
+            echo "::error::Pack gate failed — one or more community providers produced an invalid or missing package. See errors above."
+            exit 1
+          fi
+
+          echo "Pack gate passed for ${#provider_csprojs[@]} provider package(s)."
+
       # ── Step 7b2: Registry index validation ──────────────────────────────────
       # Every entry in community-providers.json must validate against the
       # registry schema (draft 2020-12) — including the hosting-conditional
