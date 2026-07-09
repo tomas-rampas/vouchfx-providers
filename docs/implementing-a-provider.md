@@ -119,9 +119,9 @@ Here is the minimal structure:
 </Project>
 ```
 
-**Before v1.0 GA release:** Pack the SDK locally from the engine repository (see `CONTRIBUTING.md` "Building Before v1.0 GA" for the command). The v1.0.0-alpha pre-releases include only the vouchfx CLI tool; the SDK packages are not yet on NuGet.
+**Until the SDK's first published pre-release:** Pack the SDK locally from the engine repository (see `CONTRIBUTING.md` "Building Before the SDK is on NuGet.org" for the command).
 
-**After v1.0 GA:** Restore from NuGet directly.
+**Once the engine has published the SDK (next tagged pre-release onward):** Restore from NuGet.org directly.
 
 ### Assembly-Graph Hygiene
 
