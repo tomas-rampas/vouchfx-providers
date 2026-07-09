@@ -24,11 +24,11 @@ The registry is stored in two files:
 - **`community-providers.schema.json`** — the JSON Schema (draft 2020-12) that validates entries
 
 The registry is human-readable and machine-consumable. It powers:
-- The project website's provider listing page
-- Community feedback and discoverability
-- Planned tooling for provider discovery and installation (part of the engine roadmap)
+- Community discoverability — this rendered page and the JSON file itself are the browsable index
+- Planned tooling for provider discovery and installation, and a generated provider-listing page on the
+  project website (both part of the engine roadmap)
 
-The first entry is [`rpc.json-rpc`](../community/Community.Steps.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package (`Community.Steps.JsonRpc`) ships alongside the engine's v1.0 release; until then it is built from source here, which is why it is listed ahead of its package being resolvable on NuGet.org.
+The first entry is [`rpc.json-rpc`](../community/Community.Steps.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package (`Community.Steps.JsonRpc`) ships alongside the engine's v1.0 GA release; until then it is built from source here, which is why it is listed ahead of its package being resolvable on NuGet.org.
 
 ## How to Add an Entry
 
@@ -49,8 +49,8 @@ Each provider entry in `community-providers.json` is a JSON object with the foll
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `name` | string | Yes | The provider's human-readable name (e.g. "Snowflake Assertion", "Redis Pub/Sub") |
-| `stepKindId` | string | Yes | The step type identifier in the form `<family>.<provider>` (e.g. `db-assert.snowflake`, `mq-publish.redis`) |
+| `name` | string | Yes | The provider's human-readable name (e.g. "Snowflake Assertion", "MQTT Publish") |
+| `stepKindId` | string | Yes | The step type identifier in the form `<family>.<provider>` (e.g. `db-assert.snowflake`, `mq-publish.mqtt`). Must not collide with a Core provider's step kind (e.g. `mq-publish.redis` is Core and therefore taken) |
 | `repo` | string | Yes | URL to the provider's repository (e.g. `https://github.com/myorg/vouchfx-snowflake-provider`) |
 | `nuget` | string | Yes | NuGet package identifier (e.g. `MyOrg.Steps.Snowflake`). Must be the exact package id on NuGet.org. |
 | `author` | string | Yes | The provider's author or organisation (e.g. "Acme Corp", "Jane Doe") |
@@ -135,7 +135,7 @@ If you own a provider that is already listed:
 ## Verification
 
 When a new entry is added or updated, the maintainers verify:
-- The NuGet package exists and is publicly resolvable (sole exception: the hub-hosted reference implementation, `rpc.json-rpc`, is built from source in this repository until its package ships alongside engine v1.0)
+- The NuGet package exists and is publicly resolvable (sole exception: the hub-hosted reference implementation, `rpc.json-rpc`, is built from source in this repository until its package ships alongside engine v1.0 GA)
 - The repository URL is valid and accessible
 - The entry validates against the schema
 - The `stepKindId` does not conflict with existing entries (duplicates are rejected)
