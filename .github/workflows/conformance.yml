@@ -17,11 +17,11 @@
 #
 # NOTE ON VERSION MATRIX
 # ----------------------
-# This workflow runs against the engine main SDK only.  The Verified-tier rubric
-# requires that a provider's integration-test fixture also passes on the engine
-# main branch plus the two preceding minor releases; that multi-version matrix is
-# a human-gate requirement validated at Verified-tier review time — it is not
-# automated here and no fake matrix is added.
+# This workflow runs against the engine main SDK only.  The Vouched badge rubric's
+# multi-version conformance matrix (a provider's integration-test fixture passing
+# on the engine main branch plus the two preceding minor releases) is validated by
+# a maintainer at badge-review time, not by this workflow — it is not automated
+# here and no fake matrix is added.
 
 name: Conformance
 
@@ -135,9 +135,9 @@ jobs:
           --logger "console;verbosity=normal"
 
       # ── Step 7b: Community provider tests (shell-glob over community/) ───────
-      # community/ hosts hub-hosted Community-tier source submissions — any
-      # contributor may PR a provider in (see CONTRIBUTING.md); rpc.json-rpc is
-      # the first and doubles as the guide's reference implementation. Every
+      # community/ is now the only hosted-source lane — any contributor may PR a
+      # provider in (see CONTRIBUTING.md); rpc.json-rpc is the first and doubles
+      # as the guide's reference implementation. Every
       # community/**/*.Tests.csproj is discovered and run in its OWN
       # restore/build/test (no --no-build, no sln-membership requirement): a
       # submission that breaks can only fail its own step output, and the
@@ -172,25 +172,3 @@ jobs:
           -c ajv-formats --spec=draft2020
           -s registry/community-providers.schema.json
           -d registry/community-providers.json
-
-      # ── Step 7c: Verified submission tests (shell-glob; no-op if none exist) ──
-      # When a Verified submission lands under verified/<provider>/
-      # its .Tests.csproj is automatically discovered and run here.
-      # nullglob ensures an empty glob expands to nothing rather than a literal
-      # string, so this step exits 0 with a diagnostic message if no submissions
-      # are present yet.
-      - name: Test — verified submissions (no-op until first submission)
-        shell: bash
-        run: |
-          set -euo pipefail
-          shopt -s globstar nullglob
-          found=0
-          for csproj in verified/**/*.Tests.csproj; do
-            echo "::group::Running verified test project: $csproj"
-            dotnet test "$csproj" -c Release --logger "console;verbosity=normal"
-            echo "::endgroup::"
-            found=1
-          done
-          if [[ "$found" -eq 0 ]]; then
-            echo "No verified/**/*.Tests.csproj found — no Verified submissions yet. (Expected.)"
-          fi
