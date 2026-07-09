@@ -203,8 +203,11 @@ jobs:
               return 1
             fi
 
+            # -Z1 (zipinfo, names only) gives exact archive entry paths, one
+            # per line — no Length/Date/Time columns or header/footer rows to
+            # accidentally substring-match against (unlike `unzip -l`).
             local zip_listing
-            zip_listing="$(unzip -l "$nupkg")"
+            zip_listing="$(unzip -Z1 "$nupkg")"
 
             # <license type="expression">Apache-2.0</license> — exact form (not
             # a licenseUrl-only or file-based license).
@@ -213,15 +216,19 @@ jobs:
               failed=1
             fi
 
-            # <readme> element AND the file it names actually present in the
-            # package.
+            # <readme> element AND the file it names actually present at that
+            # EXACT path in the package. Anchored to the package-root path
+            # (grep -x, whole-line match against the -Z1 entry list) rather
+            # than an unanchored substring match, which could be satisfied by
+            # an unrelated entry that merely contains the readme filename
+            # somewhere in a longer path.
             local readme_file
             readme_file="$(grep -oP '(?<=<readme>)[^<]+(?=</readme>)' <<<"$nuspec_content" || true)"
             if [[ -z "$readme_file" ]]; then
               echo "::error::$nupkg — missing <readme> element in the nuspec."
               failed=1
-            elif ! grep -qF "$readme_file" <<<"$zip_listing"; then
-              echo "::error::$nupkg — <readme>$readme_file</readme> is declared but that file is not present in the package."
+            elif ! grep -qxF "$readme_file" <<<"$zip_listing"; then
+              echo "::error::$nupkg — <readme>$readme_file</readme> is declared but that exact path is not present at the package root in the archive."
               failed=1
             fi
 
@@ -281,21 +288,31 @@ jobs:
 
           for csproj in "${provider_csprojs[@]}"; do
             provider_name="$(basename "$(dirname "$csproj")")"
+            # Each provider packs into its OWN output subdirectory rather than
+            # a shared artifacts/pack-gate/ selected by filename-prefix glob
+            # (${provider_name}.*.nupkg): a prefix glob can mis-resolve for
+            # prefix-related provider names living side by side — selecting
+            # for "Foo" would also match a co-located "Foo.Bar.1.0.0.nupkg".
+            # A dedicated subdirectory makes the lookup unambiguous regardless
+            # of naming overlap.
+            provider_out="artifacts/pack-gate/${provider_name}"
             echo "::group::Pack gate — $csproj"
 
-            dotnet pack "$csproj" -c Release -o artifacts/pack-gate --nologo
+            mkdir -p "$provider_out"
+            dotnet pack "$csproj" -c Release -o "$provider_out" --nologo
 
             # No -p:Version is passed, so the version segment of the produced
             # filename is whatever the csproj resolves to by default — glob it
-            # rather than assume 1.0.0.
+            # rather than assume 1.0.0. The subdirectory scope above means
+            # this glob can only ever match this provider's own package.
             nupkg=""
-            for candidate in artifacts/pack-gate/"${provider_name}".*.nupkg; do
+            for candidate in "$provider_out"/*.nupkg; do
               nupkg="$candidate"
               break
             done
 
             if [[ -z "$nupkg" || ! -f "$nupkg" ]]; then
-              echo "::error::$csproj produced no .nupkg in artifacts/pack-gate/ — possible IsPackable regression. Every hub-hosted provider must produce a package."
+              echo "::error::$csproj produced no .nupkg in $provider_out/ — possible IsPackable regression. Every hub-hosted provider must produce a package."
               gate_failed=1
               echo "::endgroup::"
               continue
