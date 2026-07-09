@@ -36,7 +36,7 @@ DOCS: list[tuple[str, str, str]] = [
     ("docs/implementing-a-provider.md", "Provider authoring", "Implementing a provider"),
     ("community/Community.Steps.JsonRpc/README.md", "Provider authoring", "rpc.json-rpc · the first community provider"),
     ("CONTRIBUTING.md", "Contributing", "Contributing & the tiers"),
-    ("VERIFIED_TIER_CHECKLIST.md", "Contributing", "Verified-tier checklist"),
+    ("VOUCHED_CHECKLIST.md", "Contributing", "The Vouched checklist"),
     ("registry/README.md", "Contributing", "Community registry"),
     ("GOVERNANCE.md", "Project", "Governance"),
     ("SECURITY.md", "Project", "Security policy"),
@@ -274,15 +274,15 @@ PORTAL = """<!DOCTYPE html>
 
   <section class="portal__group">
     <h2>Contributing</h2>
-    <p>The tiers, the rubric, and how a provider gets listed or promoted.</p>
+    <p>The submission path, the Vouched badge, and the community registry.</p>
     <div class="doc-cards">
       <a class="doc-card" href="CONTRIBUTING.html">
         <span class="doc-card__k">HOW</span><h3>Contributing &amp; the tiers</h3>
-        <p>The Community and Verified submission paths, the conformance harness, and the repository conventions.</p>
+        <p>The Community submission path, the conformance harness, and the repository conventions.</p>
       </a>
-      <a class="doc-card" href="VERIFIED_TIER_CHECKLIST.html">
-        <span class="doc-card__k">RUBRIC</span><h3>Verified-tier checklist</h3>
-        <p>The published rubric a submission must meet — the rubric, not judgement, is the gate.</p>
+      <a class="doc-card" href="VOUCHED_CHECKLIST.html">
+        <span class="doc-card__k">BADGE</span><h3>The Vouched checklist</h3>
+        <p>The published rubric for the maintainer-awarded Vouched badge — recognition recorded in the registry against this criteria.</p>
       </a>
       <a class="doc-card" href="registry/README.html">
         <span class="doc-card__k">INDEX</span><h3>Community registry</h3>
@@ -295,7 +295,7 @@ PORTAL = """<!DOCTYPE html>
     <h2>Project</h2>
     <p>How the hub is run.</p>
     <div class="doc-cards">
-      <a class="doc-card" href="GOVERNANCE.html"><span class="doc-card__k">GOV</span><h3>Governance</h3><p>Who decides what, how providers move between tiers, and how disputes are resolved.</p></a>
+      <a class="doc-card" href="GOVERNANCE.html"><span class="doc-card__k">GOV</span><h3>Governance</h3><p>How the Vouched badge is awarded and revoked, and how disputes are resolved.</p></a>
       <a class="doc-card" href="SECURITY.html"><span class="doc-card__k">SEC</span><h3>Security policy</h3><p>How to report a vulnerability in a hosted provider, the registry or the template.</p></a>
       <a class="doc-card" href="CODE_OF_CONDUCT.html"><span class="doc-card__k">CoC</span><h3>Code of conduct</h3><p>The standards this community holds itself to.</p></a>
       <a class="doc-card" href="README.html"><span class="doc-card__k">README</span><h3>Repository README</h3><p>What the hub is, the repository layout, and the local build.</p></a>
@@ -316,7 +316,7 @@ PORTAL = """<!DOCTYPE html>
   <div class="container footer__inner">
     <div class="footer__brand">
       <span class="brand__mark" aria-hidden="true"></span>
-      <div><strong>vouchfx providers</strong><p>The community hub for vouchfx step providers — Verified and Community tiers, all Apache-2.0.</p></div>
+      <div><strong>vouchfx providers</strong><p>The community hub for vouchfx step providers — Core and Community tiers with optional Vouched badge, all Apache-2.0.</p></div>
     </div>
     <div class="footer__links">
       <a href="index.html">Home</a>

@@ -4,7 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>vouchfx providers · the community provider hub</title>
-<meta name="description" content="The community hub for vouchfx step providers — implement a custom step type, test it Docker-free, and submit it to the Community or Verified tier." />
+<meta name="description" content="The community hub for vouchfx step providers — implement a custom step type, test it Docker-free, and submit it to the Community tier. Request the Vouched badge for maintainer-verified endorsement." />
 <meta name="theme-color" content="#0b0f1a" />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="styles.css" />
@@ -33,7 +33,7 @@
     <p class="section__lede">Every step type in a vouchfx test file is a <em>provider</em> — a small, compile-time
       C# plugin that binds a YAML step, validates it, and emits the code that runs it. This hub is where
       community providers are built, tested and published: the implementation guide, a real worked example,
-      the conformance harness, and the Community and Verified submission paths. All Apache-2.0.</p>
+      the conformance harness, and the single submission path with the optional Vouched badge. All Apache-2.0.</p>
   </div>
 
   <section class="portal__group">
@@ -58,30 +58,30 @@
       </a>
       <a class="doc-card" href="CONTRIBUTING.html">
         <span class="doc-card__k">4 · SUBMIT</span><h3>Contribute it</h3>
-        <p>List it in the Community registry, or submit it in-repo for the Verified tier — the published
+        <p>List it in the Community registry. Request the Vouched badge for maintainer review — the published
         rubric, not judgement, is the gate.</p>
       </a>
     </div>
   </section>
 
   <section class="portal__group">
-    <h2>The three tiers</h2>
-    <p>All providers are Apache-2.0 and move between tiers without friction.</p>
+    <h2>Two tiers and a badge</h2>
+    <p>All providers are Apache-2.0 and the Vouched badge recognises those meeting the published rubric.</p>
     <div class="doc-cards">
       <a class="doc-card" href="https://tomas-rampas.github.io/vouchfx/docs/02_YAML_DSL_Specification_and_VSCode_Extension_Design.html" target="_blank" rel="noopener noreferrer">
         <span class="doc-card__k">CORE</span><h3>Core</h3>
         <p>Ships with the engine, maintained by the platform team — twenty-five providers across eleven step
         families today. The catalogue (Table 5.1 of the DSL specification) names what is planned next.</p>
       </a>
-      <a class="doc-card" href="VERIFIED_TIER_CHECKLIST.html">
-        <span class="doc-card__k">VERIFIED</span><h3>Verified</h3>
-        <p>Community-authored, hosted in this repository under <code>verified/</code>, promoted by meeting the
-        published rubric: conformance fixture, worked examples, security sign-off.</p>
-      </a>
       <a class="doc-card" href="registry/README.html">
         <span class="doc-card__k">COMMUNITY</span><h3>Community</h3>
         <p>Maintained in your own repository, published as a NuGet package, and listed in the hub's
         schema-validated registry — no gatekeeping beyond licence and discoverability.</p>
+      </a>
+      <a class="doc-card" href="VOUCHED_CHECKLIST.html">
+        <span class="doc-card__k">BADGE</span><h3>Vouched</h3>
+        <p>Maintainer-reviewed endorsement awarded after listing, recorded in the registry: conformance fixture,
+        worked examples, security sign-off — recognition of quality, not gatekeeping.</p>
       </a>
     </div>
   </section>
@@ -91,7 +91,7 @@
   <div class="container footer__inner">
     <div class="footer__brand">
       <span class="brand__mark" aria-hidden="true"></span>
-      <div><strong>vouchfx providers</strong><p>The community hub for vouchfx step providers — Verified and Community tiers, all Apache-2.0.</p></div>
+      <div><strong>vouchfx providers</strong><p>The community hub for vouchfx step providers — Core and Community tiers with optional Vouched badge, all Apache-2.0.</p></div>
     </div>
     <div class="footer__links">
       <a href="docs.html">Documentation</a>
