@@ -1,6 +1,6 @@
 # .github/workflows/triage-auto-close.yml — politely close off-topic issues
 #
-# This repository is for community provider listings and Verified-tier submissions
+# This repository is for community provider listings and Vouched badge requests
 # only.  Engine bugs, feature requests, and general questions belong in the main
 # engine repository at https://github.com/tomas-rampas/vouchfx.
 #
@@ -10,18 +10,21 @@
 # Issue Forms using TWO independent signals:
 #
 #   Signal A — labels
-#     - provider-listing     → filed via .github/ISSUE_TEMPLATE/provider-listing.yml
-#     - verified-proposal    → filed via .github/ISSUE_TEMPLATE/verified-proposal.yml
+#     - provider-listing    → filed via .github/ISSUE_TEMPLATE/provider-listing.yml
+#     - vouched-request     → filed via .github/ISSUE_TEMPLATE/vouched-request.yml
 #
 #   Signal B — title prefix (case-insensitive, leading/trailing space tolerant)
 #     - "[Provider listing]"    → matches the form's default title:
-#     - "[Verified proposal]"   → matches the form's default title:
+#     - "[Vouched request]"     → matches the form's default title:
 #
 # Both signals are checked because GitHub silently DROPS `labels:` entries in
 # issue forms when those labels do not yet exist in the repository.  On a
 # brand-new repo the labels won't exist until they are created at provisioning
 # time (see .github/labels.yml), so a legitimately filed form issue would arrive
 # label-less and be incorrectly auto-closed if we relied on labels alone.
+#
+# CRITICAL: the title-prefix string checked below must exactly match (case-
+# insensitively) the `title:` default set in .github/ISSUE_TEMPLATE/vouched-request.yml.
 #
 # An issue is treated as a legitimate form submission if EITHER signal is present.
 # The workflow is conservative: when in doubt, do NOT close.
@@ -67,17 +70,17 @@ jobs:
             // Signal A: label-based detection.
             const labels = issue.labels.map(l => l.name);
             const hasFormLabel = labels.includes('provider-listing') ||
-                                 labels.includes('verified-proposal');
+                                 labels.includes('vouched-request');
 
             // Signal B: title-prefix detection (case-insensitive, trims surrounding
             // whitespace before comparing).  These prefixes match the `title:` defaults
-            // set in .github/ISSUE_TEMPLATE/provider-listing.yml and verified-proposal.yml
+            // set in .github/ISSUE_TEMPLATE/provider-listing.yml and vouched-request.yml
             // respectively.  This catches legitimate form submissions that arrive without
             // labels because the labels don't exist in a brand-new repo yet.
             const title = (issue.title || '').trim().toLowerCase();
             const hasFormTitlePrefix =
               title.startsWith('[provider listing]') ||
-              title.startsWith('[verified proposal]');
+              title.startsWith('[vouched request]');
 
             const isFormFiled = hasFormLabel || hasFormTitlePrefix;
 
@@ -96,7 +99,7 @@ jobs:
             const body = [
               'Thank you for reaching out!',
               '',
-              'This repository is dedicated to **community provider listings** and **Verified-tier submissions** for the vouchfx provider ecosystem.',
+              'This repository is dedicated to **community provider listings** and **Vouched badge requests** for the vouchfx provider ecosystem.',
               'It does not accept engine bug reports, feature requests, or general questions.',
               '',
               'Please direct your issue to the right place:',
@@ -107,7 +110,7 @@ jobs:
               '| Feature request for the engine | [tomas-rampas/vouchfx → Issues](https://github.com/tomas-rampas/vouchfx/issues/new/choose) |',
               '| Questions about writing a provider | [tomas-rampas/vouchfx → Discussions](https://github.com/tomas-rampas/vouchfx/discussions) |',
               '| List a community provider | Use the [Provider Listing form](../../issues/new?template=provider-listing.yml) |',
-              '| Seek Verified-tier endorsement | Use the [Verified Proposal form](../../issues/new?template=verified-proposal.yml) |',
+              '| Request the Vouched badge | Use the [Vouched request form](../../issues/new?template=vouched-request.yml) |',
               '',
               'This issue has been closed automatically. Feel free to re-open it in the correct repository.',
             ].join('\n');

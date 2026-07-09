@@ -11,9 +11,9 @@
 #       --color "0075ca" \
 #       --description "Filed via the Provider Listing issue form"
 #
-#   gh label create "verified-proposal" \
+#   gh label create "vouched-request" \
 #       --color "e4e669" \
-#       --description "Filed via the Verified Proposal issue form"
+#       --description "Filed via the Vouched request issue form"
 #
 # The triage-auto-close workflow uses both the label AND the issue title prefix
 # as dual signals, so a race between label creation and the first form submission
@@ -24,6 +24,6 @@
   color: "0075ca"
   description: "Filed via the Provider Listing issue form"
 
-- name: verified-proposal
+- name: vouched-request
   color: "e4e669"
-  description: "Filed via the Verified Proposal issue form"
+  description: "Filed via the Vouched request issue form"

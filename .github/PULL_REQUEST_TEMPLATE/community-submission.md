@@ -5,7 +5,7 @@ community/ directory. Use this template when your PR adds community/<YourProvide
 
 The merge bar is HYGIENE, not review: licence, DCO, namespace rules, and a green
 conformance lane. Merging your provider is NOT an endorsement — that is what the
-Verified tier's rubric review is for. You remain the owner of your provider's
+Vouched badge review is for. You remain the owner of your provider's
 folder (a CODEOWNERS line is added at merge).
 -->
 
@@ -33,8 +33,8 @@ folder (a CODEOWNERS line is added at merge).
 - [ ] **§13.3.1 CSX rules** — provider-prefixed helper class, brace-enclosed statement block,
       namespace-only `RequiredUsings`, no `using var`, ids sanitised before splicing.
 - [ ] **Registry entry** — added to `registry/community-providers.json` with
-      `"hosting": "hub"` and `"tier": "community"` (the `nuget` field is optional for
-      hub-hosted entries) and validates against the schema.
+      `"hosting": "hub"` (the `nuget` field is optional for hub-hosted entries) and validates
+      against the schema. Do not set `vouched` — it is maintainer-only.
 - [ ] **README** — the provider folder has a README that opens with the Community-tier
       notice (unreviewed, unendorsed; use at your own judgement) and documents every step
       field.
