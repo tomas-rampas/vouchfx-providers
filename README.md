@@ -53,21 +53,23 @@ All other providers, with no platform-team endorsement. Community providers:
 - Must be Apache-2.0 licensed and follow the reflective-discovery contract
 - Can graduate to Verified by meeting the published rubric
 
-The tier's first entry is [`rpc.json-rpc`](community/Community.Steps.JsonRpc/README.md) (`community/Community.Steps.JsonRpc`), hosted in this repository so the tier has a canonical, CI-tested reference implementation — it is the provider the [implementing-a-provider guide](docs/implementing-a-provider.md) walks through. Community providers normally live in their authors' own repositories; hub hosting is the exception, not the rule.
+Community providers may be hosted **externally** (your own repository, published on NuGet) or **hub-hosted** (contributed as source into this repository's `community/` directory — no NuGet account needed; CI runs each provider's tests in isolation and you keep ownership of your folder). Hosting here is **not** endorsement — that is the Verified tier's meaning. The tier's first entry, [`rpc.json-rpc`](community/Community.Steps.JsonRpc/README.md) (`community/Community.Steps.JsonRpc`), is hub-hosted and doubles as the canonical, CI-tested reference implementation the [implementing-a-provider guide](docs/implementing-a-provider.md) walks through.
 
 ## How to Get Your Provider Listed
 
-### Community Tier (Index Listing)
+### Community Tier
 
-If your provider is authored, tested, documented, and published on NuGet, open an issue or submit a PR to list it in the community provider index:
+**Option 1: Open an issue (external hosting)**
 
-**Option 1: Open an issue**
+If your provider is published on NuGet, click [**New Issue → Provider Listing**](.github/ISSUE_TEMPLATE/provider-listing.yml) and fill in the form. A maintainer will review and add it to the registry.
 
-Click [**New Issue → Provider Listing**](.github/ISSUE_TEMPLATE/provider-listing.yml) and fill in the form. A maintainer will review and add it to the registry.
-
-**Option 2: Submit a PR**
+**Option 2: Submit an entry PR (external hosting)**
 
 Fork this repository, add an entry to `registry/community-providers.json` (following the schema in `registry/community-providers.schema.json`), and open a pull request. See [`registry/README.md`](registry/README.md) for the field meanings.
+
+**Option 3: Submit your provider as source (hub hosting)**
+
+Open a PR adding `community/<YourProvider>/` (+ its `.Tests` project) and a registry entry with `"hosting": "hub"` — no NuGet package required. Use the [community submission template](.github/PULL_REQUEST_TEMPLATE/community-submission.md); the merge bar is licence/DCO/namespace hygiene and a green conformance lane, not a code review. See [CONTRIBUTING.md](CONTRIBUTING.md) for the step-by-step.
 
 ### Verified Tier (Submission Gate)
 

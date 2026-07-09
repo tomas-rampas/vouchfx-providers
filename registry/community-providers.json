@@ -3,6 +3,7 @@
     "name": "JSON-RPC 2.0 Invocation",
     "stepKindId": "rpc.json-rpc",
     "repo": "https://github.com/tomas-rampas/vouchfx-providers",
+    "hosting": "hub",
     "nuget": "Community.Steps.JsonRpc",
     "author": "vouchfx-community",
     "minEngineVersion": "1.0.0",
