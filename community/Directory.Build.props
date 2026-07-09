@@ -1,0 +1,55 @@
+<Project>
+  <!-- Import the root Directory.Build.props so all shared properties (TargetFramework,
+       LangVersion, Nullable, TreatWarningsAsErrors, etc.) apply here too — including its
+       repo-wide IsPackable=false default, which the PropertyGroup below then overrides
+       for non-test projects only (see composition note there). -->
+  <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+  <!-- Community provider packaging (feat/provider-packaging).
+       Every provider hosted under community/ ships as its own NuGet package, published
+       from this repo's CI (a publish workflow lands separately) — unlike the rest of the
+       repo, where IsPackable stays false (provider authors who host externally pack and
+       publish their OWN packages; template/ is a copyable skeleton, never packed).
+
+       IsPackable therefore defaults to TRUE here, rather than requiring each provider to
+       opt in: a forgotten opt-in on a new community/ submission must not silently ship a
+       provider with no package. The metadata below is deliberately the same shape as the
+       engine's own frozen-SDK package (src/Sdk/Platform.Sdk/Platform.Sdk.csproj in the
+       engine repo) — repository/license/SourceLink/symbols — so a future CI pack step has
+       real metadata to validate for every hub-hosted provider, not just the first one.
+
+       No Version/VersionPrefix/VersionSuffix is set anywhere here: a hub-hosted provider's
+       version comes from -p:Version at publish time (per-package, independent of every
+       other provider in this repo), never from a shared default.
+
+       Composition with the root import above: the root Directory.Build.props (imported
+       first, on line 1) sets IsPackable=false for the whole repo. This PropertyGroup is
+       conditioned on the project NOT being a *.Tests project, so it runs after — and
+       overrides — that default for provider (non-test) projects only. A community/*.Tests
+       project never matches the condition, so it keeps the root's IsPackable=false
+       untouched: test projects are never packed. -->
+  <PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">
+    <IsPackable>true</IsPackable>
+    <PackageId>$(MSBuildProjectName)</PackageId>
+    <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+    <RepositoryUrl>https://github.com/tomas-rampas/vouchfx-providers</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageProjectUrl>https://tomas-rampas.github.io/vouchfx-providers/</PackageProjectUrl>
+    <!-- SourceLink + symbols: let a provider consumer step into the package's source
+         straight from GitHub, mirroring Platform.Sdk's own packaging exactly. -->
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+    <IncludeSymbols>true</IncludeSymbols>
+    <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+    <ContinuousIntegrationBuild Condition="'$(CI)'=='true'">true</ContinuousIntegrationBuild>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">
+    <!-- Build-only: emits SourceLink metadata into the PDB; not a runtime/lib dependency.
+         This repo has no central package management (no Directory.Packages.props), unlike
+         the engine repo, so the version is pinned explicitly here rather than inherited —
+         8.0.0 matches the engine's own Directory.Packages.props pin and targets net8.0. -->
+    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
+  </ItemGroup>
+</Project>

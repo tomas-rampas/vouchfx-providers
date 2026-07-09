@@ -7,6 +7,25 @@
     <RootNamespace>Community.Steps.JsonRpc</RootNamespace>
   </PropertyGroup>
 
+  <!-- Per-provider package metadata (feat/provider-packaging). The shared shape
+       (IsPackable, license, repository, SourceLink, symbols) comes from
+       community/Directory.Build.props; this project supplies only what genuinely
+       varies per provider. No Version property here — it comes from -p:Version at
+       publish time. Authors matches the registry entry's "author" field for this
+       stepKindId (registry/community-providers.json). -->
+  <PropertyGroup>
+    <Description>JSON-RPC 2.0 over HTTP step provider for vouchfx — invokes a method and asserts on the result/error envelope.</Description>
+    <Authors>vouchfx-community</Authors>
+    <!-- rpc / json-rpc are the family / provider halves of this provider's step kind
+         (rpc.json-rpc) — a PackageTags value has no room for the dotted form itself. -->
+    <PackageTags>vouchfx;provider;community;rpc;json-rpc</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- A community provider depends on the frozen v1 SDK contract. No reference to
          Platform.Engine.* is taken here: the engine drives the provider through these
