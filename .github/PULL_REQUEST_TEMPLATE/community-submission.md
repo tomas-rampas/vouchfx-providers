@@ -24,10 +24,10 @@ folder (a CODEOWNERS line is added at merge).
       `Community.Steps.<Name>` convention is recommended.
 - [ ] **No Core collision** — the step kind is not already taken by a Core provider or an
       existing registry entry.
-- [ ] **Builds standalone** — the project and its tests restore/build against the packed SDK
-      (`packages-local/` feed via `nuget.config`); no engine-repo checkout required beyond
-      what the conformance workflow itself does. Not being in the `.sln` is fine — CI
-      discovers `community/**/*.Tests.csproj` by glob.
+- [ ] **Builds standalone** — the project and its tests restore from NuGet.org against the pinned
+      `Platform.Sdk` version (see `CONTRIBUTING.md` "Building against the SDK"); no engine-repo
+      checkout required beyond what the conformance workflow itself does. Not being in the `.sln`
+      is fine — CI discovers `community/**/*.Tests.csproj` by glob.
 - [ ] **Conformance** — the SDK conformance harness (`Platform.Sdk.Testing`) passes locally;
       unit tests cover bind/validate/emit and the four-verdict mapping.
 - [ ] **§13.3.1 CSX rules** — provider-prefixed helper class, brace-enclosed statement block,

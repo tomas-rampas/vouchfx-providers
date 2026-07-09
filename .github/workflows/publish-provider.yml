@@ -7,6 +7,20 @@
 # publishes exactly one provider per run — never the whole repository — so
 # providers can be released on their own schedule.
 #
+# PRECONDITION (SECURITY) — VERIFY BEFORE RELYING ON THIS WORKFLOW
+# -----------------------------------------------------------------------------
+# Every restore/pack/test step below resolves Platform.Sdk /
+# Platform.Sdk.Testing from nuget.org at the root <VouchfxSdkVersion> pin —
+# no local-feed bootstrap. That is safe ONLY once the engine has PUBLISHED
+# AND OWNS the Platform.*/vouchfx* package ids on nuget.org, ideally with
+# reserved ID prefixes (see conformance.yml's header for the full rationale
+# — this workflow shares the same precondition). A version resolving from
+# nuget.org is NOT proof of legitimate ownership: a squatted package under
+# the same id/version resolves identically, and this workflow cannot
+# distinguish the two. Verify POSITIVE OWNERSHIP (nuget.org "Owners" tab /
+# reserved-prefix confirmation) independently of this workflow before
+# treating a green run — including a real publish — as trustworthy.
+#
 # Tag convention (the tag IS the publish trigger)
 # ------------------------------------------------
 #   <ProviderDirName>/v<semver>   e.g.  Community.Steps.JsonRpc/v1.0.0
@@ -239,13 +253,18 @@ jobs:
           global-json-file: global.json
 
       # ── Step 5: Test the provider (required — no test project, no publish) ───
-      # Platform.Sdk / Platform.Sdk.Testing now resolve straight from the
-      # PUBLISHED nuget.org package at the $(VouchfxSdkVersion) root MSBuild
-      # property pin (see conformance.yml) — no local-feed bootstrap needed
-      # here. If that pin ever points at an SDK version not yet live on
-      # nuget.org, the "Preflight — dependency resolvability on nuget.org"
-      # step further below (push-only) is what catches it before publish,
-      # not this restore.
+      # Platform.Sdk / Platform.Sdk.Testing resolve straight from nuget.org
+      # at the $(VouchfxSdkVersion) root MSBuild property pin (see
+      # conformance.yml) — no local-feed bootstrap needed here. This is safe
+      # only under the PRECONDITION in this file's header (the engine
+      # legitimately owns and has published the Platform.*/vouchfx* ids).
+      # If the pin points at an SDK version not resolvable at all on
+      # nuget.org, restore fails right here with a generic NU1101 error; if
+      # restore is instead satisfied by something illegitimate (a squatted
+      # package, or a stale cache on a self-hosted runner), the "Preflight —
+      # dependency resolvability on nuget.org" step further below
+      # (push-only) is the belt-and-braces guard that still queries
+      # nuget.org directly before publish — see its own comment for detail.
       - name: Test the provider's sibling test project
         run: |
           set -euo pipefail
@@ -271,21 +290,31 @@ jobs:
           ls -lh artifacts/nuget/
 
       # ── Step 6b: Preflight — dependency resolvability on nuget.org (push-only) ─
-      # Guards against cutting a provider release tag while its packed
-      # Platform.*/vouchfx* dependency pin (e.g. Platform.Sdk) is not
-      # resolvable from nuget.org. Restore/pack above already resolve
-      # Platform.Sdk straight from nuget.org (no local bootstrap feed left to
-      # mask an unpublished pin), so an unresolvable dependency would in
-      # practice already have failed the workflow before this step runs —
-      # this step is what turns that failure into a clear, purpose-built
-      # ::error:: naming the exact missing dependency/version, rather than a
-      # generic NU1101/restore-failure buried in `dotnet pack` output. A
-      # consumer who `dotnet add package`s the just-published provider on a
-      # clean machine would hit the same unresolvable dependency — and
-      # nuget.org packages are IMMUTABLE (see the header note), so that
-      # would be a PERMANENTLY broken release needing a brand-new patch
-      # version to fix, not a re-run. It remains in place permanently as a
-      # release-time safety net, independent of the bootstrap era.
+      # PRECONDITION (see this file's header): this step's value depends on
+      # the engine legitimately owning the Platform.*/vouchfx* ids it
+      # resolves against on nuget.org — it checks that a version STRING
+      # appears in the package index, which is not proof of legitimate
+      # ownership (a squatted package resolves identically).
+      #
+      # PRIMARY failure mode for an unpublished/mismatched SDK pin: `dotnet
+      # test` (Step 5) or `dotnet pack` (Step 6) above already resolves
+      # Platform.Sdk straight from nuget.org, so an unpublished dependency
+      # normally fails there FIRST, with a generic NU1101 restore error —
+      # this Preflight step never even runs in that case, because the job
+      # has already stopped.
+      #
+      # What this step actually guards is the RESIDUAL case: restore was
+      # satisfied by something other than a legitimate, intended publish —
+      # e.g. a stale entry already sitting in the runner's local NuGet HTTP
+      # cache (relevant if this workflow is ever run on a persistent
+      # self-hosted runner rather than an ephemeral GitHub-hosted one), or a
+      # squatted package published under the same id/version by a third
+      # party — while the dependency this provider actually needs is not
+      # legitimately published. In that residual case, `dotnet pack` above
+      # would already have succeeded, so this step is what still catches it
+      # by querying nuget.org directly, before the IMMUTABLE, irreversible
+      # NuGet.org push further below. It remains in place permanently as
+      # that belt-and-braces guard, independent of the bootstrap era.
       - name: Preflight — dependency resolvability on nuget.org
         if: github.event_name == 'push'
         run: |

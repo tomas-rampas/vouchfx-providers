@@ -98,7 +98,7 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 ## Building against the SDK
 
-The vouchfx SDK (`Platform.Sdk` and `Platform.Sdk.Testing`) is pinned in `Directory.Build.props` via the `$(VouchfxSdkVersion)` property and restores from [NuGet.org](https://www.nuget.org) at that version. To build providers locally:
+Once the engine's next tagged pre-release is published to [NuGet.org](https://www.nuget.org), the vouchfx SDK (`Platform.Sdk` and `Platform.Sdk.Testing`) is pinned in `Directory.Build.props` via the `$(VouchfxSdkVersion)` property and restores from NuGet.org at that version; until then, use the "Building against engine main (optional)" path below. To build providers locally:
 
 ```bash
 dotnet restore

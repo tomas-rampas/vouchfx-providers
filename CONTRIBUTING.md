@@ -64,7 +64,7 @@ The merge bar for Option B is **hygiene, not review**: Apache-2.0 licence, DCO, 
 
 ## Building against the SDK
 
-The `Platform.Sdk` and `Platform.Sdk.Testing` packages are pinned in `Directory.Build.props` via the `$(VouchfxSdkVersion)` property. To build:
+Once the engine's next tagged pre-release is published to [NuGet.org](https://www.nuget.org), the `Platform.Sdk` and `Platform.Sdk.Testing` packages are pinned in `Directory.Build.props` via the `$(VouchfxSdkVersion)` property; until then, use the "Building against engine main (optional)" path below. To build:
 
 ```bash
 dotnet restore

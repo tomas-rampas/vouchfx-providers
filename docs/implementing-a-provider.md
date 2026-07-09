@@ -96,7 +96,7 @@ cd src/Community.Steps.MyKind
 ### The `.csproj` File
 
 Your provider project must:
-- Reference **only** `Platform.Sdk` (version 1.0.0 or later)
+- Reference **only** `Platform.Sdk` (pinned to the latest published pre-release version on NuGet.org)
 - Use a **non-reserved namespace** (never `Platform.Engine.*` or `Platform.Steps.*`)
 - Target `.NET 8.0`
 
@@ -112,8 +112,9 @@ Here is the minimal structure:
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Frozen v1 SDK contract — no engine dependencies needed. -->
-    <PackageReference Include="Platform.Sdk" Version="1.0.0" />
+    <!-- Frozen v1 SDK contract — no engine dependencies needed.
+         Substitute the newest published pre-release version (e.g. 1.0.0-alpha.3). -->
+    <PackageReference Include="Platform.Sdk" Version="1.0.0-alpha.3" />
   </ItemGroup>
 
 </Project>

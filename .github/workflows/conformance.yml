@@ -2,38 +2,56 @@
 #
 # Triggers: push and pull_request to main.
 #
+# PRECONDITION (SECURITY) — VERIFY BEFORE UN-DRAFTING THIS PR
+# -----------------------------------------------------------------------------
+# This dual-feed configuration (nuget.org + packages-local/, see
+# nuget.config's packageSourceMapping) is safe ONLY once the engine has
+# PUBLISHED AND OWNS the Platform.*/vouchfx package IDs on nuget.org —
+# ideally with reserved ID prefixes. Merging or running this lane before
+# then re-opens the dependency-confusion window the previous exclusive-local
+# mapping had closed. Verify POSITIVE OWNERSHIP (nuget.org "Owners" tab /
+# reserved-prefix confirmation for the publishing account) before
+# un-drafting — NOT merely that `dotnet restore` resolves a matching
+# version, since a squatted package under the same ID would resolve
+# identically and this workflow cannot tell the difference.
+#
 # TWO LANES
 # ---------
 # Lane A (job `conformance`, the required merge-gate check) restores
-# Platform.Sdk / Platform.Sdk.Testing from the PUBLISHED nuget.org package at
-# the $(VouchfxSdkVersion) pin (root MSBuild property, consumed by all four
-# SDK-closure PackageReferences; see nuget.config's packageSourceMapping) —
-# exactly what a real consumer experiences. The "[REMOVE AFTER SDK
-# PUBLISHED]" engine-checkout + source-pack bootstrap era is OVER for this
-# lane now that Platform.Sdk 1.0.0-alpha.3 is published: this lane no longer
-# checks out or packs the engine at all.
+# Platform.Sdk / Platform.Sdk.Testing from nuget.org at the
+# $(VouchfxSdkVersion) pin (root MSBuild property, consumed by all four
+# SDK-closure PackageReferences) — exactly what a real consumer experiences.
+# The "[REMOVE AFTER SDK PUBLISHED]" engine-checkout + source-pack bootstrap
+# steps have been removed from this lane; see the PRECONDITION above before
+# treating that removal as safe to merge.
 #
 # Lane B (job `engine-main`, non-blocking on PRs) is the early-warning lane
 # and deliberately KEEPS the source-pack pattern — but points it at the
 # engine's CURRENT main SHA (not a tagged release), so providers are proven
 # to build/test against upcoming engine changes ahead of the next tagged SDK
-# release. It packs the five SDK-closure projects at a distinct,
-# never-published version (1.0.0-enginemain) so those local packages can
-# never collide with a real published 1.0.0-alpha.N (or later) package in
-# the dual-mapped feed (packages-local/ + nuget.org), and threads
-# -p:VouchfxSdkVersion=1.0.0-enginemain through every dotnet invocation so
-# the template/community projects resolve that local pack instead of the
-# nuget.org-published pin. It is non-blocking (`continue-on-error: true`) on
-# pull_request — unreleased engine churn must never block a contributor's
-# PR — and hard-fails on push to main, where a real break must be visible to
-# maintainers.
+# release. It packs the five SDK-closure projects at a distinct version,
+# 1.0.0-enginemain, so that LOCAL pack can never COLLIDE WITH the
+# legitimately published 1.0.0-alpha.N (or later) version this branch's
+# $(VouchfxSdkVersion) pin resolves, in the same dual-mapped feed
+# (packages-local/ + nuget.org). That is a collision guard only, not a
+# publication guard: the distinct version string does not, by itself, stop
+# a third party from ALSO publishing a package called "1.0.0-enginemain"
+# under a Platform.* id — no version string can prevent that. What prevents
+# it is package-ID OWNERSHIP on nuget.org (see the PRECONDITION above), not
+# this workflow. Lane B threads -p:VouchfxSdkVersion=1.0.0-enginemain
+# through every dotnet invocation so the template/community projects
+# resolve that local pack instead of the nuget.org-published pin. It is
+# non-blocking (`continue-on-error: true`) on pull_request — unreleased
+# engine churn must never block a contributor's PR — and hard-fails on push
+# to main, where a real break must be visible to maintainers.
 #
 # REPIN PROCEDURE (at engine release cadence): when a new engine version is
-# tagged and its SDK closure published to nuget.org, bump the root
-# <VouchfxSdkVersion> MSBuild property to the new version (Lane A picks it up
-# automatically — no workflow edit needed) and separately re-pin Lane B's
-# engine checkout `ref:` below to the engine's new main SHA, so Lane B keeps
-# tracking "what's coming next" rather than what was just released.
+# tagged and its SDK closure published to nuget.org (re-verify ownership per
+# the PRECONDITION above), bump the root <VouchfxSdkVersion> MSBuild property
+# to the new version (Lane A picks it up automatically — no workflow edit
+# needed) and separately re-pin Lane B's engine checkout `ref:` below to the
+# engine's new main SHA, so Lane B keeps tracking "what's coming next" rather
+# than what was just released.
 #
 # NOTE ON VERSION MATRIX
 # ----------------------
@@ -115,8 +133,9 @@ jobs:
       # as the guide's reference implementation. Every
       # community/**/*.Tests.csproj is discovered and run in its OWN
       # restore/build/test (no --no-build, no sln-membership requirement): a
-      # submission that breaks can only fail its own step output, and the
-      # packages-local feed (nuget.config) resolves the SDK closure standalone.
+      # submission that breaks can only fail its own step output, and
+      # nuget.org (via the root $(VouchfxSdkVersion) pin) resolves the SDK
+      # closure standalone for each project — no shared local feed involved.
       # At least one project must be found — rpc.json-rpc always exists, so an
       # empty glob means the checkout/glob itself is broken, not "no submissions".
       - name: Test — community providers (glob over community/)
@@ -494,16 +513,21 @@ jobs:
           global-json-file: global.json
 
       # ── Step 4: Pack SDK-closure projects into packages-local/ ───────────────
-      # at version 1.0.0-enginemain — a version string nuget.org can never
-      # publish, so this local pack can never collide with a real published
-      # Platform.Sdk package in the dual-mapped feed (packages-local/ +
-      # nuget.org; see nuget.config's packageSourceMapping). Packs exactly
-      # five projects — the minimal closure the template provider and tests
-      # depend on. Order follows the dependency graph (Abstractions first) to
-      # keep each pack's implicit restore efficient. Aspire AppHost projects
-      # are intentionally excluded: they embed the DCP binary path at build
-      # time and require the Aspire workload, neither of which belongs in a
-      # community-provider CI job.
+      # at the distinct version 1.0.0-enginemain — this is a COLLISION guard,
+      # not a publication guard: it keeps this local pack from colliding with
+      # the legitimately published Platform.Sdk version this branch's
+      # $(VouchfxSdkVersion) pin resolves in the same dual-mapped feed
+      # (packages-local/ + nuget.org; see nuget.config's
+      # packageSourceMapping). It does NOT, by itself, stop a third party
+      # from also publishing a package called "1.0.0-enginemain" under a
+      # Platform.* id — see the workflow header's PRECONDITION note: that
+      # protection is package-ID ownership on nuget.org, not this version
+      # string. Packs exactly five projects — the minimal closure the
+      # template provider and tests depend on. Order follows the dependency
+      # graph (Abstractions first) to keep each pack's implicit restore
+      # efficient. Aspire AppHost projects are intentionally excluded: they
+      # embed the DCP binary path at build time and require the Aspire
+      # workload, neither of which belongs in a community-provider CI job.
       - name: Pack SDK-closure projects into packages-local/ (engine main)
         run: |
           set -euo pipefail
