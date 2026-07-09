@@ -1,0 +1,488 @@
+# .github/workflows/publish-provider.yml — per-provider NuGet publish (hub-hosted)
+# =============================================================================
+# Purpose
+# -------
+# Each hub-hosted community provider under community/<Name>/ ships as its OWN
+# independently versioned NuGet package. This workflow packs, tests, and
+# publishes exactly one provider per run — never the whole repository — so
+# providers can be released on their own schedule.
+#
+# Tag convention (the tag IS the publish trigger)
+# ------------------------------------------------
+#   <ProviderDirName>/v<semver>   e.g.  Community.Steps.JsonRpc/v1.0.0
+#
+# ProviderDirName must equal the provider's directory name under community/
+# (which is also its PackageId — see community/Directory.Build.props and the
+# conformance.yml pack-gate step that enforces <id> == directory name). The
+# trigger glob below ('*/v*') relies on GitHub Actions tag-glob semantics
+# where '*' never matches '/', so it matches exactly one '<segment>/v<segment>'
+# pair — this is what lets many providers version independently from tags in
+# one repository without a dispatcher/matrix step.
+#
+# Trust model
+# -----------
+#   - GitHub resolves and executes THIS WORKFLOW FILE — together with the
+#     checkout, nuget.config, and the pinned engine SHA it references — AS
+#     THEY EXIST AT THE TAGGED COMMIT. Whoever controls the content of the
+#     tagged commit therefore also controls every validation this workflow
+#     performs against that commit: no in-workflow check below (the ancestry
+#     gate, the governance-registry gate, the PROVIDER/VERSION regex
+#     validation) can contain a party who is able to push the tag that
+#     triggers it — a compromised or malicious tagged commit could simply ship
+#     a modified copy of this workflow alongside itself.
+#   - The GitHub tag ruleset restricting CREATION AND UPDATE of `*/v*` tags to
+#     maintainers (Settings → Rules → Tag rulesets) is therefore the SOLE
+#     EFFECTIVE SECURITY BOUNDARY for this workflow — not a defence-in-depth
+#     layer stacked alongside the in-workflow gates, but the actual control.
+#     Every in-workflow gate below protects against MAINTAINER MISTAKES (an
+#     accidental tag on the wrong branch, an unreviewed commit, a malformed
+#     version) — not against an actor who can already push a matching tag; it
+#     cannot, and does not attempt to, substitute for the ruleset.
+#   - This boundary is NOT static. CODEOWNERS grants each provider's
+#     folder-owner write access to review and merge their own provider's PRs,
+#     and anyone with write access can push tags whenever the ruleset above is
+#     missing or misconfigured. The write-access population — and with it,
+#     everyone who COULD push a publish tag if the ruleset ever lapses —
+#     grows with every provider onboarded to the hub. Re-verifying the `*/v*`
+#     tag ruleset MUST be a checklist item on every provider (and CODEOWNERS
+#     entry) onboarding, not a one-time setup step.
+#   - A NuGet Trusted Publishing policy on nuget.org (Package Owner "Tomas.R")
+#     is scoped to: Repository tomas-rampas/vouchfx-providers, Workflow File
+#     publish-provider.yml, no Environment — mirroring the engine's own
+#     release.yml policy exactly. No NUGET_API_KEY secret is stored; NuGet/login
+#     exchanges a single-use GitHub OIDC token for a short-lived (~1 hour)
+#     nuget.org API key immediately before push.
+#   - workflow_dispatch is a SMOKE LANE ONLY: it exercises the pack/test/pack
+#     pipeline against maintainer-supplied provider/version inputs but NEVER
+#     pushes to NuGet.org and NEVER mints an SLSA provenance attestation
+#     either (that step is push-only, same as the login/push steps) — every
+#     push-gated step below is hard-gated to `github.event_name == 'push'`.
+#   - --skip-duplicate immutability note: nuget.org packages are IMMUTABLE —
+#     a version already published is left untouched by --skip-duplicate, never
+#     overwritten. A bad artifact is never fixed by re-running or re-tagging
+#     the same version: cut a new patch version tag instead.
+#
+# =============================================================================
+
+name: Publish provider (NuGet)
+
+on:
+  push:
+    tags:
+      - "*/v*"
+  # Smoke-test lane: run the full pipeline for a given provider/version WITHOUT
+  # publishing anything. Every push-gated step below is skipped on dispatch.
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: "Provider directory name under community/ (== PackageId), e.g. Community.Steps.JsonRpc"
+        required: true
+        type: string
+      version:
+        description: "Semver string to pack, e.g. 0.0.0-test (no NuGet push)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-provider-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  DOTNET_NOLOGO: "true"
+  DOTNET_CLI_TELEMETRY_OPTOUT: "true"
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: "true"
+
+jobs:
+  publish:
+    name: Pack, test, and publish one provider
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write      # mint GitHub OIDC token for NuGet Trusted Publishing + attestation
+      attestations: write  # store the SLSA provenance attestation via the GitHub API
+      # (attestations: write is not part of the minimal contents/id-token pair
+      # a Trusted-Publishing-only job would need, but actions/attest-build-
+      # provenance in step 8 below requires it — omitting it would make that
+      # step fail on every run, including the workflow_dispatch smoke lane.)
+
+    steps:
+      # ── Step 1: Checkout this repo (same SHA-pinned action as conformance.yml) ─
+      # fetch-depth: 0 (full history) is required by the ancestry-gate step
+      # below — a shallow checkout would make `git merge-base --is-ancestor`
+      # unable to determine reachability and fail closed for every legitimate
+      # release, not just illegitimate ones.
+      - name: Checkout vouchfx-providers
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          fetch-depth: 0
+
+      # ── Step 2: Derive + validate PROVIDER and VERSION from the trigger ──────
+      # Tag refs and dispatch inputs are BOTH untrusted here: a missing or
+      # misconfigured tag-protection ruleset would let any contributor with
+      # push access mint an attacker-controlled tag. Every attacker-influenceable
+      # value is passed through env:, never interpolated directly into the run:
+      # body via ${{ }} — mirroring the engine release.yml "Determine release
+      # version" step's own SECURITY comment.
+      - name: Derive and validate PROVIDER + VERSION from the trigger
+        env:
+          TAG_REF:        ${{ github.ref_name }}
+          INPUT_PROVIDER: ${{ inputs.provider }}
+          INPUT_VERSION:  ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            PROVIDER="$INPUT_PROVIDER"
+            VERSION="$INPUT_VERSION"
+          elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            # TAG_REF is github.ref_name for a tag push, e.g.
+            # "Community.Steps.JsonRpc/v1.0.0". The trigger glob ('*/v*') does
+            # not let '*' cross '/', so the ref is expected to already contain
+            # exactly one '/' — but that expectation is not trusted blindly
+            # (manual re-run, workflow edited elsewhere, ruleset gap); re-derive
+            # and re-validate defensively rather than assume the trigger did it.
+            PROVIDER="${TAG_REF%%/*}"
+            rest="${TAG_REF#*/}"
+            if [[ "$rest" != v* ]]; then
+              echo "::error::Malformed tag '$TAG_REF' — expected <provider>/v<version>."
+              exit 1
+            fi
+            VERSION="${rest#v}"
+          else
+            echo "::error::Unsupported event: $GITHUB_EVENT_NAME"
+            exit 1
+          fi
+
+          # Fail-closed semver validation — copied verbatim from the engine's
+          # release.yml "Determine release version" step (vouchfx repo).
+          if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Refusing to publish: version '$VERSION' is not a valid semver."
+            exit 1
+          fi
+
+          # Conservative PackageId-shaped pattern for PROVIDER (it IS a .NET
+          # PackageId — see community/Directory.Build.props): one or more
+          # alphanumeric SEGMENTS separated by single dots (the
+          # Community.Steps.<Name> convention). No path separators, no shell
+          # metacharacters, and — critically — no consecutive dots: each dot
+          # must be immediately followed by at least one alphanumeric
+          # character, so '..', a leading '.x', a trailing 'x.', and an
+          # internal 'A..B' are ALL rejected (the previous
+          # `^[A-Za-z0-9]([A-Za-z0-9.]*[A-Za-z0-9])?$` form only anchored the
+          # first/last character and still admitted 'A..B' in the middle).
+          # This anchored full-string match transitively defeats path
+          # traversal (e.g. "Evil/../thing") and command-injection-shaped
+          # strings (e.g. "Foo;rm -rf"), since neither '/' nor ';' nor
+          # whitespace is in the allowed character set.
+          if [[ ! "$PROVIDER" =~ ^[A-Za-z0-9]+(\.[A-Za-z0-9]+)*$ ]]; then
+            echo "::error::Refusing to publish: provider id '$PROVIDER' does not look like a .NET PackageId."
+            exit 1
+          fi
+
+          if [[ ! -f "community/$PROVIDER/$PROVIDER.csproj" ]]; then
+            echo "::error::community/$PROVIDER/$PROVIDER.csproj does not exist — refusing to publish an unknown provider."
+            exit 1
+          fi
+
+          echo "Resolved: provider=$PROVIDER version=$VERSION (event: $GITHUB_EVENT_NAME)"
+          {
+            echo "PROVIDER=$PROVIDER"
+            echo "VERSION=$VERSION"
+          } >> "$GITHUB_ENV"
+
+      # ── Step 2b: Require the tagged commit to be reachable from main ─────────
+      # Defence-in-depth against MISTAKES, not the primary control (see the
+      # header Trust model note): GitHub reads and executes this very workflow
+      # file from the tagged commit, so a party who controls that commit also
+      # controls this check and everything around it — this step cannot
+      # contain such a party. What it DOES catch: a maintainer accidentally
+      # tagging a feature branch, an unreviewed/un-merged commit, or a tag
+      # pushed against a stale or detached ref. The GitHub tag ruleset
+      # restricting `*/v*` creation/update to maintainers remains the sole
+      # effective boundary.
+      - name: Require the tagged commit to be reachable from main
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin +refs/heads/main:refs/remotes/origin/main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/main; then
+            echo "::error::Tagged commit $GITHUB_SHA is not reachable from origin/main — only code merged to main (via CODEOWNERS review) may be released. Refusing to publish."
+            exit 1
+          fi
+          echo "OK: $GITHUB_SHA is reachable from origin/main."
+
+      # ── Step 3: Governance gate — PROVIDER must be a registered hub entry ────
+      # The registry (registry/community-providers.json) is the authoritative
+      # catalogue: no entry, no package, no exceptions. Requires BOTH the
+      # nuget id and hosting:"hub" — a provider entry that lists as
+      # externally-hosted must not be silently republished from the hub.
+      - name: Governance gate — PROVIDER must be a registered hub-hosted entry
+        run: |
+          set -euo pipefail
+          if ! jq -e --arg p "$PROVIDER" \
+            'any(.[]; .nuget == $p and .hosting == "hub")' \
+            registry/community-providers.json > /dev/null; then
+            echo "::error::No entry in registry/community-providers.json has .nuget == \"$PROVIDER\" and .hosting == \"hub\" — the registry is the authoritative catalogue; add or update the entry before publishing."
+            exit 1
+          fi
+          echo "Governance gate passed: $PROVIDER is a registered hub-hosted provider."
+
+      # ── Step 4: Set up .NET SDK (same pinned action as conformance.yml) ──────
+      - name: Set up .NET SDK (reads global.json)
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          global-json-file: global.json
+
+      # ── Step 5: Bootstrap the SDK-closure local feed [REMOVE AFTER SDK PUBLISHED] ─
+      # Platform.Sdk / Platform.Sdk.Testing v1.0.0 are not yet on nuget.org (they
+      # ship with the vouchfx v1.0 GA release). Until then this workflow needs
+      # the exact same local-feed bootstrap conformance.yml uses so that
+      # `dotnet test`/`dotnet pack` below can restore Platform.Sdk — identical
+      # engine checkout SHA and pack-5-projects loop, kept byte-for-byte
+      # equivalent so the eventual repin PR can delete both in one sweep.
+      - name: Checkout engine (tomas-rampas/vouchfx → engine/) [REMOVE AFTER SDK PUBLISHED]
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: tomas-rampas/vouchfx
+          # Full 40-char SHA required: actions/checkout treats a short SHA as a
+          # branch/tag glob (refs/heads/<ref>*) and fails the cross-repo fetch.
+          # Kept identical to conformance.yml's pinned engine SHA — update both
+          # together.
+          ref: f5bf109651bd5ea4c2f3653d4a62d34fe2ba1011
+          path: engine
+
+      - name: Pack SDK-closure projects into packages-local/ [REMOVE AFTER SDK PUBLISHED]
+        run: |
+          set -euo pipefail
+          for csproj in \
+            engine/src/Engine/Platform.Engine.Abstractions/Platform.Engine.Abstractions.csproj \
+            engine/src/Engine/Platform.Engine.Authoring/Platform.Engine.Authoring.csproj \
+            engine/src/Engine/Platform.Engine.Compilation/Platform.Engine.Compilation.csproj \
+            engine/src/Sdk/Platform.Sdk/Platform.Sdk.csproj \
+            engine/src/Sdk/Platform.Sdk.Testing/Platform.Sdk.Testing.csproj ; do
+            echo "::group::pack $csproj"
+            dotnet pack "$csproj" -c Release -o packages-local/ --nologo
+            echo "::endgroup::"
+          done
+          echo "Packages staged in packages-local/:"
+          ls packages-local/*.nupkg
+
+      # ── Step 6: Test the provider (required — no test project, no publish) ───
+      - name: Test the provider's sibling test project
+        run: |
+          set -euo pipefail
+          test_csproj="community/$PROVIDER.Tests/$PROVIDER.Tests.csproj"
+          if [[ ! -f "$test_csproj" ]]; then
+            echo "::error::$test_csproj does not exist — a sibling test project is required before publishing $PROVIDER."
+            exit 1
+          fi
+          dotnet test "$test_csproj" -c Release --logger "console;verbosity=normal"
+
+      # ── Step 7: Pack the provider at the requested version ───────────────────
+      # Package-metadata validation (license/readme/description/repository/
+      # tags/id — the pack gate) is enforced at PR time on main by
+      # conformance.yml; the ancestry gate above guarantees the tagged commit
+      # already passed it, so this step does not re-validate metadata.
+      - name: Pack the provider
+        run: |
+          set -euo pipefail
+          dotnet pack "community/$PROVIDER/$PROVIDER.csproj" \
+            -c Release \
+            -p:Version="$VERSION" \
+            -o artifacts/nuget
+          ls -lh artifacts/nuget/
+
+      # ── Step 7b: Preflight — dependency resolvability on nuget.org (push-only) ─
+      # Guards against cutting a provider release tag while its packed
+      # Platform.*/vouchfx* dependency pin (e.g. Platform.Sdk) is not yet
+      # resolvable from nuget.org: Step 5's packages-local/ bootstrap feed
+      # makes `dotnet pack` above succeed regardless of what's actually live
+      # on nuget.org, so pack succeeding is NOT evidence the package is
+      # installable. A consumer who `dotnet add package`s the just-published
+      # provider on a clean machine (no packages-local/ bootstrap) would hit
+      # an unresolvable dependency — and nuget.org packages are IMMUTABLE
+      # (see the header note), so that would be a PERMANENTLY broken release
+      # needing a brand-new patch version to fix, not a re-run.
+      #
+      # This check SELF-HEALS: once Platform.Sdk ships to nuget.org and every
+      # "[REMOVE AFTER SDK PUBLISHED]" step above is deleted, every
+      # Platform.*/vouchfx* dependency will resolve and this step becomes a
+      # normal no-op pass — it stays in place permanently as a release-time
+      # safety net, not a bootstrap-era workaround to remove later.
+      - name: Preflight — dependency resolvability on nuget.org
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+
+          # check_one_dependency <id> <version>
+          # Queries the NuGet v3 flatcontainer version index for <id> and
+          # fails unless <version> appears in it. Three DISTINCT failure
+          # modes, each with its own named ::error:: — a transport/network
+          # blip must never be misread as "the dependency doesn't exist":
+          #   1. curl transport failure (DNS, TLS, timeout, connection reset)
+          #      -> NETWORK ERROR
+          #   2. HTTP 404 (the package id has never been published at all)
+          #      -> DEPENDENCY NOT PUBLISHED (id-level)
+          #   3. HTTP 200 but <version> absent from the "versions" array
+          #      -> DEPENDENCY NOT PUBLISHED (version-level)
+          # Any other HTTP status is treated as an API/network anomaly (mode
+          # 1's bucket), never as confirmation of absence.
+          check_one_dependency() {
+            local dep_id="$1" dep_version="$2"
+            local dep_id_lower url raw curl_exit http_code body
+
+            dep_id_lower="$(tr '[:upper:]' '[:lower:]' <<<"$dep_id")"
+            url="https://api.nuget.org/v3-flatcontainer/${dep_id_lower}/index.json"
+            echo "::group::Checking $dep_id $dep_version"
+            echo "GET $url"
+
+            # NOTE: `if ! raw=$(cmd); then curl_exit=$?; ...` looks natural but
+            # is WRONG — `!` negates the condition's exit status, so `$?`
+            # inside the `then` block is always 0 (the negation's own
+            # success), never curl's real exit code. The if/else form below
+            # keeps the assignment errexit-safe (it's a condition, so `set -e`
+            # does not abort on failure) while `$?` in the `else` branch still
+            # correctly holds curl's real exit code.
+            if raw="$(curl --silent --show-error --connect-timeout 10 --max-time 30 --retry 2 --retry-delay 2 -w $'\n%{http_code}' "$url")"; then
+              curl_exit=0
+            else
+              curl_exit=$?
+            fi
+            if [[ "$curl_exit" -ne 0 ]]; then
+              echo "::error::NETWORK ERROR while checking $dep_id — curl could not reach $url (exit $curl_exit). This is a TRANSPORT FAILURE, not evidence that $dep_id is missing — re-run once network/nuget.org access is restored."
+              echo "::endgroup::"
+              return 1
+            fi
+
+            http_code="$(tail -n1 <<<"$raw")"
+            body="$(sed '$d' <<<"$raw")"
+
+            if [[ "$http_code" == "404" ]]; then
+              echo "::error::DEPENDENCY NOT PUBLISHED: $dep_id does not exist at all on nuget.org (404 at $url). Publishing $PROVIDER now would ship a permanently broken, immutable package for any consumer without the local packages-local/ bootstrap feed. Wait until $dep_id is published, or update the dependency pin, before cutting this tag."
+              echo "::endgroup::"
+              return 1
+            fi
+
+            if [[ "$http_code" != "200" ]]; then
+              echo "::error::NETWORK/API ERROR while checking $dep_id — nuget.org returned unexpected HTTP $http_code from $url. This is NOT confirmation that $dep_id is missing — investigate or re-run."
+              echo "::endgroup::"
+              return 1
+            fi
+
+            if ! jq -e --arg v "$dep_version" '(.versions // []) | index($v) != null' <<<"$body" > /dev/null 2>&1; then
+              echo "::error::DEPENDENCY NOT PUBLISHED: $dep_id $dep_version is not present in nuget.org's version index ($url). Publishing $PROVIDER now would ship a permanently broken, immutable package for any consumer without the local packages-local/ bootstrap feed. Wait until $dep_id $dep_version is published, or update the dependency pin, before cutting this tag."
+              echo "::endgroup::"
+              return 1
+            fi
+
+            echo "OK: $dep_id $dep_version is published on nuget.org."
+            echo "::endgroup::"
+            return 0
+          }
+
+          # Resolve by glob, not the literal "${PROVIDER}.${VERSION}.nupkg": NuGet
+          # normalises legal-but-non-canonical versions (e.g. 1.2.3.0 -> 1.2.3) in
+          # the produced filename. Exactly one package is expected in the output dir.
+          shopt -s nullglob
+          candidates=(artifacts/nuget/"${PROVIDER}".*.nupkg)
+          if [[ ${#candidates[@]} -ne 1 ]]; then
+            echo "::error::expected exactly one artifacts/nuget/${PROVIDER}.*.nupkg from the pack step, found ${#candidates[@]}. Refusing to publish."
+            exit 1
+          fi
+          nupkg="${candidates[0]}"
+
+          echo "Extracting Platform.*/vouchfx* dependencies from ${PROVIDER}.nuspec..."
+          nuspec_content="$(unzip -p "$nupkg" "${PROVIDER}.nuspec")"
+          dep_tags="$(grep -oP '<dependency\b[^>]*/>' <<<"$nuspec_content" || true)"
+
+          deps=""
+          while IFS= read -r tag; do
+            [[ -z "$tag" ]] && continue
+            dep_id="$(grep -oP '(?<=\bid=")[^"]+' <<<"$tag" || true)"
+            dep_version="$(grep -oP '(?<=\bversion=")[^"]+' <<<"$tag" || true)"
+            if [[ "$dep_id" == Platform.* || "$dep_id" == vouchfx* ]]; then
+              deps+="${dep_id}"$'\t'"${dep_version}"$'\n'
+            fi
+          done <<< "$dep_tags"
+
+          if [[ -z "$deps" ]]; then
+            echo "No Platform.*/vouchfx* dependencies declared in ${PROVIDER}.nuspec — nothing to preflight."
+            exit 0
+          fi
+
+          echo "Dependencies to verify:"
+          echo "$deps"
+
+          failed=0
+          while IFS=$'\t' read -r dep_id dep_version; do
+            [[ -z "$dep_id" ]] && continue
+            if ! check_one_dependency "$dep_id" "$dep_version"; then
+              failed=1
+            fi
+          done <<< "$deps"
+
+          if [[ "$failed" -ne 0 ]]; then
+            echo "::error::Preflight dependency-resolvability check failed — see errors above. Refusing to publish $PROVIDER $VERSION."
+            exit 1
+          fi
+
+          echo "Preflight passed: every Platform.*/vouchfx* dependency of $PROVIDER $VERSION is resolvable from nuget.org."
+
+      # ── Step 8: SLSA build provenance attestation ─────────────────────────────
+      # NOTE: the engine's own release.yml references this action as
+      # actions/attest-build-provenance@v4 WITHOUT a pinned SHA (verified by
+      # inspection — it is the one action in that workflow left unpinned), so
+      # there is no engine SHA to copy here. Resolved independently to the
+      # commit the v4 tag currently points at (v4.1.1) to keep this repo's own
+      # full-SHA-pinning convention (see conformance.yml) intact regardless.
+      - name: Attest provenance (SLSA build provenance)
+        if: github.event_name == 'push'
+        uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
+        with:
+          subject-path: |
+            artifacts/nuget/*.nupkg
+            artifacts/nuget/*.snupkg
+
+      # workflow_dispatch must never mint a real SLSA attestation subject for
+      # a smoke-test artifact — make the skip explicit rather than silent.
+      - name: Attestation skipped (dispatch smoke lane)
+        if: github.event_name == 'workflow_dispatch'
+        run: echo "::notice::Skipping SLSA provenance attestation — workflow_dispatch is a smoke-test lane and must not mint a real attestation subject."
+
+      # ── Step 9: Publish to NuGet.org — Trusted Publishing (push-only) ────────
+      # Gated on BOTH github.event_name == 'push' and the exact repository, so
+      # the workflow_dispatch smoke lane never pushes and a fork can never
+      # publish (a fork also has no matching Trusted Publishing policy, so the
+      # OIDC exchange would fail there anyway — the explicit condition just
+      # fails fast/skips instead of erroring mid-job, matching release.yml).
+      - name: NuGet login (OIDC → short-lived API key) — Trusted Publishing
+        id: nuget-login
+        if: ${{ github.event_name == 'push' && github.repository == 'tomas-rampas/vouchfx-providers' }}
+        uses: NuGet/login@8d196754b4036150537f80ac539e15c2f1028841 # v1.2.0
+        with:
+          user: Tomas.R
+
+      - name: Publish nupkg to NuGet.org — Trusted Publishing
+        if: ${{ github.event_name == 'push' && github.repository == 'tomas-rampas/vouchfx-providers' }}
+        env:
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+        run: |
+          set -euo pipefail
+          for nupkg in artifacts/nuget/*.nupkg; do
+            echo "Pushing: $nupkg"
+            dotnet nuget push "$nupkg" \
+              --api-key "$NUGET_API_KEY" \
+              --source https://api.nuget.org/v3/index.json \
+              --skip-duplicate
+          done
+
+      # ── Step 10: Smoke-test summary (dispatch-only, nothing was pushed) ──────
+      - name: Smoke-test summary — nothing was pushed
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          echo "Smoke-test run for $PROVIDER $VERSION — dispatch runs never push. On a real '$PROVIDER/v$VERSION' tag push, this would have been published to NuGet.org:"
+          ls -lh artifacts/nuget/ || echo "(no artifacts/nuget/ contents found)"

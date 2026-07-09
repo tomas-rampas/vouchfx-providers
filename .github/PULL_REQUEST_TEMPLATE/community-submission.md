@@ -33,8 +33,9 @@ folder (a CODEOWNERS line is added at merge).
 - [ ] **§13.3.1 CSX rules** — provider-prefixed helper class, brace-enclosed statement block,
       namespace-only `RequiredUsings`, no `using var`, ids sanitised before splicing.
 - [ ] **Registry entry** — added to `registry/community-providers.json` with
-      `"hosting": "hub"` (the `nuget` field is optional for hub-hosted entries) and validates
-      against the schema. Do not set `vouched` — it is maintainer-only.
+      `"hosting": "hub"` and validates against the schema. If you plan to publish to NuGet, set
+      `nuget` to the provider directory name (required to cut a release tag); if not publishing,
+      the field is optional. Do not set `vouched` — it is maintainer-only.
 - [ ] **README** — the provider folder has a README that opens with the Community-tier
       notice (unreviewed, unendorsed; use at your own judgement) and documents every step
       field.

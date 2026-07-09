@@ -7,6 +7,37 @@
     <RootNamespace>Community.Steps.Hello</RootNamespace>
   </PropertyGroup>
 
+  <!-- Per-provider package metadata — REPLACE every value below when you copy this
+       template. It exists here, on the template itself, so a copy that lands under
+       community/ is never missing it: community/Directory.Build.props supplies the
+       shared shape (IsPackable, license, repository, SourceLink, symbols) once your
+       copy lives there, but Description/Authors/PackageTags/PackageReadmeFile are
+       genuinely per-provider and are NOT inherited from anywhere — the hub's pack
+       gate (conformance.yml, "Pack gate — every hub provider must produce a valid
+       package") validates all of them on every push/PR, so a forgotten replacement
+       fails your submission's CI, not a later release. In THIS location (template/,
+       not community/) the block below is inert: the root Directory.Build.props keeps
+       IsPackable=false for everything outside community/, so nothing is actually
+       packed here — `dotnet pack` on this project produces no .nupkg until it is
+       copied under community/. -->
+  <PropertyGroup>
+    <!-- Replace: one sentence describing your step provider. The pack gate rejects
+         both an empty <Description> and MSBuild's own unset/default value — write a
+         real, instructive sentence, not a placeholder that could ship as-is. -->
+    <Description>Replace: one sentence describing your step provider.</Description>
+    <!-- Replace with your GitHub handle (or org name for a team-owned provider). -->
+    <Authors>your-github-handle</Authors>
+    <!-- Replace "hello;console" with your own family;provider step-kind halves —
+         keep the vouchfx;provider;community prefix so the package is discoverable
+         alongside every other hub-hosted provider. -->
+    <PackageTags>vouchfx;provider;community;hello;console</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
   <ItemGroup>
     <!-- A community provider depends ONLY on the frozen v1 SDK contract.
          No reference to Platform.Engine.* is needed or permitted: the engine drives
