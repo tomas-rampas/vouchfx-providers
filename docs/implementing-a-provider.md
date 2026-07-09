@@ -119,9 +119,7 @@ Here is the minimal structure:
 </Project>
 ```
 
-**Until the SDK's first published pre-release:** Pack the SDK locally from the engine repository (see `CONTRIBUTING.md` "Building Before the SDK is on NuGet.org" for the command).
-
-**Once the engine has published the SDK (next tagged pre-release onward):** Restore from NuGet.org directly.
+Restore the SDK from NuGet.org at the pinned version (see `CONTRIBUTING.md` "Building against the SDK"). For advanced use cases testing against the engine's unreleased `main` branch, see the "Building against engine main (optional)" subsection in `CONTRIBUTING.md`.
 
 ### Assembly-Graph Hygiene
 

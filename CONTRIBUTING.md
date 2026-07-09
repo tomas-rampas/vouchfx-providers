@@ -56,15 +56,26 @@ All Community-tier providers follow one contribution flow with two hosting choic
 
 1. Start from [`template/`](template/) (`Community.Steps.Hello` + its tests) or model on [`community/Community.Steps.JsonRpc`](community/Community.Steps.JsonRpc/), the hub's worked reference.
 2. Name your projects `community/<YourProvider>/` + `community/<YourProvider>.Tests/`; use a non-reserved namespace (the `Community.Steps.<Name>` convention is recommended — never `Platform.Engine.*`/`Platform.Steps.*`).
-3. Build standalone against the packed SDK (`packages-local/` feed via `nuget.config`; see "Building Before the SDK is on NuGet.org" below). Your projects do **not** need to join the `.sln` — CI discovers `community/**/*.Tests.csproj` by glob and runs each submission in its own step. Every public member of your provider must have an XML-doc comment (CS1591 enforced by the repo's TreatWarningsAsErrors setting); the reference provider [`Community.Steps.JsonRpc`](community/Community.Steps.JsonRpc) demonstrates this quality bar. When you publish to NuGet, the pack gate validates per-provider metadata: `Description` (not the MSBuild default), `PackageTags`, `PackageReadmeFile` + a packaged `README.md` file; `PackageId`, repository URL, and Apache-2.0 licence expression are set automatically from `community/Directory.Build.props`.
+3. Build standalone against the pinned SDK (see "Building against the SDK" below). Your projects do **not** need to join the `.sln` — CI discovers `community/**/*.Tests.csproj` by glob and runs each submission in its own step. Every public member of your provider must have an XML-doc comment (CS1591 enforced by the repo's TreatWarningsAsErrors setting); the reference provider [`Community.Steps.JsonRpc`](community/Community.Steps.JsonRpc) demonstrates this quality bar. When you publish to NuGet, the pack gate validates per-provider metadata: `Description` (not the MSBuild default), `PackageTags`, `PackageReadmeFile` + a packaged `README.md` file; `PackageId`, repository URL, and Apache-2.0 licence expression are set automatically from `community/Directory.Build.props`.
 4. Add your registry entry with `"hosting": "hub"`. If your provider will be published to NuGet (recommended for discoverability), set `nuget` to the provider directory name (e.g. `nuget: "Community.Steps.JsonRpc"` for `community/Community.Steps.JsonRpc`); the publish workflow requires this field to cut a release tag (`<Provider>/vX.Y.Z`). **Release timing:** no `<Provider>/vX.Y.Z` tag may be cut until your provider's `Platform.Sdk` dependency pin is publicly restorable from NuGet.org. The publish workflow enforces this with a dependency-resolvability preflight check — publishing an unrestorable package would burn an immutable version number.
 5. Open the PR using the [community submission template](.github/PULL_REQUEST_TEMPLATE/community-submission.md), with every commit DCO-signed (`git commit -s`).
 
 The merge bar for Option B is **hygiene, not review**: Apache-2.0 licence, DCO, namespace rules, no step-kind collision, and a green conformance lane. **Hosting in this repository is not endorsement** — your provider's README must open with the Community-tier notice, and you remain the owner of your folder (a CODEOWNERS line is added at merge). The published Vouched rubric is the feedback for what is needed to work towards the Vouched badge.
 
-## Building Before the SDK is on NuGet.org
+## Building against the SDK
 
-The `Platform.Sdk` and `Platform.Sdk.Testing` packages ship with the engine's next tagged pre-release and will be published to NuGet. Until the engine publishes the SDK (its next tagged pre-release), pack the five SDK-closure projects locally from the engine:
+The `Platform.Sdk` and `Platform.Sdk.Testing` packages are pinned in `Directory.Build.props` via the `$(VouchfxSdkVersion)` property. To build:
+
+```bash
+dotnet restore
+dotnet build
+```
+
+Restoring the SDK requires no special setup — it downloads automatically from [NuGet.org](https://www.nuget.org) at the pinned version. The `nuget.config` in this repository already handles routing the SDK packages to NuGet.org.
+
+### Building against engine main (optional)
+
+For advanced work testing against the engine's unreleased `main` branch, pack the five SDK-closure projects locally and override the version pin:
 
 ```bash
 # From the vouchfx-providers repo root, with the engine checked out at <engine>:
@@ -76,15 +87,13 @@ for p in \
   src/Sdk/Platform.Sdk.Testing/Platform.Sdk.Testing.csproj ; do
   dotnet pack "<engine>/$p" -c Release -o packages-local
 done
+
+# Restore and build against the engine-main pre-release
+dotnet restore -p:VouchfxSdkVersion=1.0.0-enginemain
+dotnet build
 ```
 
-This repository's `nuget.config` already points to `packages-local`:
-
-```xml
-<add key="local" value="packages-local" />
-```
-
-Local builds will consume the locally packed SDK.
+This is the pattern used by CI's early-warning lane to test compatibility with unreleased engine changes.
 
 ## Earning the Vouched Badge
 
