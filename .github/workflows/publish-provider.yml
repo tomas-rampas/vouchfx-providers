@@ -290,6 +290,137 @@ jobs:
             -o artifacts/nuget
           ls -lh artifacts/nuget/
 
+      # ── Step 7b: Preflight — dependency resolvability on nuget.org (push-only) ─
+      # Guards against cutting a provider release tag while its packed
+      # Platform.*/vouchfx* dependency pin (e.g. Platform.Sdk) is not yet
+      # resolvable from nuget.org: Step 5's packages-local/ bootstrap feed
+      # makes `dotnet pack` above succeed regardless of what's actually live
+      # on nuget.org, so pack succeeding is NOT evidence the package is
+      # installable. A consumer who `dotnet add package`s the just-published
+      # provider on a clean machine (no packages-local/ bootstrap) would hit
+      # an unresolvable dependency — and nuget.org packages are IMMUTABLE
+      # (see the header note), so that would be a PERMANENTLY broken release
+      # needing a brand-new patch version to fix, not a re-run.
+      #
+      # This check SELF-HEALS: once Platform.Sdk ships to nuget.org and every
+      # "[REMOVE AFTER SDK PUBLISHED]" step above is deleted, every
+      # Platform.*/vouchfx* dependency will resolve and this step becomes a
+      # normal no-op pass — it stays in place permanently as a release-time
+      # safety net, not a bootstrap-era workaround to remove later.
+      - name: Preflight — dependency resolvability on nuget.org
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+
+          # check_one_dependency <id> <version>
+          # Queries the NuGet v3 flatcontainer version index for <id> and
+          # fails unless <version> appears in it. Three DISTINCT failure
+          # modes, each with its own named ::error:: — a transport/network
+          # blip must never be misread as "the dependency doesn't exist":
+          #   1. curl transport failure (DNS, TLS, timeout, connection reset)
+          #      -> NETWORK ERROR
+          #   2. HTTP 404 (the package id has never been published at all)
+          #      -> DEPENDENCY NOT PUBLISHED (id-level)
+          #   3. HTTP 200 but <version> absent from the "versions" array
+          #      -> DEPENDENCY NOT PUBLISHED (version-level)
+          # Any other HTTP status is treated as an API/network anomaly (mode
+          # 1's bucket), never as confirmation of absence.
+          check_one_dependency() {
+            local dep_id="$1" dep_version="$2"
+            local dep_id_lower url raw curl_exit http_code body
+
+            dep_id_lower="$(tr '[:upper:]' '[:lower:]' <<<"$dep_id")"
+            url="https://api.nuget.org/v3-flatcontainer/${dep_id_lower}/index.json"
+            echo "::group::Checking $dep_id $dep_version"
+            echo "GET $url"
+
+            # NOTE: `if ! raw=$(cmd); then curl_exit=$?; ...` looks natural but
+            # is WRONG — `!` negates the condition's exit status, so `$?`
+            # inside the `then` block is always 0 (the negation's own
+            # success), never curl's real exit code. The if/else form below
+            # keeps the assignment errexit-safe (it's a condition, so `set -e`
+            # does not abort on failure) while `$?` in the `else` branch still
+            # correctly holds curl's real exit code.
+            if raw="$(curl --silent --show-error --connect-timeout 10 --max-time 30 --retry 2 --retry-delay 2 -w $'\n%{http_code}' "$url")"; then
+              curl_exit=0
+            else
+              curl_exit=$?
+            fi
+            if [[ "$curl_exit" -ne 0 ]]; then
+              echo "::error::NETWORK ERROR while checking $dep_id — curl could not reach $url (exit $curl_exit). This is a TRANSPORT FAILURE, not evidence that $dep_id is missing — re-run once network/nuget.org access is restored."
+              echo "::endgroup::"
+              return 1
+            fi
+
+            http_code="$(tail -n1 <<<"$raw")"
+            body="$(sed '$d' <<<"$raw")"
+
+            if [[ "$http_code" == "404" ]]; then
+              echo "::error::DEPENDENCY NOT PUBLISHED: $dep_id does not exist at all on nuget.org (404 at $url). Publishing $PROVIDER now would ship a permanently broken, immutable package for any consumer without the local packages-local/ bootstrap feed. Wait until $dep_id is published, or update the dependency pin, before cutting this tag."
+              echo "::endgroup::"
+              return 1
+            fi
+
+            if [[ "$http_code" != "200" ]]; then
+              echo "::error::NETWORK/API ERROR while checking $dep_id — nuget.org returned unexpected HTTP $http_code from $url. This is NOT confirmation that $dep_id is missing — investigate or re-run."
+              echo "::endgroup::"
+              return 1
+            fi
+
+            if ! jq -e --arg v "$dep_version" '(.versions // []) | index($v) != null' <<<"$body" > /dev/null 2>&1; then
+              echo "::error::DEPENDENCY NOT PUBLISHED: $dep_id $dep_version is not present in nuget.org's version index ($url). Publishing $PROVIDER now would ship a permanently broken, immutable package for any consumer without the local packages-local/ bootstrap feed. Wait until $dep_id $dep_version is published, or update the dependency pin, before cutting this tag."
+              echo "::endgroup::"
+              return 1
+            fi
+
+            echo "OK: $dep_id $dep_version is published on nuget.org."
+            echo "::endgroup::"
+            return 0
+          }
+
+          nupkg="artifacts/nuget/${PROVIDER}.${VERSION}.nupkg"
+          if [[ ! -f "$nupkg" ]]; then
+            echo "::error::$nupkg not found — the pack step above should have produced it. Refusing to publish."
+            exit 1
+          fi
+
+          echo "Extracting Platform.*/vouchfx* dependencies from ${PROVIDER}.nuspec..."
+          nuspec_content="$(unzip -p "$nupkg" "${PROVIDER}.nuspec")"
+          dep_tags="$(grep -oP '<dependency\b[^>]*/>' <<<"$nuspec_content" || true)"
+
+          deps=""
+          while IFS= read -r tag; do
+            [[ -z "$tag" ]] && continue
+            dep_id="$(grep -oP '(?<=\bid=")[^"]+' <<<"$tag" || true)"
+            dep_version="$(grep -oP '(?<=\bversion=")[^"]+' <<<"$tag" || true)"
+            if [[ "$dep_id" == Platform.* || "$dep_id" == vouchfx* ]]; then
+              deps+="${dep_id}"$'\t'"${dep_version}"$'\n'
+            fi
+          done <<< "$dep_tags"
+
+          if [[ -z "$deps" ]]; then
+            echo "No Platform.*/vouchfx* dependencies declared in ${PROVIDER}.nuspec — nothing to preflight."
+            exit 0
+          fi
+
+          echo "Dependencies to verify:"
+          echo "$deps"
+
+          failed=0
+          while IFS=$'\t' read -r dep_id dep_version; do
+            [[ -z "$dep_id" ]] && continue
+            if ! check_one_dependency "$dep_id" "$dep_version"; then
+              failed=1
+            fi
+          done <<< "$deps"
+
+          if [[ "$failed" -ne 0 ]]; then
+            echo "::error::Preflight dependency-resolvability check failed — see errors above. Refusing to publish $PROVIDER $VERSION."
+            exit 1
+          fi
+
+          echo "Preflight passed: every Platform.*/vouchfx* dependency of $PROVIDER $VERSION is resolvable from nuget.org."
+
       # ── Step 8: SLSA build provenance attestation ─────────────────────────────
       # NOTE: the engine's own release.yml references this action as
       # actions/attest-build-provenance@v4 WITHOUT a pinned SHA (verified by

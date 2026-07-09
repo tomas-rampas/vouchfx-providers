@@ -232,11 +232,18 @@ jobs:
               failed=1
             fi
 
-            # Non-empty <description>.
+            # Non-empty <description>, and not MSBuild's default placeholder
+            # ("Package Description", emitted automatically when a project has
+            # IsPackable=true but no explicit <Description> property) — that
+            # placeholder is worse than empty because it silently satisfies a
+            # naive non-empty check.
             local description
             description="$(grep -oP '(?<=<description>).*(?=</description>)' <<<"$nuspec_content" || true)"
             if [[ -z "$description" ]]; then
               echo "::error::$nupkg — <description> is missing or empty."
+              failed=1
+            elif [[ "$description" == "Package Description" ]]; then
+              echo "::error::$nupkg — <description> is still MSBuild's default placeholder \"Package Description\" — set a real <Description> in the provider's csproj."
               failed=1
             fi
 
