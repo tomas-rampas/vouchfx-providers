@@ -18,7 +18,15 @@
       "stepKindId": {
         "type": "string",
         "pattern": "^[a-z0-9](-?[a-z0-9])*\\.[a-z0-9](-?[a-z0-9])*$",
-        "description": "Step type identifier in the form 'family.provider' (e.g. 'db-assert.snowflake', 'mq-publish.redis')"
+        "description": "Step type identifier in the form 'family.provider' (e.g. 'db-assert.snowflake', 'mq-publish.mqtt'). Must not collide with a Core provider's step kind."
+      },
+      "hosting": {
+        "type": "string",
+        "enum": [
+          "external",
+          "hub"
+        ],
+        "description": "Where the provider's source lives: 'external' (the author's own repository — the default when absent) or 'hub' (contributed as source into this repository's community/ directory). Hub-hosted entries may omit 'nuget' until a package exists."
       },
       "repo": {
         "type": "string",
@@ -63,12 +71,26 @@
       "name",
       "stepKindId",
       "repo",
-      "nuget",
       "author",
       "minEngineVersion",
       "tier",
       "description"
     ],
+    "if": {
+      "properties": {
+        "hosting": {
+          "const": "hub"
+        }
+      },
+      "required": [
+        "hosting"
+      ]
+    },
+    "else": {
+      "required": [
+        "nuget"
+      ]
+    },
     "additionalProperties": false
   },
   "uniqueItems": true

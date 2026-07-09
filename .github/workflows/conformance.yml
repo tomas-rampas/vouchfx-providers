@@ -134,19 +134,44 @@ jobs:
           --no-build
           --logger "console;verbosity=normal"
 
-      # ── Step 7b: Community provider conformance test (Community.Steps.JsonRpc) ─
-      # community/ hosts hub-hosted Community-tier providers — rpc.json-rpc is the
-      # first, listed in registry/community-providers.json and used as the reference
-      # implementation by the implementing-a-provider guide (alongside template/'s
-      # copyable skeleton and verified/'s submission gate). Same restore/build flow
-      # as the template step above; the sln already globs both projects into the
-      # single restore/build done earlier in this job.
-      - name: Test — community providers (Community.Steps.JsonRpc conformance)
+      # ── Step 7b: Community provider tests (shell-glob over community/) ───────
+      # community/ hosts hub-hosted Community-tier source submissions — any
+      # contributor may PR a provider in (see CONTRIBUTING.md); rpc.json-rpc is
+      # the first and doubles as the guide's reference implementation. Every
+      # community/**/*.Tests.csproj is discovered and run in its OWN
+      # restore/build/test (no --no-build, no sln-membership requirement): a
+      # submission that breaks can only fail its own step output, and the
+      # packages-local feed (nuget.config) resolves the SDK closure standalone.
+      # At least one project must be found — rpc.json-rpc always exists, so an
+      # empty glob means the checkout/glob itself is broken, not "no submissions".
+      - name: Test — community providers (glob over community/)
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          found=0
+          for csproj in community/**/*.Tests.csproj; do
+            echo "::group::Running community test project: $csproj"
+            dotnet test "$csproj" -c Release --logger "console;verbosity=normal"
+            echo "::endgroup::"
+            found=1
+          done
+          if [[ "$found" -eq 0 ]]; then
+            echo "::error::No community/**/*.Tests.csproj found — rpc.json-rpc should always be present."
+            exit 1
+          fi
+
+      # ── Step 7b2: Registry index validation ──────────────────────────────────
+      # Every entry in community-providers.json must validate against the
+      # registry schema (draft 2020-12) — including the hosting-conditional
+      # rule (external entries require a nuget id; hub-hosted entries may omit
+      # it). Guards registry PRs and hub-hosted submissions alike.
+      - name: Validate — registry index vs schema
         run: >
-          dotnet test community/Community.Steps.JsonRpc.Tests
-          -c Release
-          --no-build
-          --logger "console;verbosity=normal"
+          npx --yes -p ajv-cli@5 -p ajv-formats@2 ajv validate
+          -c ajv-formats --spec=draft2020
+          -s registry/community-providers.schema.json
+          -d registry/community-providers.json
 
       # ── Step 7c: Verified submission tests (shell-glob; no-op if none exist) ──
       # When a Verified submission lands under verified/<provider>/

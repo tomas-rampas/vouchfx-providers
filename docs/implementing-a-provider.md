@@ -1059,11 +1059,11 @@ dotnet test your-provider.Tests -c Release --filter "requires!=docker"
 
 ## 11. Publishing and Submission
 
-Once your provider is tested and documented, you have two paths:
+Once your provider is tested and documented, the Community tier offers two hosting options, and the Verified tier a review gate:
 
-### Community Tier — Index Listing
+### Community Tier — external hosting (your repository + NuGet)
 
-**When to choose this:** Your provider is authored, tested, and published on NuGet. You want discoverability without seeking platform endorsement.
+**When to choose this:** You want to keep the source in your own repository and publish it yourself. You want discoverability without seeking platform endorsement.
 
 **How to submit:**
 
@@ -1076,7 +1076,13 @@ Once your provider is tested and documented, you have two paths:
 
 2. **Add to the community index** — open a GitHub issue using the **Provider Listing** template, or submit a pull request to `registry/community-providers.json` following the schema in `registry/community-providers.schema.json`.
 
-3. **List immediately** — a maintainer adds your provider to the registry. There is no conformance testing for Community tier; only Apache-2.0 compliance and the reflective-discovery contract.
+3. **List immediately** — a maintainer adds your provider to the registry. There is no conformance testing for externally-hosted Community providers; only Apache-2.0 compliance and the reflective-discovery contract.
+
+### Community Tier — hub hosting (source PR into `community/`)
+
+**When to choose this:** You do not have (or want) a NuGet account, or you want your provider's tests running in the hub's CI. Hosting here is **not** endorsement — the merge bar is hygiene (Apache-2.0, DCO, namespace rules, green conformance lane), not a code review.
+
+**How to submit:** open one pull request adding `community/<YourProvider>/` + `community/<YourProvider>.Tests/` **and** your registry entry with `"hosting": "hub"` (the `nuget` field is optional). Use the community submission PR template; CI discovers `community/**/*.Tests.csproj` by glob and runs your tests in their own step. The full step-by-step lives in `CONTRIBUTING.md`; `rpc.json-rpc` under `community/` is the worked example of exactly this shape.
 
 ### Verified Tier — Platform Endorsement
 

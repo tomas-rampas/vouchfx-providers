@@ -44,20 +44,24 @@ See the engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blo
 
 ## Two Submission Paths
 
-### Path 1: Community Tier (Index Listing)
+### Path 1: Community Tier
 
-List your provider in the community index **if:**
-- Your provider is authored, tested, and published on NuGet
-- You want discoverability without seeking platform-team endorsement
-- You do not (yet) meet the Verified-tier rubric
+Choose the Community tier **if** you want discoverability without seeking platform-team endorsement (or do not yet meet the Verified-tier rubric). It has two equally valid hosting options:
 
-**How to submit:**
+**Option A — external hosting (your repository + NuGet).** Your provider is authored, tested, and published on NuGet:
 
-1. **Option A: Open an issue** — click [**New Issue → Provider Listing**](.github/ISSUE_TEMPLATE/provider-listing.yml) and fill in the form. A maintainer will add your provider to the registry.
+1. **Open an issue** — click [**New Issue → Provider Listing**](.github/ISSUE_TEMPLATE/provider-listing.yml) and fill in the form; a maintainer adds your entry. Or:
+2. **Submit an entry PR** — fork this repository, add an entry to `registry/community-providers.json` following the schema in `registry/community-providers.schema.json`, and open a pull request. See [`registry/README.md`](registry/README.md) for the field meanings and validation.
 
-2. **Option B: Submit a PR** — fork this repository, add an entry to `registry/community-providers.json` following the schema in `registry/community-providers.schema.json`, and open a pull request. See [`registry/README.md`](registry/README.md) for the field meanings and validation.
+**Option B — hub hosting (source PR into `community/`, no NuGet account needed).** Contribute the provider itself:
 
-There is no conformance testing for Community providers — the gatekeeping is only Apache-2.0 compliance and the reflective-discovery contract. The published Verified-tier rubric is the feedback for what is needed to graduate.
+1. Start from [`template/`](template/) (`Community.Steps.Hello` + its tests) or model on [`community/Community.Steps.JsonRpc`](community/Community.Steps.JsonRpc/), the tier's worked reference.
+2. Name your projects `community/<YourProvider>/` + `community/<YourProvider>.Tests/`; use a non-reserved namespace (the `Community.Steps.<Name>` convention is recommended — never `Platform.Engine.*`/`Platform.Steps.*`).
+3. Build standalone against the packed SDK (`packages-local/` feed via `nuget.config`; see "Building Before v1.0 GA" below). Your projects do **not** need to join the `.sln` — CI discovers `community/**/*.Tests.csproj` by glob and runs each submission in its own step.
+4. Add your registry entry with `"hosting": "hub"` (the `nuget` field is optional for hub-hosted entries).
+5. Open the PR using the [community submission template](.github/PULL_REQUEST_TEMPLATE/community-submission.md), with every commit DCO-signed (`git commit -s`).
+
+The merge bar for Option B is **hygiene, not review**: Apache-2.0 licence, DCO, namespace rules, no step-kind collision, and a green conformance lane. **Hosting in this repository is not endorsement** — your provider's README must open with the Community-tier notice, and you remain the owner of your folder (a CODEOWNERS line is added at merge). The published Verified-tier rubric is the feedback for what is needed to graduate.
 
 ### Path 2: Verified Tier (Platform Endorsement)
 

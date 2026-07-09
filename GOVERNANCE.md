@@ -52,14 +52,19 @@ Verified providers have passed a published rubric, are endorsed by the platform 
 ### Tier 3: Community
 **Status:** Community-authored, independently versioned, no platform-team endorsement.
 
-Community providers are listed in the curated community index but are not endorsed by the platform team. They are published on NuGet and discoverable through this repository.
+Community providers are listed in the curated community index but are not endorsed by the platform team. They may be hosted in either of two first-class places: **externally** (the author's own repository, published on NuGet) or **hub-hosted** (contributed as source into this repository's `community/` directory via pull request, no NuGet account required — CI discovers and runs each provider's tests in isolation, and the author retains ownership of their folder via CODEOWNERS).
+
+**Hosting is not endorsement.** The Verified tier's meaning is *review*; the Community tier's meaning is *availability*. A provider living under `community/` in this repository carries exactly the same no-endorsement status as one living in its author's repository — every hub-hosted provider's README opens with the Community-tier notice, and the merge bar for accepting one is hygiene, not review.
 
 **Requirements:**
-- Apache-2.0 licensed (or compatible)
+- Apache-2.0 licensed (or compatible); for hub-hosted submissions, all commits signed off via DCO
 - Follows the reflective-discovery contract (implements `[StepProvider]` attribute, four required interfaces, uses non-reserved namespaces)
-- No validation or conformance testing by the platform team
+- For hub-hosted submissions: builds standalone against the packed SDK and its conformance lane is green
+- No code review or rubric validation by the platform team (that is the Verified gate)
 
-**Decision maker:** Any contributor. Providers are listed by the community via issue or pull request; there is no gatekeeping beyond Apache-2.0 compliance.
+**Decision maker:** Any contributor. Providers are listed by the community via issue or pull request; the gatekeeping is Apache-2.0 compliance, and — for hub-hosted source — DCO, namespace hygiene and a green conformance lane.
+
+**Delisting (hub-hosted):** a hub-hosted provider whose conformance lane rots and whose author is unresponsive may be delisted — its registry entry removed and its folder archived out of CI — never silently adopted or maintained by the platform team. The source history remains available; the author can resubmit at any time.
 
 **Support:** No official support from the platform team. Provider authors own support for their providers. The published Verified-tier rubric is the feedback for what is needed to graduate to Verified.
 
