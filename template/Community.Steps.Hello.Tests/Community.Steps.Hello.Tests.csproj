@@ -15,8 +15,8 @@
 
     <!-- Published harness packages — the out-of-repo path uses these instead of
          in-tree ProjectReferences to Platform.Engine.* assemblies. -->
-    <PackageReference Include="Platform.Sdk" Version="1.0.0" />
-    <PackageReference Include="Platform.Sdk.Testing" Version="1.0.0" />
+    <PackageReference Include="Platform.Sdk" Version="$(VouchfxSdkVersion)" />
+    <PackageReference Include="Platform.Sdk.Testing" Version="$(VouchfxSdkVersion)" />
   </ItemGroup>
 
 </Project>

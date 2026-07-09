@@ -43,7 +43,7 @@
          No reference to Platform.Engine.* is needed or permitted: the engine drives
          the provider through these interfaces, and cross-step state reaches the run
          environment solely through the engine-injected Vars global. -->
-    <PackageReference Include="Platform.Sdk" Version="1.0.0" />
+    <PackageReference Include="Platform.Sdk" Version="$(VouchfxSdkVersion)" />
   </ItemGroup>
 
 </Project>
