@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://vouchfx.dev/schema/community-providers.schema.json",
   "title": "vouchfx Community Provider Registry",
-  "description": "JSON Schema for the vouchfx community provider index (community-providers.json)",
+  "description": "JSON Schema for the vouchfx community provider index (community-providers.json). The registry lists community providers; the maintainer-awarded Vouched badge (see 'vouched') is the only endorsement marker.",
   "type": "array",
   "items": {
     "type": "object",
@@ -52,13 +52,10 @@
         "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-((?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*))?(?:\\+([0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*))?$",
         "description": "Minimum vouchfx engine version (SemVer format, e.g. '1.0.0', '1.1.0')"
       },
-      "tier": {
-        "type": "string",
-        "enum": [
-          "community",
-          "verified"
-        ],
-        "description": "Governance tier: 'community' (no endorsement) or 'verified' (platform-team endorsed)"
+      "vouched": {
+        "type": "boolean",
+        "default": false,
+        "description": "Maintainer-awarded Vouched badge per VOUCHED_CHECKLIST.md (rubric review after listing). Absence means not vouched. Only maintainers may set this field (gated by CODEOWNERS on /registry/)."
       },
       "description": {
         "type": "string",
@@ -73,7 +70,6 @@
       "repo",
       "author",
       "minEngineVersion",
-      "tier",
       "description"
     ],
     "if": {
