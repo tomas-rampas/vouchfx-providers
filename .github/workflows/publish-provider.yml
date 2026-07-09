@@ -378,11 +378,16 @@ jobs:
             return 0
           }
 
-          nupkg="artifacts/nuget/${PROVIDER}.${VERSION}.nupkg"
-          if [[ ! -f "$nupkg" ]]; then
-            echo "::error::$nupkg not found — the pack step above should have produced it. Refusing to publish."
+          # Resolve by glob, not the literal "${PROVIDER}.${VERSION}.nupkg": NuGet
+          # normalises legal-but-non-canonical versions (e.g. 1.2.3.0 -> 1.2.3) in
+          # the produced filename. Exactly one package is expected in the output dir.
+          shopt -s nullglob
+          candidates=(artifacts/nuget/"${PROVIDER}".*.nupkg)
+          if [[ ${#candidates[@]} -ne 1 ]]; then
+            echo "::error::expected exactly one artifacts/nuget/${PROVIDER}.*.nupkg from the pack step, found ${#candidates[@]}. Refusing to publish."
             exit 1
           fi
+          nupkg="${candidates[0]}"
 
           echo "Extracting Platform.*/vouchfx* dependencies from ${PROVIDER}.nuspec..."
           nuspec_content="$(unzip -p "$nupkg" "${PROVIDER}.nuspec")"
