@@ -62,9 +62,9 @@ All Community-tier providers follow one contribution flow with two hosting choic
 
 The merge bar for Option B is **hygiene, not review**: Apache-2.0 licence, DCO, namespace rules, no step-kind collision, and a green conformance lane. **Hosting in this repository is not endorsement** — your provider's README must open with the Community-tier notice, and you remain the owner of your folder (a CODEOWNERS line is added at merge). The published Vouched rubric is the feedback for what is needed to work towards the Vouched badge.
 
-## Building Before v1.0 GA
+## Building Before the SDK is on NuGet.org
 
-The `Platform.Sdk` and `Platform.Sdk.Testing` packages are published to NuGet with the vouchfx v1.0 **GA** release. The v1.0.0-alpha pre-releases include only the vouchfx CLI tool; the SDK packages are not yet on NuGet. Until the GA release, pack the five SDK-closure projects locally from the engine:
+The `Platform.Sdk` and `Platform.Sdk.Testing` packages ship with the engine's next tagged pre-release and will be published to NuGet. Until the engine publishes the SDK (its next tagged pre-release), pack the five SDK-closure projects locally from the engine:
 
 ```bash
 # From the vouchfx-providers repo root, with the engine checked out at <engine>:

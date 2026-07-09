@@ -45,7 +45,7 @@ After a Community provider is listed in the registry, a maintainer can award the
 
 A Community provider is consumed via **source-level build**: clone the provider repository, reference its project in your build, and rebuild your application host to integrate the provider at compile time. This is the distribution model through v1.0 and beyond.
 
-Per-provider NuGet packages will be published from this hub's own CI in a planned follow-up (targeting the v1.x release series); until then, build from source.
+Per-provider NuGet packages will be published from this hub's own CI once the SDK is restorable from NuGet.org; until then, build from source.
 
 ## How to Get Your Provider Listed
 
@@ -96,9 +96,9 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 **Note:** For hub-hosted submissions, CI runs your conformance tests against the engine `main` SDK only. The Vouched rubric requires you to verify your provider's integration-test fixture also passes on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers during the Vouched review, not an automated CI check.
 
-## Building Before v1.0 GA
+## Building Before the SDK is on NuGet.org
 
-The vouchfx SDK (`Platform.Sdk` and `Platform.Sdk.Testing`) will be released to [NuGet.org](https://www.nuget.org) with the vouchfx v1.0 **GA** release. The v1.0.0-alpha pre-releases include only the vouchfx CLI tool; the SDK packages are not yet on NuGet. Until the GA release, to build providers locally, pack the five SDK-closure projects from the engine:
+The vouchfx SDK (`Platform.Sdk` and `Platform.Sdk.Testing`) is wired into the engine's release pipeline and ships with the engine's next tagged pre-release. Until that release is published to [NuGet.org](https://www.nuget.org), to build providers locally, pack the five SDK-closure projects from the engine:
 
 ```bash
 # From the vouchfx-providers repo root, with the engine checked out at <engine>:

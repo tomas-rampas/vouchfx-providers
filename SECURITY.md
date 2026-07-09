@@ -82,6 +82,10 @@ Security issues in the parts of this repository the project maintains:
   the conformance tests, the security sign-off, or the CSX review; workflow injection
   via a submission pull request; or secret/token exfiltration from the conformance
   CI.
+- **The tag-driven publish workflow** (`publish-provider.yml`) — the per-provider
+  NuGet package publication pipeline. Security-sensitive controls include the
+  `*/v*` tag ruleset (primary gating mechanism), the ancestry gate, the registry
+  governance gate, and the dependency-resolvability preflight check.
 - **Malicious or compromised listings**: if a provider listed in this repository
   (any tier) is actively malicious or its package has been compromised, report it
   here as well as upstream — delisting and consumer notification are this
