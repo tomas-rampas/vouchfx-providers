@@ -1,6 +1,8 @@
-# Verified-Tier Rubric — Actionable Checklist
+# The Vouched Checklist
 
-A provider is promoted to **Verified** when it meets all six items in this rubric. This checklist is the source of truth for Verified-tier endorsement; it is objective, published, and enforced by CI and maintainer review.
+A provider is awarded the **Vouched badge** when it meets all six items in this rubric. This checklist is the source of truth for the Vouched-badge endorsement; it is objective, published, and enforced by maintainer review.
+
+The Vouched badge is awarded **post-listing**: a provider must already have a registry entry (listed in `registry/community-providers.json`) before a Vouched request is opened.
 
 ## The Six Required Items
 
@@ -10,22 +12,27 @@ Your provider's integration-test fixture must pass on the official conformance m
 
 **Official matrix:**
 - Engine main branch (`1.0.0` or later)
-- Two preceding minor versions (validated by a maintainer during review)
+- Two preceding minor versions (or all released minor versions, when fewer than two exist), validated by a maintainer during review
 
 **How it is tested:**
-- CI automatically runs your integration-test fixture against the engine `main` branch when you submit a PR to `verified/`.
+
+*For hub-hosted providers:*
+- CI automatically runs your integration-test fixture against the engine `main` branch when the provider source is updated in `community/`.
 - All tests must pass (0 failures, 0 skips, 0 flakes).
-- If any test fails, you push fixes to your PR branch; CI re-runs automatically.
 - A maintainer will verify that your fixture also passes on the engine main branch plus two preceding minor releases.
+
+*For externally hosted providers:*
+- You provide a link to a public CI run of your conformance fixture (green run against the engine version your provider targets).
+- A maintainer will reproduce and verify the fixture passes on the engine main branch plus two preceding minor releases.
 
 **What to do:**
 1. Author an integration-test fixture that exercises your provider end-to-end with live infrastructure (databases, brokers, etc.).
-2. Place it in `verified/<your-provider-id>/tests/` (or as a subdirectory of your submission).
-3. Ensure it runs locally: `dotnet test verified/<your-provider-id>/tests/ -c Release`.
-4. When you open your PR, CI will run it against the engine `main` branch.
-5. Before the PR merges, a maintainer will verify the fixture passes on the engine main plus two preceding minor releases.
+2. If hub-hosted: place it in `community/<your-provider-id>.Tests/` (as a sibling to your provider project).
+3. If externally hosted: place it in your own repository (e.g. `tests/ConformanceTests.cs`).
+4. Ensure it runs locally: `dotnet test` against your test project (`-c Release`).
+5. When you open a Vouched request issue, link to your CI run (external) or confirm your hub-hosted tests are green on `main`.
 
-**Failure mode:** If any test fails on the engine `main` or on the multi-version validation, the maintainer will request changes. Push fixes to your PR branch; CI re-runs automatically.
+**Failure mode:** If any test fails on the engine `main` or on the multi-version validation, the maintainer will request changes or ask for evidence of remediation.
 
 ---
 
@@ -40,7 +47,7 @@ Your provider's README must be comprehensive and cover real-world scenarios.
 - Any required configuration or prerequisites (environment variables, permissions, etc.)
 
 **What to do:**
-1. Write a README in your provider's root or in `verified/<your-provider-id>/README.md`.
+1. Write a README in your provider's repository root or as `README.md` in your provider folder.
 2. Include at least three use cases. Each should show:
    - A brief description of the scenario
    - A code example (a YAML `.e2e.yaml` snippet showing the step type in use)
@@ -49,7 +56,7 @@ Your provider's README must be comprehensive and cover real-world scenarios.
    - "This provider requires PostgreSQL 11 or later; earlier versions are not tested."
    - "Timeout handling: if the provider exceeds 30 seconds, the engine's step timeout will fire; see verifyMode for polling strategies."
    - "This provider cannot be used with TLS-disabled connections; TLS is mandatory."
-4. If your provider is in `verified/<your-provider-id>/`, reference the README in your PR description or include it in the folder.
+4. If your provider is hub-hosted, the README lives in `community/<your-provider-id>/README.md`. If externally hosted, it lives in your repository.
 
 **Failure mode:** A README with fewer than three use cases or without a known-limitations section will not pass review. The known-limitations section is not a place to list bugs; it is where you document the boundaries of what your provider does and does not do.
 
@@ -66,7 +73,7 @@ A maintainer must sign off on your provider's security posture. This is **not** 
    - Never logged or printed to stdout/stderr
    - Transmitted over TLS where applicable (database connections, HTTP, etc.)
    
-   **What to provide:** A brief note in your PR describing how credentials are handled (e.g. "Credentials are read from `Vars.Secrets.Resolve(ref)` and passed to Npgsql.NpgsqlConnectionStringBuilder; no secrets are logged.")
+   **What to provide:** A brief note describing how credentials are handled (e.g. "Credentials are read from `Vars.Secrets.Resolve(ref)` and passed to Npgsql.NpgsqlConnectionStringBuilder; no secrets are logged.")
 
 2. **Transitive dependency vulnerabilities:** Your provider's NuGet package must have zero high-severity CVEs at the time of promotion.
    
@@ -88,12 +95,12 @@ A maintainer must sign off on your provider's security posture. This is **not** 
    **What to provide:** A link to your NuGet package and confirmation that it is signed, or an explanation if it is not.
 
 **How security review works:**
-1. You provide the evidence above in your PR description or a separate security checklist.
+1. You provide the evidence above in your Vouched request issue (see `CONTRIBUTING.md` or the [vouched-request issue template](../.github/ISSUE_TEMPLATE/vouched-request.yml)).
 2. A vouchfx maintainer reviews your provider code, dependency tree, and examples.
 3. If all checks pass, the maintainer approves the security sign-off.
 4. If issues are found, the maintainer requests changes (e.g. removing hardcoded secrets, updating a vulnerable dependency, documenting a TLS gap).
 
-**Failure mode:** Unresolved security issues will block promotion. Common blockers: hardcoded credentials, high-severity transitive CVEs, unencrypted default connections, or telemetry calls.
+**Failure mode:** Unresolved security issues will block the Vouched badge. Common blockers: hardcoded credentials, high-severity transitive CVEs, unencrypted default connections, or telemetry calls.
 
 ---
 
@@ -109,20 +116,20 @@ Your provider must be Apache-2.0 licensed (or compatible), and you must sign off
      <License>Apache-2.0</License>
    </PropertyGroup>
    ```
-3. All commits in your PR must be signed off: use `git commit -s` or the GitHub web UI "Sign off" checkbox. The sign-off text should read:
+3. All commits in your work must be signed off: use `git commit -s` or the GitHub web UI "Sign off" checkbox. The sign-off text should read:
    ```
    Signed-off-by: Your Name <your.email@example.com>
    ```
 
 **How DCO sign-off works:**
 - When you commit with `git commit -s`, Git appends your sign-off line to the commit message.
-- When you push a PR, a GitHub bot checks that all commits are signed off. If any commit is missing a sign-off, the bot will flag it.
+- When you push a PR or open an issue, a GitHub bot checks that all relevant commits are signed off.
 - You can sign off retroactively: `git rebase -i main` and amend each commit to add the sign-off line, then force-push to your PR branch.
 
 **Why DCO matters:**
 The DCO confirms that you have the legal right to license your work under Apache-2.0 and that you have read and understood the Developer Certificate of Origin.
 
-**Failure mode:** If any commit in your PR is not signed off, the DCO check will fail and the PR cannot merge.
+**Failure mode:** If any commit is not signed off, the DCO check will flag it and the badge cannot be awarded.
 
 ---
 
@@ -196,7 +203,7 @@ When your `IStepCompiler<TModel>` emits a `CsxFragment`, the code runs inside a 
 5. **Cross-step state passes only through `Vars`.** Never assume variables declared by another provider will be in scope.
 
 **How review works:**
-1. When you submit your PR, a maintainer reads the `Emit` method of your `IStepCompiler<TModel>` for at least one representative step (e.g. the primary assertion step if you have multiple step types).
+1. When you open a Vouched request, a maintainer reads the `Emit` method of your `IStepCompiler<TModel>` for at least one representative step (e.g. the primary assertion step if you have multiple step types).
 2. The maintainer confirms that the emitted C# code follows all five rules above.
 3. If any rule is violated, the maintainer requests changes.
 4. Once the emitted code is confirmed to be correct, the review is approved.
@@ -208,34 +215,35 @@ When your `IStepCompiler<TModel>` emits a `CsxFragment`, the code runs inside a 
 - Declaring helper classes without the provider-id prefix (collision risk)
 - Attempting to share state between steps via static variables or module-level state
 
-**Failure mode:** Code that violates §13.3.1 will be caught in CSX review and must be fixed before promotion.
+**Failure mode:** Code that violates §13.3.1 will be caught in CSX review and must be fixed before the badge is awarded.
 
 **Resource:**
 See the engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) for worked examples and the architecture blueprint (§13.3.1) for the complete rules.
 
 ---
 
-## Submission Checklist
+## Vouched Request Checklist
 
-Use this checklist when you submit a PR to the `verified/` folder:
+Use this checklist when you open a Vouched request issue to request the badge for your provider:
 
-- [ ] **Conformance:** Integration-test fixture passes locally (`dotnet test verified/<provider-id>/tests/ -c Release`)
+- [ ] **Provider listed:** My provider is already in `registry/community-providers.json`
+- [ ] **Conformance:** Integration-test fixture passes locally and on the conformance matrix (engine main + two preceding minors)
 - [ ] **Documentation:** README with ≥3 use cases and known-limitations section
 - [ ] **Security:** Credentials reviewed, transitive CVEs scanned, TLS defaults checked, no telemetry, signature noted
 - [ ] **Licence:** Apache-2.0 license in provider repository and `.csproj`
 - [ ] **DCO:** All commits signed off (`git commit -s`)
 - [ ] **MinEngineVersion:** Declared in the provider's `Metadata` property (`ProviderMetadata.MinEngineVersion`)
-- [ ] **CSX:** Representative steps reviewed against §13.3.1 (this will be verified by a maintainer during review)
+- [ ] **CSX:** Representative steps reviewed against §13.3.1 (verified by a maintainer during review)
 
 ---
 
 ## Questions?
 
 - **How do I structure my integration tests?** See the engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) under "Testing Your Provider" and the worked example [`Example.Steps.Echo`](https://github.com/tomas-rampas/vouchfx/tree/main/examples/Example.Steps.Echo).
-- **Can I fix issues after submitting?** Yes. Push fixes to your PR branch; CI re-runs automatically.
-- **What if I can't meet one rubric item?** Remain in Community tier. The rubric is the actionable feedback for what is needed to graduate. Ask for help if you are unsure how to proceed.
+- **Can I fix issues after submitting a Vouched request?** Yes. Update your provider; the maintainer will re-review.
+- **What if I can't meet one rubric item?** Remain in Community tier. The rubric is the actionable feedback for what is needed to earn the Vouched badge. Ask for help if you are unsure how to proceed.
 - **Can the rubric change?** Yes, post-v1.0. Changes will be proposed and debated in the community. Current rubric is frozen for v1.x.
 
 ---
 
-*Verified-tier rubric extracted from the vouchfx project plan (docs/03_MVP_Project_Plan.md § 9.6) and the architecture blueprint (docs/01 § 13). Authoritative source: engine [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md).*
+*Vouched-badge rubric extracted from the vouchfx project plan and the architecture blueprint (docs/01 § 13). Authoritative source: engine [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md).*
