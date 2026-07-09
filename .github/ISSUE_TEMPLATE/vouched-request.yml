@@ -1,0 +1,141 @@
+name: Vouched request
+description: Request the Vouched badge for a provider already listed in the community registry
+title: "[Vouched request] Your Provider Name"
+labels:
+  - vouched-request
+body:
+  - type: markdown
+    attributes:
+      value: |
+        # Vouched Badge Request
+
+        Use this form to request the **Vouched** badge for a provider that is already listed in
+        [`registry/community-providers.json`](../registry/community-providers.json).
+
+        **Prerequisite:** your provider must already have a registry entry (hosted externally or
+        on the hub) before you request Vouched review. If it is not yet listed, open a
+        [Provider Listing request](../../issues/new?template=provider-listing.yml) first —
+        **this issue will be closed if the provider cannot be found in the registry.**
+
+        A maintainer reviews the evidence you provide below against
+        [`VOUCHED_CHECKLIST.md`](../VOUCHED_CHECKLIST.md). On success, the maintainer opens a
+        one-line registry PR setting `"vouched": true` for your entry — you do not open that PR
+        yourself.
+
+  - type: input
+    id: provider-id
+    attributes:
+      label: Provider ID / Step Kind
+      description: The step type identifier (family.provider) exactly as it appears in the registry
+      placeholder: "db-assert.snowflake"
+    validations:
+      required: true
+
+  - type: input
+    id: registry-entry-url
+    attributes:
+      label: Link to Registry Entry
+      description: |
+        Link to your provider's entry in `registry/community-providers.json` (a permalink to the
+        line/commit is ideal). Your provider MUST already be listed — this request will be
+        closed if it cannot be found in the registry.
+      placeholder: "https://github.com/tomas-rampas/vouchfx-providers/blob/main/registry/community-providers.json#L4-L10"
+    validations:
+      required: true
+
+  - type: textarea
+    id: rubric-evidence
+    attributes:
+      label: Vouched Rubric Evidence
+      description: |
+        Provide evidence for each of the six rubric items in
+        [`VOUCHED_CHECKLIST.md`](../VOUCHED_CHECKLIST.md):
+
+        1. Integration-test fixture passes on the official matrix (engine main + 2 preceding minors)
+        2. README with ≥3 use cases and known-limitations section
+        3. Security sign-off (credentials, transitive CVEs, TLS, no telemetry, signature)
+        4. Apache-2.0 + DCO sign-off
+        5. MinEngineVersion declared
+        6. CSX reviewed for §13.3.1 conformance
+
+        Address each item individually. Do not claim an item is complete unless it truly is —
+        incomplete evidence will be returned for revision.
+      placeholder: |
+        1. Conformance matrix: ...
+        2. README: ...
+        3. Security sign-off: see Security Review Evidence below
+        4. Licence/DCO: ...
+        5. MinEngineVersion: ...
+        6. CSX §13.3.1: see CSX Review Evidence below
+    validations:
+      required: true
+
+  - type: textarea
+    id: security-review-evidence
+    attributes:
+      label: Security Review Evidence
+      description: |
+        Provide the following for security sign-off (rubric item 3):
+
+        - Credential handling strategy
+        - Transitive dependency scan result (e.g. `dotnet list package --outdated`, zero high-severity CVEs)
+        - TLS defaults
+        - Telemetry statement (no phone-home / exfiltration beyond the target service)
+        - NuGet package signature status
+      placeholder: |
+        - Credential handling: Credentials are read from `Vars.Secrets.Resolve(ref)` and passed to Npgsql; no secrets are logged.
+        - Transitive dependency scan: Ran `dotnet list package --outdated` — zero high-severity CVEs.
+        - TLS defaults: Connections default to SSL=Require; unsecured connections are not supported.
+        - Telemetry: No outbound connections beyond the target service; no telemetry or analytics.
+        - NuGet signature: Package is signed with a code-signing certificate from Acme Corp.
+    validations:
+      required: true
+
+  - type: textarea
+    id: csx-review-evidence
+    attributes:
+      label: CSX Review Evidence
+      description: |
+        Provide evidence that a representative step's emitted CSX follows §13.3.1: three fields
+        only (`RequiredUsings`, `RequiredHelpers`, `StatementBlock`), no `using var` in the script
+        body, double-dollar raw strings, sanitised step IDs, and state passed only through `Vars`.
+        Paste the emitted `CsxFragment` (or an equivalent excerpt) and annotate its compliance.
+      placeholder: |
+        // Representative step: SnowflakeAssertCompiler for a SELECT query assertion
+        var fragment = new CsxFragment(
+            RequiredUsings: new[] { "System", "System.Data", "Snowflake.Data.Client" },
+            RequiredHelpers: new[] { "static class DbAssertSnowflake_Helpers { ... }" },
+            StatementBlock: $$"""
+            {
+                var __secret_{{safeId}} = Vars.Secrets.Resolve({{secretRefLiteral}});
+                ...
+            }
+            """
+        );
+
+        // Compliance notes:
+        // - Three fields only (RequiredUsings, RequiredHelpers, StatementBlock)
+        // - No `using var`; explicit Dispose() in finally
+        // - Double-dollar raw string; step ID sanitised before use in variable names
+        // - Cross-step state passes through Vars only
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-context
+    attributes:
+      label: Additional Context
+      description: Anything else a maintainer should know (optional)
+
+  - type: checkboxes
+    id: confirm
+    attributes:
+      label: Confirmation
+      description: Please confirm
+      options:
+        - label: My provider is already listed in `registry/community-providers.json`
+          required: true
+        - label: I have read the [`VOUCHED_CHECKLIST.md`](../VOUCHED_CHECKLIST.md) and understand what is required
+          required: true
+        - label: I have read the engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) and the provider authoring guide
+          required: true

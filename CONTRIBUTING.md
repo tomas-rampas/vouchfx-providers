@@ -1,6 +1,6 @@
 # Contributing a Provider to vouchfx
 
-This guide explains how to submit a provider for listing in the community index or for Verified-tier endorsement.
+This guide explains how to submit a Community provider for listing in the index and how to work towards the Vouched badge.
 
 ## Before You Start
 
@@ -42,96 +42,25 @@ See the engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blo
 - Local tests must pass: `dotnet test <your-provider.Tests> -c Release --filter "requires!=docker"`.
 - If your provider uses infrastructure (databases, brokers), include a Docker integration test. Community providers can author this within their own repository or contribute it to the main vouchfx repository if it uses Core infrastructure.
 
-## Two Submission Paths
+## One Submission Flow, Two Hosting Options
 
-### Path 1: Community Tier
-
-Choose the Community tier **if** you want discoverability without seeking platform-team endorsement (or do not yet meet the Verified-tier rubric). It has two equally valid hosting options:
+All Community-tier providers follow one contribution flow with two hosting choices:
 
 **Option A — external hosting (your repository + NuGet).** Your provider is authored, tested, and published on NuGet:
 
-1. **Open an issue** — click [**New Issue → Provider Listing**](.github/ISSUE_TEMPLATE/provider-listing.yml) and fill in the form; a maintainer adds your entry. Or:
-2. **Submit an entry PR** — fork this repository, add an entry to `registry/community-providers.json` following the schema in `registry/community-providers.schema.json`, and open a pull request. See [`registry/README.md`](registry/README.md) for the field meanings and validation.
+1. **Publish to NuGet** — pack your provider as a NuGet package and push it to nuget.org.
+2. **Open an issue** — click [**New Issue → Provider Listing**](.github/ISSUE_TEMPLATE/provider-listing.yml) and fill in the form; a maintainer adds your entry. Or:
+3. **Submit an entry PR** — fork this repository, add an entry to `registry/community-providers.json` following the schema in `registry/community-providers.schema.json`, and open a pull request. See [`registry/README.md`](registry/README.md) for the field meanings and validation.
 
-**Option B — hub hosting (source PR into `community/`, no NuGet account needed).** Contribute the provider itself:
+**Option B — hub hosting (source PR into `community/`, no NuGet account needed).** Contribute the provider source itself:
 
-1. Start from [`template/`](template/) (`Community.Steps.Hello` + its tests) or model on [`community/Community.Steps.JsonRpc`](community/Community.Steps.JsonRpc/), the tier's worked reference.
+1. Start from [`template/`](template/) (`Community.Steps.Hello` + its tests) or model on [`community/Community.Steps.JsonRpc`](community/Community.Steps.JsonRpc/), the hub's worked reference.
 2. Name your projects `community/<YourProvider>/` + `community/<YourProvider>.Tests/`; use a non-reserved namespace (the `Community.Steps.<Name>` convention is recommended — never `Platform.Engine.*`/`Platform.Steps.*`).
 3. Build standalone against the packed SDK (`packages-local/` feed via `nuget.config`; see "Building Before v1.0 GA" below). Your projects do **not** need to join the `.sln` — CI discovers `community/**/*.Tests.csproj` by glob and runs each submission in its own step.
 4. Add your registry entry with `"hosting": "hub"` (the `nuget` field is optional for hub-hosted entries).
 5. Open the PR using the [community submission template](.github/PULL_REQUEST_TEMPLATE/community-submission.md), with every commit DCO-signed (`git commit -s`).
 
-The merge bar for Option B is **hygiene, not review**: Apache-2.0 licence, DCO, namespace rules, no step-kind collision, and a green conformance lane. **Hosting in this repository is not endorsement** — your provider's README must open with the Community-tier notice, and you remain the owner of your folder (a CODEOWNERS line is added at merge). The published Verified-tier rubric is the feedback for what is needed to graduate.
-
-### Path 2: Verified Tier (Platform Endorsement)
-
-Submit for Verified-tier endorsement **if:**
-- Your provider meets or nearly meets the [Verified-tier rubric](VERIFIED_TIER_CHECKLIST.md)
-- You want platform-team endorsement and website listing
-- You are prepared for security review and CSX conformance review
-
-**How to submit:**
-
-#### Step 1: Signal Intent (Optional but Recommended)
-
-Open an issue [**New Issue → Verified Proposal**](.github/ISSUE_TEMPLATE/verified-proposal.yml). This tells maintainers you plan to submit, lets them coordinate review capacity, and gives you early feedback on readiness. It is not mandatory but is strongly recommended.
-
-#### Step 2: Prepare Your Submission
-
-Organise your provider for submission:
-- Create a folder at `verified/<your-provider-id>/` (e.g. `verified/snowflake-assert/` or `verified/redis-pubsub/`). The id should be descriptive and match your step type family or provider name.
-- Copy your provider's **source code** into `verified/<your-provider-id>/src/` (the minimal subset needed to compile your provider).
-- Copy your **integration-test fixture** into `verified/<your-provider-id>/tests/` (the conformance test that CI will run).
-- Copy your **README** into `verified/<your-provider-id>/README.md` (or link to it in your submission PR description).
-- Ensure your project file references `Platform.Sdk` from the local feed (for pre-v1.0) or NuGet (post-v1.0).
-
-#### Step 3: Open a Pull Request
-
-Fork this repository, commit your submission, and open a PR. **Use the Verified submission pull-request template** (available when you open the PR). Complete the checklist:
-
-- [ ] Provider meets all six Verified-tier rubric items (conformance matrix, README use cases + known limitations, security sign-off, Apache-2.0 + DCO, MinEngineVersion declared, CSX reviewed)
-- [ ] Integration-test fixture is included and runs locally: `dotnet test verified/<provider-id>/tests/ -c Release`
-- [ ] README contains at least three realistic use cases
-- [ ] README includes a known-limitations section
-- [ ] Provider is Apache-2.0 licensed
-- [ ] All commits are signed off with DCO (`git commit -s`)
-- [ ] MinEngineVersion is declared in provider metadata
-- [ ] I have read the CsxFragment composition rules (§13.3.1 of the architecture blueprint) and confirmed my provider follows them
-
-#### Step 4: CI Conformance Gate
-
-CI automatically runs when your PR opens:
-
-1. **Compile** — your provider against `Platform.Sdk`
-2. **Unit and Integration Tests** — your test suite against the engine `main` branch
-3. **Schema Validation** — your provider's JSON Schema fragment is validated
-
-**All tests must pass.** If any fail, push fixes to your PR branch; CI re-runs automatically.
-
-**Note:** CI runs your conformance test against the engine `main` SDK only. The Verified-tier rubric requires you to verify your provider also passes on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers during the submission review, not an automated CI step.
-
-#### Step 5: Security Review
-
-A maintainer reviews your provider for:
-- **Credential handling** — are credentials stored, transmitted, and used securely? (Never hardcoded, never logged, always over TLS where applicable.)
-- **Dependency vulnerabilities** — are transitive dependencies scanned? Zero high-severity CVEs at promotion.
-- **TLS defaults** — does your provider enforce TLS where applicable (e.g. database connections, webhooks)?
-- **Telemetry** — does your provider phone home or exfiltrate data? (It must not.)
-- **Package signature** — is your NuGet package signed?
-
-The security sign-off is a maintainer's responsibility; you provide the information, and the maintainer documents their review.
-
-#### Step 6: CSX Review
-
-A maintainer reads the C# code emitted by your representative steps and confirms it follows the CsxFragment composition rules (§13.3.1). This is a code review of the *generated* code, not your provider implementation — it ensures the CSX you emit is safe to execute in the collectible `AssemblyLoadContext`.
-
-#### Step 7: Merge and Promotion
-
-Upon approval of CI, security review, and CSX review, the maintainer merges your PR. Your provider is now:
-- Promoted to Verified tier
-- Listed on the vouchfx project website
-- Added to the public community-providers registry
-- Eligible for inclusion in future platform communications
+The merge bar for Option B is **hygiene, not review**: Apache-2.0 licence, DCO, namespace rules, no step-kind collision, and a green conformance lane. **Hosting in this repository is not endorsement** — your provider's README must open with the Community-tier notice, and you remain the owner of your folder (a CODEOWNERS line is added at merge). The published Vouched rubric is the feedback for what is needed to work towards the Vouched badge.
 
 ## Building Before v1.0 GA
 
@@ -157,9 +86,29 @@ This repository's `nuget.config` already points to `packages-local`:
 
 Local builds will consume the locally packed SDK.
 
-## The Verified-Tier Rubric (Full Reference)
+## Earning the Vouched Badge
 
-For the complete checklist, see [`VERIFIED_TIER_CHECKLIST.md`](VERIFIED_TIER_CHECKLIST.md). Summary:
+After your Community provider is listed in the registry (via Option A or Option B above), you can work towards the optional **Vouched badge** — an optional registry metadata flag (`"vouched": true`) awarded by a maintainer after reviewing your provider against the published rubric.
+
+**How to request the badge:**
+
+1. **Your provider is already listed** — the provider is in the registry and CI is passing (if hub-hosted).
+
+2. **Open a Vouched request issue** — click [**New Issue → Vouched Request**](.github/ISSUE_TEMPLATE/vouched-request.yml) linking to your provider source and confirming which rubric items are met. This proposes the provider for review.
+
+3. **Maintainer review** — a maintainer reviews your provider against the [`VOUCHED_CHECKLIST.md`](VOUCHED_CHECKLIST.md) rubric:
+   - Integration-test fixture passes on engine main + two preceding minors
+   - README with ≥3 use cases + known-limitations section
+   - Security sign-off: credentials, transitive CVEs, TLS, no telemetry, signature
+   - Apache-2.0 + DCO sign-off
+   - MinEngineVersion declared
+   - CSX reviewed for §13.3.1 conformance by a maintainer
+
+4. **Badge award** — upon approval, a maintainer opens a one-line registry PR adding `"vouched": true`. Once merged, the badge is live on your listing. The badge does not move your provider to a new tier or hosted location — it remains where it is, now with platform-team endorsement.
+
+## The Vouched Rubric (Full Reference)
+
+For the complete checklist, see [`VOUCHED_CHECKLIST.md`](VOUCHED_CHECKLIST.md). Summary:
 
 1. Integration-test fixture passes on main + two preceding minors
 2. README with ≥3 use cases + known-limitations section
@@ -186,7 +135,7 @@ A unique namespace prevents assembly-graph collisions and makes it clear which t
 - **How do I write a provider?** See the engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) and the worked examples.
 - **What is CsxFragment composition?** See the architecture blueprint's section 13.3.1.
 - **How do I test my provider?** See the engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) under "Testing Your Provider".
-- **Can I update my provider after it is listed?** Yes. Community providers are versioned independently on NuGet; update your NuGet package and open a PR to update the registry entry. Verified providers can be updated by opening new PRs to the `verified/` folder.
+- **Can I update my provider after it is listed?** Yes. Community providers are versioned independently. If externally hosted, update your NuGet package and open a PR to update the registry entry. If hub-hosted, open a PR to the `community/` folder with your changes.
 - **What if I disagree with a maintainer's decision?** Open an issue on this repository or the main vouchfx repository. The platform team is committed to fair, defensible decisions based on the published rubric.
 
 ## Licence

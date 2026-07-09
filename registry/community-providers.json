@@ -7,7 +7,6 @@
     "nuget": "Community.Steps.JsonRpc",
     "author": "vouchfx-community",
     "minEngineVersion": "1.0.0",
-    "tier": "community",
     "description": "Invokes a JSON-RPC 2.0 method over HTTP and asserts on the result or error envelope"
   }
 ]

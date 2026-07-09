@@ -6,7 +6,7 @@
 //      Uses ProviderTestHarness.RunSingleStepAsync to drive the provider through
 //      the full published engine pipeline (schema-validate → parse → bind → validate
 //      → emit → assemble → compile-once → run-isolated) WITHOUT Docker.  This is the
-//      pattern every Verified-tier submission must replicate.
+//      pattern every hub provider submission must replicate.
 //
 //   2. UNIT (emit surface)
 //      Uses TestCompileContext to call the provider's Emit directly and assert the
@@ -41,7 +41,7 @@ public sealed class HelloConsoleProviderTests
     /// </summary>
     /// <remarks>
     /// This test is the CI merge gate for the template provider — and the pattern
-    /// every Verified-tier provider submission must replicate with its own step kind.
+    /// every hub provider submission must replicate with its own step kind.
     /// It proves:
     /// <list type="bullet">
     ///   <item>The <c>[StepProvider]</c> attribute is present and the registry discovers the type.</item>

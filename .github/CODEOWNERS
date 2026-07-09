@@ -1,5 +1,5 @@
-# CODEOWNERS — require maintainer review for Verified submissions, registry
-# changes, and any governance or CI/CD file.
+# CODEOWNERS — require maintainer review for registry changes, community
+# submissions, and any governance or CI/CD file.
 #
 # Rules are evaluated last-match-wins (bottom of file wins), so the specific
 # path overrides below the catch-all are intentionally listed after it.
@@ -9,9 +9,6 @@
 # Catch-all: every file requires at least one maintainer approval.
 *                    @tomas-rampas
 
-# Verified-tier submissions — explicit sign-off required for provider promotion.
-/verified/           @tomas-rampas
-
 # Community-tier source submissions — a maintainer gates the INITIAL merge
 # (licence/DCO/namespace hygiene/conformance only — not a code review; hosting
 # is not endorsement). When a submission merges, append a line here giving the
@@ -19,7 +16,14 @@
 #   /community/Community.Steps.Foo/  @their-github-handle
 /community/          @tomas-rampas
 
-# Registry index — controls what is publicly discoverable.
+# Registry index — controls what is publicly discoverable. This also gates
+# Vouched badge awards: a PR setting "vouched": true on an entry may only
+# merge with maintainer approval. The vouched/vouchedVersion fields are the
+# endorsement trust surface: merges touching them must NEVER use the
+# `gh pr merge --admin` bypass (a required-check tripwire in conformance.yml
+# flags such changes, but it cannot itself block an --admin merge). Branch
+# protection should require code-owner review for /registry/ paths so this
+# rule is actually enforced, not merely advisory.
 /registry/           @tomas-rampas
 
 # Governance and CI/CD changes — workflows, templates, CODEOWNERS, labels.

@@ -1,18 +1,18 @@
 # Community Provider Registry
 
-This directory contains the **community provider index** — a curated registry of Community-tier and Verified-tier providers authored by the vouchfx community.
+This directory contains the **community provider index** — a curated registry of Community-tier providers authored by the vouchfx community.
 
 ## How the model works — the JSON is a catalogue entry, not the provider
 
 A common first-read confusion, resolved up front: a community provider consists of **two entirely different artifacts**, and only one of them is JSON.
 
 1. **The provider itself is C# source, shipped as a NuGet package.** It is a small project implementing the frozen `Platform.Sdk` contract (`IStepProvider`, `IStepBinder<T>`, `IStepValidator<T>`, `IStepCompiler<T>`), compiled and published under Apache-2.0. Providers are compile-time, source-level plugins: the package is the distribution artifact you consume in a source-level build by referencing the provider project and rebuilding the host. When the planned provider directory loader ships, packages will become runtime-loadable; until then, source-level builds are the distribution model. The [implementing-a-provider guide](../docs/implementing-a-provider.md) covers writing one end to end.
-2. **The registry entry is one JSON object** in the shared `community-providers.json` file below — pure *discovery metadata*: the provider's name, its step kind, where its source lives, which NuGet package to install, and the minimum engine version. Nobody publishes "a JSON file" as their provider; an author adds a single entry to this shared catalogue so users can find the package.
+2. **The registry entry is one JSON object** in the shared `community-providers.json` file below — pure *discovery metadata*: the provider's name, its step kind, where its source lives, which NuGet package to install, the minimum engine version, and whether it holds the Vouched badge. Nobody publishes "a JSON file" as their provider; an author adds a single entry to this shared catalogue so users can find the package.
 
 A Community-tier provider can live in **either of two first-class places** — every provider gets a registry entry here regardless:
 
 1. **Your own repository** (`"hosting": "external"`, the default): write the provider following the guide, publish it as an Apache-2.0 NuGet package, and add your entry with the `nuget` field pointing at your package.
-2. **This repository's `community/` directory** (`"hosting": "hub"`): contribute the provider *as source* in a pull request — no NuGet account needed. Your PR adds `community/<YourProvider>/` (+ its `.Tests` sibling) plus the registry entry; CI discovers and runs your tests automatically, and you remain the owner of your folder. The merge bar is licence (Apache-2.0), DCO, namespace hygiene and a green conformance lane — **not** a code review, and **hosting here is not endorsement** (that is what the Verified tier's rubric review is for). See [CONTRIBUTING](../CONTRIBUTING.md) and the [community submission PR template](../.github/PULL_REQUEST_TEMPLATE/community-submission.md).
+2. **This repository's `community/` directory** (`"hosting": "hub"`): contribute the provider *as source* in a pull request — no NuGet account needed. Your PR adds `community/<YourProvider>/` (+ its `.Tests` sibling) plus the registry entry; CI discovers and runs your tests automatically, and you remain the owner of your folder. The merge bar is licence (Apache-2.0), DCO, namespace hygiene and a green conformance lane — **not** a code review, and **hosting here is not endorsement** (that is what the Vouched badge is for). See [CONTRIBUTING](../CONTRIBUTING.md) and the [community submission PR template](../.github/PULL_REQUEST_TEMPLATE/community-submission.md).
 
 The first entry — [`rpc.json-rpc`](../community/Community.Steps.JsonRpc/README.md) — is hub-hosted and doubles as the worked reference for both the guide and the submission shape.
 
@@ -32,7 +32,7 @@ The registry is human-readable and machine-consumable. It powers:
 - Planned tooling for provider discovery and installation, and a generated provider-listing page on the
   project website (both part of the engine roadmap)
 
-The first entry is [`rpc.json-rpc`](../community/Community.Steps.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package (`Community.Steps.JsonRpc`) ships alongside the engine's v1.0 GA release; until then it is built from source here.
+The first entry is [`rpc.json-rpc`](../community/Community.Steps.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package (`Community.Steps.JsonRpc`) will be published from this repository's own CI pipeline (planned); until then it is built from source here.
 
 ## How to Add an Entry
 
@@ -64,12 +64,13 @@ Each provider entry in `community-providers.json` is a JSON object with the foll
 | `nuget` | string | Yes for external; optional for hub-hosted | NuGet package identifier (e.g. `MyOrg.Steps.Snowflake`). Must be the exact package id on NuGet.org. |
 | `author` | string | Yes | The provider's author or organisation (e.g. "Acme Corp", "Jane Doe") |
 | `minEngineVersion` | string | Yes | Minimum vouchfx engine version required (SemVer format, e.g. `"1.0.0"`) |
-| `tier` | enum | Yes | The governance tier: `"community"` or `"verified"` |
+| `vouched` | boolean | No | Maintainer-awarded Vouched badge (true/false). Absence means not vouched. Only maintainers may set this field (gated by CODEOWNERS on /registry/). |
+| `vouchedVersion` | string | Yes, if `vouched` is true | The provider version (NuGet package version for external providers, or commit SHA for hub-hosted) that was validated and passed the Vouched rubric review. The badge attests to that specific version only. Maintainer-set only. |
 | `description` | string | Yes | A one-line summary of the provider's purpose (e.g. "Asserts state in a Snowflake data warehouse") |
 
 ### Example Entry
 
-A fictional entry showing the normal shape — source in the author's own repository, package on NuGet.org:
+A fictional entry showing the normal shape — source in the author's own repository, package on NuGet.org (without the Vouched badge):
 
 ```json
 {
@@ -79,12 +80,27 @@ A fictional entry showing the normal shape — source in the author's own reposi
   "nuget": "AcmeCorp.Steps.SnowflakeAssert",
   "author": "Acme Corporation",
   "minEngineVersion": "1.0.0",
-  "tier": "community",
   "description": "Asserts state in a Snowflake data warehouse using SQL queries"
 }
 ```
 
-For a live example, see the first entry in [`community-providers.json`](community-providers.json) — the hub-hosted `rpc.json-rpc` reference provider (`"hosting": "hub"`, with its `repo` field pointing at this repository).
+An example entry with the Vouched badge (fictional):
+
+```json
+{
+  "name": "Snowflake Assertion",
+  "stepKindId": "db-assert.snowflake",
+  "repo": "https://github.com/acme-corp/vouchfx-snowflake-provider",
+  "nuget": "AcmeCorp.Steps.SnowflakeAssert",
+  "author": "Acme Corporation",
+  "minEngineVersion": "1.0.0",
+  "vouched": true,
+  "vouchedVersion": "1.2.0",
+  "description": "Asserts state in a Snowflake data warehouse using SQL queries"
+}
+```
+
+For a live example, see the first entry in [`community-providers.json`](community-providers.json) — the hub-hosted `rpc.json-rpc` reference provider (`"hosting": "hub"`, with its `repo` field pointing at this repository). The `rpc.json-rpc` entry has no `vouched` field; it has not yet gone through the Vouched badge review process.
 
 ### Field Rules
 
@@ -94,7 +110,7 @@ For a live example, see the first entry in [`community-providers.json`](communit
 - **`nuget`** — must be the exact package identifier on NuGet.org (case-sensitive); the package should be public and publicly resolvable
 - **`author`** — between 3 and 100 characters; should clearly identify the author or organisation
 - **`minEngineVersion`** — must be valid SemVer (e.g. `"1.0.0"`, `"1.1.0"`)
-- **`tier`** — one of `"community"` or `"verified"`; only maintainers can promote providers to `"verified"`
+- **`vouched`** — optional boolean; only maintainers can set this field (gated by CODEOWNERS on /registry/); absence means not vouched
 - **`description`** — between 10 and 200 characters; a single-line summary (no linebreaks)
 
 ## Validation
@@ -137,23 +153,43 @@ else
 If you own a provider that is already listed:
 
 1. Fork this repository
-2. Update the relevant fields in `community-providers.json` (e.g. update `minEngineVersion`, `description`, or move from `"community"` to `"verified"`)
+2. Update the relevant fields in `community-providers.json` (e.g. update `minEngineVersion`, `description`, or `repo`)
 3. Open a pull request
 4. A maintainer will review and merge if the changes are consistent with the provider's actual state
+
+**To request the Vouched badge:** do not edit the `vouched` field in the registry yourself. Instead, open a [**Vouched request** issue](../.github/ISSUE_TEMPLATE/vouched-request.yml) with evidence of all six rubric items. A maintainer will review and, if approved, open a one-line registry PR to set `vouched: true` with the supporting evidence link.
 
 ## Verification
 
 When a new entry is added or updated, the maintainers verify:
 - For external entries: the NuGet package exists and is publicly resolvable
-- For hub-hosted entries: the source under `community/` builds and its conformance lane is green (a `nuget` id, when present, is expected to become resolvable — e.g. `rpc.json-rpc`'s package ships alongside engine v1.0 GA)
+- For hub-hosted entries: the source under `community/` builds and its conformance lane is green (a `nuget` id, when present, is expected to become resolvable — e.g. `rpc.json-rpc`'s package will ship from hub CI)
 - The repository URL is valid and accessible
 - The entry validates against the schema (CI enforces this on every PR)
 - The `stepKindId` does not conflict with existing entries or a Core provider (duplicates are rejected)
 
-## Tier Transitions
+## Badge and Tier Transitions
 
-- **Community → Verified:** A provider moves from `community` to `verified` when the author submits a pull request to the `verified/` folder, meets the Verified-tier rubric, and the maintainers approve. The registry entry is then updated by a maintainer.
-- **Verified → Community:** A provider may be downgraded only if it violates the Verified contract (e.g. a high-severity security issue). The maintainers will notify the author before downgrading.
+### Earning the Vouched Badge
+
+A provider earns the Vouched badge by meeting the published rubric in [`VOUCHED_CHECKLIST.md`](../VOUCHED_CHECKLIST.md):
+
+**Path:**
+1. Provider is listed in Community tier
+2. Author opens a **Vouched request** issue with evidence of all six rubric items
+3. A maintainer reviews the issue (conformance, security, CSX, etc.)
+4. On success, the maintainer opens a one-line registry PR setting `"vouched": true`
+5. PR merges, badge appears in the registry
+
+See [`GOVERNANCE.md`](../GOVERNANCE.md) for the full flow.
+
+### Badge Revocation
+
+A maintainer may revoke the Vouched badge if a provider violates the rubric (e.g. high-severity CVE). The maintainer will notify the author before taking action.
+
+### Promotion to Core
+
+A provider promoted to Core leaves the community registry entirely — Core providers are engine-repository citizens, never registry entries. Promotion decisions are made by the platform team and announced via the engine repository.
 
 ## Questions?
 

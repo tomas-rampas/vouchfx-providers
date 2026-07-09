@@ -1,7 +1,7 @@
 // Community.Steps.JsonRpc — rpc.json-rpc step provider (JSON-RPC 2.0 over HTTP).
 //
 // The FIRST Community-tier provider for the vouchfx hub (hub-hosted, listed in
-// registry/community-providers.json; not a Verified submission): a real
+// registry/community-providers.json; not badge-vouched): a real
 // BCL-plus-JsonPath.Net transport provider, mirroring the engine's own Core
 // http.rest / mail-expect.smtp providers, but living entirely outside the engine repo
 // against the frozen v1 Platform.Sdk contract.  See community/Community.Steps.JsonRpc/README.md

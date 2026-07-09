@@ -17,11 +17,11 @@
 #
 # NOTE ON VERSION MATRIX
 # ----------------------
-# This workflow runs against the engine main SDK only.  The Verified-tier rubric
-# requires that a provider's integration-test fixture also passes on the engine
-# main branch plus the two preceding minor releases; that multi-version matrix is
-# a human-gate requirement validated at Verified-tier review time — it is not
-# automated here and no fake matrix is added.
+# This workflow runs against the engine main SDK only.  The Vouched badge rubric's
+# multi-version conformance matrix (a provider's integration-test fixture passing
+# on the engine main branch plus the two preceding minor releases) is validated by
+# a maintainer at badge-review time, not by this workflow — it is not automated
+# here and no fake matrix is added.
 
 name: Conformance
 
@@ -135,9 +135,9 @@ jobs:
           --logger "console;verbosity=normal"
 
       # ── Step 7b: Community provider tests (shell-glob over community/) ───────
-      # community/ hosts hub-hosted Community-tier source submissions — any
-      # contributor may PR a provider in (see CONTRIBUTING.md); rpc.json-rpc is
-      # the first and doubles as the guide's reference implementation. Every
+      # community/ is now the only hosted-source lane — any contributor may PR a
+      # provider in (see CONTRIBUTING.md); rpc.json-rpc is the first and doubles
+      # as the guide's reference implementation. Every
       # community/**/*.Tests.csproj is discovered and run in its OWN
       # restore/build/test (no --no-build, no sln-membership requirement): a
       # submission that breaks can only fail its own step output, and the
@@ -173,24 +173,106 @@ jobs:
           -s registry/community-providers.schema.json
           -d registry/community-providers.json
 
-      # ── Step 7c: Verified submission tests (shell-glob; no-op if none exist) ──
-      # When a Verified submission lands under verified/<provider>/
-      # its .Tests.csproj is automatically discovered and run here.
-      # nullglob ensures an empty glob expands to nothing rather than a literal
-      # string, so this step exits 0 with a diagnostic message if no submissions
-      # are present yet.
-      - name: Test — verified submissions (no-op until first submission)
-        shell: bash
+      # ── Step 7c: Tripwire — vouched badge changes are maintainer-only ───────
+      # This is a TRIPWIRE, not a hard gate: `gh pr merge --admin` bypasses
+      # required status checks (this one included), so the real control is
+      # policy, not CI — NEVER --admin-merge a PR that touches the vouched /
+      # vouchedVersion fields. This step's job is to make an out-of-policy
+      # change LOUD (a failed required check + an ::error:: annotation) so it
+      # can't slip past maintainer eyeballing unnoticed. Pair it with
+      # branch-protection code-owner review requiring @tomas-rampas approval
+      # on /registry/ paths (see .github/CODEOWNERS) — that is the actual
+      # enforcement; this step is the tripwire that fires if that review is
+      # ever skipped or bypassed.
+      #
+      # Scope: the comparison below considers ONLY entries that already carry
+      # (or newly carry) endorsement state — vouched:true or a non-empty
+      # vouchedVersion. A plain registry submission that adds/edits/removes a
+      # non-vouched entry (the repo's normal self-service listing flow, used
+      # by non-maintainer authors on every PR) is a no-op for this tripwire
+      # and never fires it.
+      - name: Tripwire — vouched badge changes are maintainer-only
+        if: github.event_name == 'pull_request'
+        env:
+          # Passed via env, not inlined as ${{ github.actor }} in the script
+          # body, so the value is never substituted directly into the shell
+          # command text.
+          PR_ACTOR: ${{ github.actor }}
         run: |
           set -euo pipefail
-          shopt -s globstar nullglob
-          found=0
-          for csproj in verified/**/*.Tests.csproj; do
-            echo "::group::Running verified test project: $csproj"
-            dotnet test "$csproj" -c Release --logger "console;verbosity=normal"
-            echo "::endgroup::"
-            found=1
-          done
-          if [[ "$found" -eq 0 ]]; then
-            echo "No verified/**/*.Tests.csproj found — no Verified submissions yet. (Expected.)"
+
+          # Fetch the base branch explicitly into refs/remotes/origin/<base>.
+          # A bare `git fetch origin <ref>` only updates FETCH_HEAD unless the
+          # remote's configured fetch refspec happens to already cover that
+          # branch — not guaranteed under actions/checkout's shallow/
+          # single-branch checkout. The explicit <src>:<dst> refspec forces
+          # the remote-tracking ref to exist so `origin/$GITHUB_BASE_REF`
+          # below is guaranteed to resolve.
+          if ! git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF:refs/remotes/origin/$GITHUB_BASE_REF"; then
+            echo "::error::Failed to fetch base ref 'origin/${GITHUB_BASE_REF}' — cannot evaluate the vouched-badge tripwire. This is a FETCH FAILURE, not a detected registry change. Re-run the job; if it persists, investigate the checkout/fetch configuration."
+            exit 1
           fi
+          if ! git rev-parse --verify --quiet "refs/remotes/origin/${GITHUB_BASE_REF}^{commit}" >/dev/null; then
+            echo "::error::origin/${GITHUB_BASE_REF} did not resolve to a commit after fetch — cannot evaluate the vouched-badge tripwire. This is a FETCH/RESOLUTION FAILURE, not a detected registry change. Re-run the job; if it persists, investigate the checkout/fetch configuration."
+            exit 1
+          fi
+
+          # Normalise stepKindId -> {vouched, vouchedVersion} for a given git
+          # ref, keeping ONLY endorsement-bearing entries: vouched == true,
+          # or a non-empty vouchedVersion (kept even without vouched:true, so
+          # a sneaky "vouchedVersion set but vouched omitted" edit still
+          # counts as an endorsement-state change). Entries that are not, and
+          # never become, endorsement-bearing are excluded entirely — adding,
+          # editing, or renaming a plain (non-vouched) entry is therefore
+          # invisible to this map and cannot trip the gate. Tolerates: the
+          # registry file not existing at all on that ref (e.g. it's
+          # introduced fresh in this PR), and non-JSON/missing content
+          # generally.
+          extract_vouched_map() {
+            local ref="$1"
+            local content
+            if ! content=$(git show "${ref}:registry/community-providers.json" 2>/dev/null); then
+              printf '%s' '{}'
+              return 0
+            fi
+            printf '%s' "$content" | jq -cS '
+              if type == "array" then . else [] end
+              | map(select(.vouched == true or (.vouchedVersion // "") != "")
+                  | {
+                      (.stepKindId // "?"): {
+                        vouched: (.vouched // false),
+                        vouchedVersion: (.vouchedVersion // "")
+                      }
+                    })
+              | add // {}
+            ' 2>/dev/null || printf '%s' '{}'
+            return 0
+          }
+
+          base_map=$(extract_vouched_map "origin/$GITHUB_BASE_REF")
+          head_map=$(extract_vouched_map "HEAD")
+
+          echo "Base (${GITHUB_BASE_REF}) endorsement-bearing map: $base_map"
+          echo "Head (this PR)          endorsement-bearing map: $head_map"
+
+          if [[ "$base_map" == "$head_map" ]]; then
+            echo "No vouched/vouchedVersion changes detected — nothing to gate."
+            exit 0
+          fi
+
+          # Per-stepKindId diff of what actually changed, for the message.
+          changed_entries=$(jq -cn --argjson base "$base_map" --argjson head "$head_map" '
+            (($base | keys) + ($head | keys) | unique) as $ids
+            | [ $ids[] | select($base[.] != $head[.]) | {
+                stepKindId: .,
+                base: ($base[.] // {vouched: false, vouchedVersion: ""}),
+                head: ($head[.] // {vouched: false, vouchedVersion: ""})
+              } ]
+          ')
+
+          if [[ "$PR_ACTOR" != "tomas-rampas" ]]; then
+            echo "::error::This PR changes the endorsement state ('vouched'/'vouchedVersion') of one or more registry entries: ${changed_entries}. These fields are the endorsement trust surface and may ONLY be set by a maintainer via the badge-award flow — see GOVERNANCE.md (https://github.com/tomas-rampas/vouchfx-providers/blob/main/GOVERNANCE.md#the-vouched-badge) and open a Vouched request issue (https://github.com/tomas-rampas/vouchfx-providers/issues/new?template=vouched-request.yml) instead of editing the registry directly. Do not merge this PR — including via 'gh pr merge --admin' — until the vouched field(s) are reverted or a maintainer takes ownership of the change."
+            exit 1
+          fi
+
+          echo "::notice::Endorsement-state change detected (${changed_entries}), authored by maintainer ($PR_ACTOR) — allowed to proceed."

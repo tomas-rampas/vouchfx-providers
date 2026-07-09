@@ -2,12 +2,12 @@
 
 This repository is the **community provider hub** for
 [vouchfx](https://github.com/tomas-rampas/vouchfx): it hosts the community provider
-**registry**, the provider **template scaffold**, and the **Verified-tier submission
-gate** (the CI conformance workflow, the published rubric, and the maintainer
-security/CSX review process). Because the Verified tier is a trust signal — a
-platform-team endorsement that consumers rely on when choosing providers — we take
-security reports about this repository's gates and listings seriously and aim to
-respond quickly and transparently.
+**registry**, the provider **template scaffold**, and the **Vouched-badge award
+process** (the published rubric, the maintainer security/CSX review, and the registry
+metadata flag). Because the Vouched badge represents platform-team endorsement — a
+trust statement that consumers rely on when choosing providers — we take security
+reports about this repository's processes and listings seriously and aim to respond
+quickly and transparently.
 
 This document describes how to report a vulnerability, what is in and out of scope,
 and our coordinated-disclosure expectations.
@@ -34,7 +34,7 @@ A good report lets us reproduce and triage fast. Please include, where possible:
 
 - A clear description of the issue and the **impact** (what an attacker can do).
 - The **affected surface**: the registry, the template scaffold, a CI workflow, the
-  Verified-tier rubric or review process, or a specific listed provider.
+  Vouched-badge rubric or review process, or a specific listed provider.
 - **Reproduction steps** — ideally a minimal submission, registry entry, or workflow
   input that demonstrates the bypass.
 - Any **proof-of-concept**, logs, or workflow runs (redact your own secrets first).
@@ -76,10 +76,10 @@ Security issues in the parts of this repository the project maintains:
   that renders the registry.
 - **The template scaffold** — a defect in the published provider template that
   would cause providers built from it to be insecure by default.
-- **The Verified-tier submission gate** — the CI conformance workflows, the
-  published rubric, and the review process. **Gate and rubric bypasses belong
-  here**: any way to obtain a Verified listing without genuinely passing the
-  conformance tests, the security sign-off, or the CSX review; workflow injection
+- **The Vouched-badge award process** — the CI conformance workflows, the published
+  rubric (VOUCHED_CHECKLIST.md), and the review process. **Process and rubric
+  bypasses belong here**: any way to obtain a Vouched badge without genuinely passing
+  the conformance tests, the security sign-off, or the CSX review; workflow injection
   via a submission pull request; or secret/token exfiltration from the conformance
   CI.
 - **Malicious or compromised listings**: if a provider listed in this repository
@@ -109,12 +109,11 @@ Security issues in the parts of this repository the project maintains:
 
 ## Governance note
 
-The Verified-tier bar — conformance testing, security sign-off (credential
+The Vouched-badge bar — conformance testing, security sign-off (credential
 handling, transitive CVEs, TLS defaults, no telemetry, package signature), and CSX
-review — is defined in the published rubric (`VERIFIED_TIER_CHECKLIST.md`) and
-[`CONTRIBUTING.md`](CONTRIBUTING.md). It exists precisely because a Verified
-listing is a trust statement; weaknesses in that bar are security issues, not
-process nits.
+review — is defined in the published rubric (`VOUCHED_CHECKLIST.md`) and
+[`CONTRIBUTING.md`](CONTRIBUTING.md). It exists precisely because a Vouched listing
+is a trust statement; weaknesses in that bar are security issues, not process nits.
 
 ---
 

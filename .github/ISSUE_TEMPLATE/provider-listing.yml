@@ -17,7 +17,7 @@ body:
         - Follows the [provider contract](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) and uses a non-reserved namespace
         - Has a README with at least basic documentation
 
-        If your provider meets the [Verified-tier rubric](../VERIFIED_TIER_CHECKLIST.md), consider submitting for Verified endorsement instead.
+        If your provider meets the [Vouched rubric](../VOUCHED_CHECKLIST.md), consider [requesting the Vouched badge](../../issues/new?template=vouched-request.yml) instead.
 
   - type: input
     id: provider-name
@@ -83,7 +83,7 @@ body:
         Examples:
         - Links to documentation or examples
         - Information about infrastructure requirements
-        - A brief note if this is a pre-Verified submission
+        - A brief note if you plan to request the Vouched badge later
 
   - type: checkboxes
     id: confirm

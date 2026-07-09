@@ -7,7 +7,7 @@
 # Engine bugs, feature requests, and general questions all belong in the
 # main engine repository at https://github.com/tomas-rampas/vouchfx.
 # This repository only accepts community provider listings (provider-listing.yml)
-# and Verified-tier submission intents (verified-proposal.yml).
+# and Vouched badge requests (vouched-request.yml).
 
 blank_issues_enabled: false
 
