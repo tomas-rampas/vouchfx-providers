@@ -4,6 +4,8 @@ A provider is awarded the **Vouched badge** when it meets all six items in this 
 
 The Vouched badge is awarded **post-listing**: a provider must already have a registry entry (listed in `registry/community-providers.json`) before a Vouched request is opened.
 
+**Point-in-time semantics:** The badge attests to the specific version of the provider recorded in the registry's `vouchedVersion` field (the NuGet package version for external providers, or the commit SHA for hub-hosted providers). Later releases are not automatically covered by the badge; a new minor or major release warrants a fresh Vouched request to ensure continued compliance with the rubric.
+
 ## The Six Required Items
 
 ### 1. Conformance Matrix: Integration Tests Pass
@@ -75,7 +77,7 @@ A maintainer must sign off on your provider's security posture. This is **not** 
    
    **What to provide:** A brief note describing how credentials are handled (e.g. "Credentials are read from `Vars.Secrets.Resolve(ref)` and passed to Npgsql.NpgsqlConnectionStringBuilder; no secrets are logged.")
 
-2. **Transitive dependency vulnerabilities:** Your provider's NuGet package must have zero high-severity CVEs at the time of promotion.
+2. **Transitive dependency vulnerabilities:** Your provider's NuGet package must have zero high-severity CVEs at the time the badge is awarded.
    
    **What to provide:** Run `dotnet list package --outdated` and confirm there are no vulnerabilities. If you use a vulnerable transitive dependency, document your mitigation (e.g. "Direct dependency X has a CVE in transitive Y, but Y is not reachable in our code path because…").
 
@@ -95,7 +97,7 @@ A maintainer must sign off on your provider's security posture. This is **not** 
    **What to provide:** A link to your NuGet package and confirmation that it is signed, or an explanation if it is not.
 
 **How security review works:**
-1. You provide the evidence above in your Vouched request issue (see `CONTRIBUTING.md` or the [vouched-request issue template](../.github/ISSUE_TEMPLATE/vouched-request.yml)).
+1. You provide the evidence above in your Vouched request issue (see `CONTRIBUTING.md` or the [vouched-request issue template](.github/ISSUE_TEMPLATE/vouched-request.yml)).
 2. A vouchfx maintainer reviews your provider code, dependency tree, and examples.
 3. If all checks pass, the maintainer approves the security sign-off.
 4. If issues are found, the maintainer requests changes (e.g. removing hardcoded secrets, updating a vulnerable dependency, documenting a TLS gap).

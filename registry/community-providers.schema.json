@@ -57,6 +57,11 @@
         "default": false,
         "description": "Maintainer-awarded Vouched badge per VOUCHED_CHECKLIST.md (rubric review after listing). Absence means not vouched. Only maintainers may set this field (gated by CODEOWNERS on /registry/)."
       },
+      "vouchedVersion": {
+        "type": "string",
+        "minLength": 1,
+        "description": "The provider version (for external/NuGet-hosted providers) or commit SHA (for hub-hosted providers) that passed the Vouched review; the badge attests this version only — later releases are not covered until re-reviewed. Maintainer-set, like 'vouched'."
+      },
       "description": {
         "type": "string",
         "minLength": 10,
@@ -72,21 +77,42 @@
       "minEngineVersion",
       "description"
     ],
-    "if": {
-      "properties": {
-        "hosting": {
-          "const": "hub"
+    "allOf": [
+      {
+        "if": {
+          "properties": {
+            "hosting": {
+              "const": "hub"
+            }
+          },
+          "required": [
+            "hosting"
+          ]
+        },
+        "else": {
+          "required": [
+            "nuget"
+          ]
         }
       },
-      "required": [
-        "hosting"
-      ]
-    },
-    "else": {
-      "required": [
-        "nuget"
-      ]
-    },
+      {
+        "if": {
+          "properties": {
+            "vouched": {
+              "const": true
+            }
+          },
+          "required": [
+            "vouched"
+          ]
+        },
+        "then": {
+          "required": [
+            "vouchedVersion"
+          ]
+        }
+      }
+    ],
     "additionalProperties": false
   },
   "uniqueItems": true

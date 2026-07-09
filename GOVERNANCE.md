@@ -84,12 +84,14 @@ See [`VOUCHED_CHECKLIST.md`](VOUCHED_CHECKLIST.md) for the full rubric and the [
          [On success]
               ↓
   [Maintainer opens registry PR]
-      (one-line: vouched: true)
+      (one-line: vouched: true + vouchedVersion)
               ↓
     [PR merges → badge live in registry]
 ```
 
 **Decision maker:** A vouchfx platform-team maintainer, acting on evidence presented in the Vouched request issue.
+
+**Point-in-time semantics:** The badge records `vouchedVersion` — the specific provider release (NuGet package version or commit SHA) that was reviewed and passed the rubric. The badge attests to that version only; later releases are not automatically covered. A new minor or major release of a Vouched provider warrants a fresh Vouched request for continued endorsement.
 
 **Revocation:** A maintainer may revoke the Vouched badge if a provider violates the rubric (e.g. a high-severity CVE is discovered). The maintainer will notify the author before taking action.
 

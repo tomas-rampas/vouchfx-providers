@@ -1101,7 +1101,7 @@ Once your provider is tested and documented, you have two hosting options for li
 
 1. **Your provider is already listed** — the provider appears in the registry and (if hub-hosted) CI is passing.
 
-2. **Open a Vouched request issue** — use [**New Issue → Vouched Request**](.github/ISSUE_TEMPLATE/vouched-request.yml). Link to your provider source and confirm which rubric items are met. Maintainers will prioritise review bandwidth and give you early feedback.
+2. **Open a Vouched request issue** — use [**New Issue → Vouched Request**](../.github/ISSUE_TEMPLATE/vouched-request.yml). Link to your provider source and confirm which rubric items are met. Maintainers will prioritise review bandwidth and give you early feedback.
 
 3. **Maintainer review:**
    - **Security review** — credentials, CVEs, TLS, telemetry, package signature

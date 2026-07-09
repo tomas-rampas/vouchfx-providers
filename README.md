@@ -7,7 +7,7 @@ The community provider hub for [vouchfx](https://github.com/tomas-rampas/vouchfx
 A vouchfx *provider* is a `<family>.<provider>` step type (e.g. `db-assert.postgres`, `mq-publish.kafka`) that the vouchfx engine discovers and executes. This repository serves two purposes:
 
 1. **Community Provider Index** — a registry of providers authored by the community, vetted only for Apache-2.0 compliance and the reflective-discovery contract.
-2. **Hosted Community Providers** — a PR-gated hub where community members can host their providers; the Vouched badge offers optional, optional post-listing platform-team endorsement.
+2. **Hosted Community Providers** — a PR-gated hub where community members can host their providers; the Vouched badge offers optional post-listing platform-team endorsement.
 
 ## What is a Provider?
 

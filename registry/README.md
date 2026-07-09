@@ -65,6 +65,7 @@ Each provider entry in `community-providers.json` is a JSON object with the foll
 | `author` | string | Yes | The provider's author or organisation (e.g. "Acme Corp", "Jane Doe") |
 | `minEngineVersion` | string | Yes | Minimum vouchfx engine version required (SemVer format, e.g. `"1.0.0"`) |
 | `vouched` | boolean | No | Maintainer-awarded Vouched badge (true/false). Absence means not vouched. Only maintainers may set this field (gated by CODEOWNERS on /registry/). |
+| `vouchedVersion` | string | Yes, if `vouched` is true | The provider version (NuGet package version for external providers, or commit SHA for hub-hosted) that was validated and passed the Vouched rubric review. The badge attests to that specific version only. Maintainer-set only. |
 | `description` | string | Yes | A one-line summary of the provider's purpose (e.g. "Asserts state in a Snowflake data warehouse") |
 
 ### Example Entry
@@ -83,22 +84,23 @@ A fictional entry showing the normal shape — source in the author's own reposi
 }
 ```
 
-An example entry with the Vouched badge:
+An example entry with the Vouched badge (fictional):
 
 ```json
 {
-  "name": "JSON-RPC Request",
-  "stepKindId": "rpc.json-rpc",
-  "repo": "https://github.com/tomas-rampas/vouchfx-providers",
-  "hosting": "hub",
-  "author": "vouchfx Platform Team",
+  "name": "Snowflake Assertion",
+  "stepKindId": "db-assert.snowflake",
+  "repo": "https://github.com/acme-corp/vouchfx-snowflake-provider",
+  "nuget": "AcmeCorp.Steps.SnowflakeAssert",
+  "author": "Acme Corporation",
   "minEngineVersion": "1.0.0",
   "vouched": true,
-  "description": "Invokes a JSON-RPC 2.0 server and validates the response"
+  "vouchedVersion": "1.2.0",
+  "description": "Asserts state in a Snowflake data warehouse using SQL queries"
 }
 ```
 
-For a live example, see the first entry in [`community-providers.json`](community-providers.json) — the hub-hosted `rpc.json-rpc` reference provider (`"hosting": "hub"`, with its `repo` field pointing at this repository, and `"vouched": true`).
+For a live example, see the first entry in [`community-providers.json`](community-providers.json) — the hub-hosted `rpc.json-rpc` reference provider (`"hosting": "hub"`, with its `repo` field pointing at this repository). The `rpc.json-rpc` entry has no `vouched` field; it has not yet gone through the Vouched badge review process.
 
 ### Field Rules
 
@@ -151,9 +153,11 @@ else
 If you own a provider that is already listed:
 
 1. Fork this repository
-2. Update the relevant fields in `community-providers.json` (e.g. update `minEngineVersion`, `description`, or request a Vouched badge review)
+2. Update the relevant fields in `community-providers.json` (e.g. update `minEngineVersion`, `description`, or `repo`)
 3. Open a pull request
 4. A maintainer will review and merge if the changes are consistent with the provider's actual state
+
+**To request the Vouched badge:** do not edit the `vouched` field in the registry yourself. Instead, open a [**Vouched request** issue](../.github/ISSUE_TEMPLATE/vouched-request.yml) with evidence of all six rubric items. A maintainer will review and, if approved, open a one-line registry PR to set `vouched: true` with the supporting evidence link.
 
 ## Verification
 
