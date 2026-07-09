@@ -22,10 +22,11 @@
 # Trust model
 # -----------
 #   - GitHub resolves and executes THIS WORKFLOW FILE — together with the
-#     checkout, nuget.config, and the pinned engine SHA it references — AS
-#     THEY EXIST AT THE TAGGED COMMIT. Whoever controls the content of the
-#     tagged commit therefore also controls every validation this workflow
-#     performs against that commit: no in-workflow check below (the ancestry
+#     checkout, nuget.config, and the root <VouchfxSdkVersion> pin it
+#     restores against — AS THEY EXIST AT THE TAGGED COMMIT. Whoever controls
+#     the content of the tagged commit therefore also controls every
+#     validation this workflow performs against that commit: no in-workflow
+#     check below (the ancestry
 #     gate, the governance-registry gate, the PROVIDER/VERSION regex
 #     validation) can contain a party who is able to push the tag that
 #     triggers it — a compromised or malicious tagged commit could simply ship
@@ -106,7 +107,7 @@ jobs:
       attestations: write  # store the SLSA provenance attestation via the GitHub API
       # (attestations: write is not part of the minimal contents/id-token pair
       # a Trusted-Publishing-only job would need, but actions/attest-build-
-      # provenance in step 8 below requires it — omitting it would make that
+      # provenance in step 7 below requires it — omitting it would make that
       # step fail on every run, including the workflow_dispatch smoke lane.)
 
     steps:
@@ -237,41 +238,14 @@ jobs:
         with:
           global-json-file: global.json
 
-      # ── Step 5: Bootstrap the SDK-closure local feed [REMOVE AFTER SDK PUBLISHED] ─
-      # Platform.Sdk / Platform.Sdk.Testing v1.0.0 are not yet on nuget.org (they
-      # ship with the vouchfx v1.0 GA release). Until then this workflow needs
-      # the exact same local-feed bootstrap conformance.yml uses so that
-      # `dotnet test`/`dotnet pack` below can restore Platform.Sdk — identical
-      # engine checkout SHA and pack-5-projects loop, kept byte-for-byte
-      # equivalent so the eventual repin PR can delete both in one sweep.
-      - name: Checkout engine (tomas-rampas/vouchfx → engine/) [REMOVE AFTER SDK PUBLISHED]
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          repository: tomas-rampas/vouchfx
-          # Full 40-char SHA required: actions/checkout treats a short SHA as a
-          # branch/tag glob (refs/heads/<ref>*) and fails the cross-repo fetch.
-          # Kept identical to conformance.yml's pinned engine SHA — update both
-          # together.
-          ref: f5bf109651bd5ea4c2f3653d4a62d34fe2ba1011
-          path: engine
-
-      - name: Pack SDK-closure projects into packages-local/ [REMOVE AFTER SDK PUBLISHED]
-        run: |
-          set -euo pipefail
-          for csproj in \
-            engine/src/Engine/Platform.Engine.Abstractions/Platform.Engine.Abstractions.csproj \
-            engine/src/Engine/Platform.Engine.Authoring/Platform.Engine.Authoring.csproj \
-            engine/src/Engine/Platform.Engine.Compilation/Platform.Engine.Compilation.csproj \
-            engine/src/Sdk/Platform.Sdk/Platform.Sdk.csproj \
-            engine/src/Sdk/Platform.Sdk.Testing/Platform.Sdk.Testing.csproj ; do
-            echo "::group::pack $csproj"
-            dotnet pack "$csproj" -c Release -o packages-local/ --nologo
-            echo "::endgroup::"
-          done
-          echo "Packages staged in packages-local/:"
-          ls packages-local/*.nupkg
-
-      # ── Step 6: Test the provider (required — no test project, no publish) ───
+      # ── Step 5: Test the provider (required — no test project, no publish) ───
+      # Platform.Sdk / Platform.Sdk.Testing now resolve straight from the
+      # PUBLISHED nuget.org package at the $(VouchfxSdkVersion) root MSBuild
+      # property pin (see conformance.yml) — no local-feed bootstrap needed
+      # here. If that pin ever points at an SDK version not yet live on
+      # nuget.org, the "Preflight — dependency resolvability on nuget.org"
+      # step further below (push-only) is what catches it before publish,
+      # not this restore.
       - name: Test the provider's sibling test project
         run: |
           set -euo pipefail
@@ -282,7 +256,7 @@ jobs:
           fi
           dotnet test "$test_csproj" -c Release --logger "console;verbosity=normal"
 
-      # ── Step 7: Pack the provider at the requested version ───────────────────
+      # ── Step 6: Pack the provider at the requested version ───────────────────
       # Package-metadata validation (license/readme/description/repository/
       # tags/id — the pack gate) is enforced at PR time on main by
       # conformance.yml; the ancestry gate above guarantees the tagged commit
@@ -296,23 +270,22 @@ jobs:
             -o artifacts/nuget
           ls -lh artifacts/nuget/
 
-      # ── Step 7b: Preflight — dependency resolvability on nuget.org (push-only) ─
+      # ── Step 6b: Preflight — dependency resolvability on nuget.org (push-only) ─
       # Guards against cutting a provider release tag while its packed
-      # Platform.*/vouchfx* dependency pin (e.g. Platform.Sdk) is not yet
-      # resolvable from nuget.org: Step 5's packages-local/ bootstrap feed
-      # makes `dotnet pack` above succeed regardless of what's actually live
-      # on nuget.org, so pack succeeding is NOT evidence the package is
-      # installable. A consumer who `dotnet add package`s the just-published
-      # provider on a clean machine (no packages-local/ bootstrap) would hit
-      # an unresolvable dependency — and nuget.org packages are IMMUTABLE
-      # (see the header note), so that would be a PERMANENTLY broken release
-      # needing a brand-new patch version to fix, not a re-run.
-      #
-      # This check SELF-HEALS: once Platform.Sdk ships to nuget.org and every
-      # "[REMOVE AFTER SDK PUBLISHED]" step above is deleted, every
-      # Platform.*/vouchfx* dependency will resolve and this step becomes a
-      # normal no-op pass — it stays in place permanently as a release-time
-      # safety net, not a bootstrap-era workaround to remove later.
+      # Platform.*/vouchfx* dependency pin (e.g. Platform.Sdk) is not
+      # resolvable from nuget.org. Restore/pack above already resolve
+      # Platform.Sdk straight from nuget.org (no local bootstrap feed left to
+      # mask an unpublished pin), so an unresolvable dependency would in
+      # practice already have failed the workflow before this step runs —
+      # this step is what turns that failure into a clear, purpose-built
+      # ::error:: naming the exact missing dependency/version, rather than a
+      # generic NU1101/restore-failure buried in `dotnet pack` output. A
+      # consumer who `dotnet add package`s the just-published provider on a
+      # clean machine would hit the same unresolvable dependency — and
+      # nuget.org packages are IMMUTABLE (see the header note), so that
+      # would be a PERMANENTLY broken release needing a brand-new patch
+      # version to fix, not a re-run. It remains in place permanently as a
+      # release-time safety net, independent of the bootstrap era.
       - name: Preflight — dependency resolvability on nuget.org
         if: github.event_name == 'push'
         run: |
@@ -362,7 +335,7 @@ jobs:
             body="$(sed '$d' <<<"$raw")"
 
             if [[ "$http_code" == "404" ]]; then
-              echo "::error::DEPENDENCY NOT PUBLISHED: $dep_id does not exist at all on nuget.org (404 at $url). Publishing $PROVIDER now would ship a permanently broken, immutable package for any consumer without the local packages-local/ bootstrap feed. Wait until $dep_id is published, or update the dependency pin, before cutting this tag."
+              echo "::error::DEPENDENCY NOT PUBLISHED: $dep_id does not exist at all on nuget.org (404 at $url). Publishing $PROVIDER now would ship a permanently broken, immutable package — every consumer resolves this dependency straight from nuget.org. Wait until $dep_id is published, or update the dependency pin, before cutting this tag."
               echo "::endgroup::"
               return 1
             fi
@@ -374,7 +347,7 @@ jobs:
             fi
 
             if ! jq -e --arg v "$dep_version" '(.versions // []) | index($v) != null' <<<"$body" > /dev/null 2>&1; then
-              echo "::error::DEPENDENCY NOT PUBLISHED: $dep_id $dep_version is not present in nuget.org's version index ($url). Publishing $PROVIDER now would ship a permanently broken, immutable package for any consumer without the local packages-local/ bootstrap feed. Wait until $dep_id $dep_version is published, or update the dependency pin, before cutting this tag."
+              echo "::error::DEPENDENCY NOT PUBLISHED: $dep_id $dep_version is not present in nuget.org's version index ($url). Publishing $PROVIDER now would ship a permanently broken, immutable package — every consumer resolves this dependency straight from nuget.org. Wait until $dep_id $dep_version is published, or update the dependency pin, before cutting this tag."
               echo "::endgroup::"
               return 1
             fi
@@ -432,7 +405,7 @@ jobs:
 
           echo "Preflight passed: every Platform.*/vouchfx* dependency of $PROVIDER $VERSION is resolvable from nuget.org."
 
-      # ── Step 8: SLSA build provenance attestation ─────────────────────────────
+      # ── Step 7: SLSA build provenance attestation ─────────────────────────────
       # NOTE: the engine's own release.yml references this action as
       # actions/attest-build-provenance@v4 WITHOUT a pinned SHA (verified by
       # inspection — it is the one action in that workflow left unpinned), so
@@ -453,7 +426,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: echo "::notice::Skipping SLSA provenance attestation — workflow_dispatch is a smoke-test lane and must not mint a real attestation subject."
 
-      # ── Step 9: Publish to NuGet.org — Trusted Publishing (push-only) ────────
+      # ── Step 8: Publish to NuGet.org — Trusted Publishing (push-only) ────────
       # Gated on BOTH github.event_name == 'push' and the exact repository, so
       # the workflow_dispatch smoke lane never pushes and a fork can never
       # publish (a fork also has no matching Trusted Publishing policy, so the
@@ -480,7 +453,7 @@ jobs:
               --skip-duplicate
           done
 
-      # ── Step 10: Smoke-test summary (dispatch-only, nothing was pushed) ──────
+      # ── Step 9: Smoke-test summary (dispatch-only, nothing was pushed) ───────
       - name: Smoke-test summary — nothing was pushed
         if: github.event_name == 'workflow_dispatch'
         run: |
