@@ -110,6 +110,13 @@
           "required": [
             "vouchedVersion"
           ]
+        },
+        "else": {
+          "not": {
+            "required": [
+              "vouchedVersion"
+            ]
+          }
         }
       }
     ],

@@ -184,6 +184,13 @@ jobs:
       # on /registry/ paths (see .github/CODEOWNERS) — that is the actual
       # enforcement; this step is the tripwire that fires if that review is
       # ever skipped or bypassed.
+      #
+      # Scope: the comparison below considers ONLY entries that already carry
+      # (or newly carry) endorsement state — vouched:true or a non-empty
+      # vouchedVersion. A plain registry submission that adds/edits/removes a
+      # non-vouched entry (the repo's normal self-service listing flow, used
+      # by non-maintainer authors on every PR) is a no-op for this tripwire
+      # and never fires it.
       - name: Tripwire — vouched badge changes are maintainer-only
         if: github.event_name == 'pull_request'
         env:
@@ -194,14 +201,33 @@ jobs:
         run: |
           set -euo pipefail
 
-          git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF"
+          # Fetch the base branch explicitly into refs/remotes/origin/<base>.
+          # A bare `git fetch origin <ref>` only updates FETCH_HEAD unless the
+          # remote's configured fetch refspec happens to already cover that
+          # branch — not guaranteed under actions/checkout's shallow/
+          # single-branch checkout. The explicit <src>:<dst> refspec forces
+          # the remote-tracking ref to exist so `origin/$GITHUB_BASE_REF`
+          # below is guaranteed to resolve.
+          if ! git fetch --no-tags --depth=1 origin "$GITHUB_BASE_REF:refs/remotes/origin/$GITHUB_BASE_REF"; then
+            echo "::error::Failed to fetch base ref 'origin/${GITHUB_BASE_REF}' — cannot evaluate the vouched-badge tripwire. This is a FETCH FAILURE, not a detected registry change. Re-run the job; if it persists, investigate the checkout/fetch configuration."
+            exit 1
+          fi
+          if ! git rev-parse --verify --quiet "refs/remotes/origin/${GITHUB_BASE_REF}^{commit}" >/dev/null; then
+            echo "::error::origin/${GITHUB_BASE_REF} did not resolve to a commit after fetch — cannot evaluate the vouched-badge tripwire. This is a FETCH/RESOLUTION FAILURE, not a detected registry change. Re-run the job; if it persists, investigate the checkout/fetch configuration."
+            exit 1
+          fi
 
           # Normalise stepKindId -> {vouched, vouchedVersion} for a given git
-          # ref, tolerating: the registry file not existing at all on that
-          # ref (e.g. it's introduced fresh in this PR), and non-JSON/missing
-          # content generally. Absent "vouched" reads as false; absent
-          # "vouchedVersion" reads as "" — so a PR that merely adds the key
-          # with its default value is not flagged as a change.
+          # ref, keeping ONLY endorsement-bearing entries: vouched == true,
+          # or a non-empty vouchedVersion (kept even without vouched:true, so
+          # a sneaky "vouchedVersion set but vouched omitted" edit still
+          # counts as an endorsement-state change). Entries that are not, and
+          # never become, endorsement-bearing are excluded entirely — adding,
+          # editing, or renaming a plain (non-vouched) entry is therefore
+          # invisible to this map and cannot trip the gate. Tolerates: the
+          # registry file not existing at all on that ref (e.g. it's
+          # introduced fresh in this PR), and non-JSON/missing content
+          # generally.
           extract_vouched_map() {
             local ref="$1"
             local content
@@ -211,12 +237,13 @@ jobs:
             fi
             printf '%s' "$content" | jq -cS '
               if type == "array" then . else [] end
-              | map({
-                  (.stepKindId // "?"): {
-                    vouched: (.vouched // false),
-                    vouchedVersion: (.vouchedVersion // "")
-                  }
-                })
+              | map(select(.vouched == true or (.vouchedVersion // "") != "")
+                  | {
+                      (.stepKindId // "?"): {
+                        vouched: (.vouched // false),
+                        vouchedVersion: (.vouchedVersion // "")
+                      }
+                    })
               | add // {}
             ' 2>/dev/null || printf '%s' '{}'
             return 0
@@ -225,17 +252,27 @@ jobs:
           base_map=$(extract_vouched_map "origin/$GITHUB_BASE_REF")
           head_map=$(extract_vouched_map "HEAD")
 
-          echo "Base (${GITHUB_BASE_REF}) vouched map: $base_map"
-          echo "Head (this PR)          vouched map: $head_map"
+          echo "Base (${GITHUB_BASE_REF}) endorsement-bearing map: $base_map"
+          echo "Head (this PR)          endorsement-bearing map: $head_map"
 
           if [[ "$base_map" == "$head_map" ]]; then
             echo "No vouched/vouchedVersion changes detected — nothing to gate."
             exit 0
           fi
 
+          # Per-stepKindId diff of what actually changed, for the message.
+          changed_entries=$(jq -cn --argjson base "$base_map" --argjson head "$head_map" '
+            (($base | keys) + ($head | keys) | unique) as $ids
+            | [ $ids[] | select($base[.] != $head[.]) | {
+                stepKindId: .,
+                base: ($base[.] // {vouched: false, vouchedVersion: ""}),
+                head: ($head[.] // {vouched: false, vouchedVersion: ""})
+              } ]
+          ')
+
           if [[ "$PR_ACTOR" != "tomas-rampas" ]]; then
-            echo "::error::This PR changes the 'vouched' and/or 'vouchedVersion' field(s) in registry/community-providers.json. These fields are the endorsement trust surface and may ONLY be set by a maintainer via the badge-award flow — see GOVERNANCE.md (https://github.com/tomas-rampas/vouchfx-providers/blob/main/GOVERNANCE.md#the-vouched-badge) and open a Vouched request issue (https://github.com/tomas-rampas/vouchfx-providers/issues/new?template=vouched-request.yml) instead of editing the registry directly. Do not merge this PR — including via 'gh pr merge --admin' — until the vouched field(s) are reverted or a maintainer takes ownership of the change."
+            echo "::error::This PR changes the endorsement state ('vouched'/'vouchedVersion') of one or more registry entries: ${changed_entries}. These fields are the endorsement trust surface and may ONLY be set by a maintainer via the badge-award flow — see GOVERNANCE.md (https://github.com/tomas-rampas/vouchfx-providers/blob/main/GOVERNANCE.md#the-vouched-badge) and open a Vouched request issue (https://github.com/tomas-rampas/vouchfx-providers/issues/new?template=vouched-request.yml) instead of editing the registry directly. Do not merge this PR — including via 'gh pr merge --admin' — until the vouched field(s) are reverted or a maintainer takes ownership of the change."
             exit 1
           fi
 
-          echo "::notice::vouched/vouchedVersion change detected, authored by maintainer ($PR_ACTOR) — allowed to proceed."
+          echo "::notice::Endorsement-state change detected (${changed_entries}), authored by maintainer ($PR_ACTOR) — allowed to proceed."

@@ -83,14 +83,18 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 ## How the Hub Conformance Gate Works
 
-When you submit a Community provider (via Option B/hub-hosted PR or Option A/listing), CI automatically runs:
+**For hub-hosted source submissions (Option 3)**, CI automatically runs:
 
 1. **Compile** — your provider and its test assembly against the `Platform.Sdk`
 2. **Unit Tests** — your test suite (unit and integration-capable tests)
-3. **Integration Tests** — your integration-test fixture against the engine `main` branch (for hub-hosted only)
+3. **Integration Tests** — your integration-test fixture against the engine `main` branch
 4. **Schema Validation** — your provider's JSON Schema fragment against the engine's validator
 
-**Note:** For hub-hosted submissions, CI runs your conformance test against the engine `main` SDK only. The Vouched rubric requires you to verify your provider's integration-test fixture also passes on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers during the Vouched review, not an automated CI check.
+**For external listing submissions (Option 1 or 2)**, CI validates:
+
+- **Schema Validation only** — your registry entry's JSON Schema fragment
+
+**Note:** For hub-hosted submissions, CI runs your conformance tests against the engine `main` SDK only. The Vouched rubric requires you to verify your provider's integration-test fixture also passes on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers during the Vouched review, not an automated CI check.
 
 ## Building Before v1.0 GA
 
