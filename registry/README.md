@@ -6,7 +6,7 @@ This directory contains the **community provider index** — a curated registry 
 
 A common first-read confusion, resolved up front: a community provider consists of **two entirely different artifacts**, and only one of them is JSON.
 
-1. **The provider itself is C# source, shipped as a NuGet package.** It is a small project implementing the frozen `Platform.Sdk` contract (`IStepProvider`, `IStepBinder<T>`, `IStepValidator<T>`, `IStepCompiler<T>`), compiled and published under Apache-2.0. Providers are compile-time, source-level plugins: the package is the distribution artifact you consume in a source-level build by referencing the provider project and rebuilding the host. When the planned provider directory loader ships, packages will become runtime-loadable; until then, source-level builds are the distribution model. The [implementing-a-provider guide](../docs/implementing-a-provider.md) covers writing one end to end.
+1. **The provider itself is C# source, shipped as a NuGet package.** It is a small project implementing the frozen `Vouchfx.Sdk` contract (`IStepProvider`, `IStepBinder<T>`, `IStepValidator<T>`, `IStepCompiler<T>`), compiled and published under Apache-2.0. Providers are compile-time, source-level plugins: the package is the distribution artifact you consume in a source-level build by referencing the provider project and rebuilding the host. When the planned provider directory loader ships, packages will become runtime-loadable; until then, source-level builds are the distribution model. The [implementing-a-provider guide](../docs/implementing-a-provider.md) covers writing one end to end.
 2. **The registry entry is one JSON object** in the shared `community-providers.json` file below — pure *discovery metadata*: the provider's name, its step kind, where its source lives, which NuGet package to install, the minimum engine version, and whether it holds the Vouched badge. Nobody publishes "a JSON file" as their provider; an author adds a single entry to this shared catalogue so users can find the package.
 
 A Community-tier provider can live in **either of two first-class places** — every provider gets a registry entry here regardless:
@@ -14,7 +14,7 @@ A Community-tier provider can live in **either of two first-class places** — e
 1. **Your own repository** (`"hosting": "external"`, the default): write the provider following the guide, publish it as an Apache-2.0 NuGet package, and add your entry with the `nuget` field pointing at your package.
 2. **This repository's `community/` directory** (`"hosting": "hub"`): contribute the provider *as source* in a pull request — no NuGet account needed. Your PR adds `community/<YourProvider>/` (+ its `.Tests` sibling) plus the registry entry; CI discovers and runs your tests automatically, and you remain the owner of your folder. The merge bar is licence (Apache-2.0), DCO, namespace hygiene and a green conformance lane — **not** a code review, and **hosting here is not endorsement** (that is what the Vouched badge is for). See [CONTRIBUTING](../CONTRIBUTING.md) and the [community submission PR template](../.github/PULL_REQUEST_TEMPLATE/community-submission.md).
 
-The first entry — [`rpc.json-rpc`](../community/Community.Steps.JsonRpc/README.md) — is hub-hosted and doubles as the worked reference for both the guide and the submission shape.
+The first entry — [`rpc.json-rpc`](../community/Vouchfx.Community.JsonRpc/README.md) — is hub-hosted and doubles as the worked reference for both the guide and the submission shape.
 
 Today, consuming a community provider requires a source-level build: clone the provider's repository (or this one, for hub-hosted providers), reference its project in your build, and rebuild your host to integrate the provider. A one-command install experience (`vouchfx providers install <package>`) is planned and tracked on the [engine's public roadmap](https://tomas-rampas.github.io/vouchfx/docs/roadmap.html).
 
@@ -32,7 +32,7 @@ The registry is human-readable and machine-consumable. It powers:
 - Planned tooling for provider discovery and installation, and a generated provider-listing page on the
   project website (both part of the engine roadmap)
 
-The first entry is [`rpc.json-rpc`](../community/Community.Steps.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package (`Community.Steps.JsonRpc`) will be published from this repository's own CI pipeline (planned); until then it is built from source here.
+The first entry is [`rpc.json-rpc`](../community/Vouchfx.Community.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package (`Vouchfx.Community.JsonRpc`) will be published from this repository's own CI pipeline (planned); until then it is built from source here.
 
 ## How to Add an Entry
 
@@ -61,7 +61,7 @@ Each provider entry in `community-providers.json` is a JSON object with the foll
 | `stepKindId` | string | Yes | The step type identifier in the form `<family>.<provider>` (e.g. `db-assert.snowflake`, `mq-publish.mqtt`). Must not collide with a Core provider's step kind (e.g. `mq-publish.redis` is Core and therefore taken) |
 | `repo` | string | Yes | URL to the provider's repository (e.g. `https://github.com/myorg/vouchfx-snowflake-provider`; this repository's URL for hub-hosted providers) |
 | `hosting` | enum | No | Where the source lives: `"external"` (your repository — the default when absent) or `"hub"` (contributed as source under `community/`) |
-| `nuget` | string | Yes for external; optional until published for hub-hosted | NuGet package identifier (e.g. `MyOrg.Steps.Snowflake`). For external providers, must be the exact package id on NuGet.org. For hub-hosted providers, this field is optional unless you plan to publish to NuGet; if publishing, it is required and must equal the provider directory name (e.g. `Community.Steps.JsonRpc` for `community/Community.Steps.JsonRpc`). The publish workflow requires this field to cut a release tag. |
+| `nuget` | string | Yes for external; optional until published for hub-hosted | NuGet package identifier (e.g. `MyOrg.Steps.Snowflake`). For external providers, must be the exact package id on NuGet.org. For hub-hosted providers, this field is optional unless you plan to publish to NuGet; if publishing, it is required and must equal the provider directory name (e.g. `Vouchfx.Community.JsonRpc` for `community/Vouchfx.Community.JsonRpc`). The publish workflow requires this field to cut a release tag. |
 | `author` | string | Yes | The provider's author or organisation (e.g. "Acme Corp", "Jane Doe") |
 | `minEngineVersion` | string | Yes | Minimum vouchfx engine version required (SemVer format, e.g. `"1.0.0"`) |
 | `vouched` | boolean | No | Maintainer-awarded Vouched badge (true/false). Absence means not vouched. Only maintainers may set this field (gated by CODEOWNERS on /registry/). |
@@ -100,7 +100,7 @@ An example entry with the Vouched badge (fictional):
 }
 ```
 
-For a live example, see the first entry in [`community-providers.json`](community-providers.json) — the hub-hosted `rpc.json-rpc` reference provider (`"hosting": "hub"`, with its `repo` field pointing at this repository). The `rpc.json-rpc` entry has no `vouched` field; it has not yet gone through the Vouched badge review process.
+For a live example, see the first entry in [`community-providers.json`](community-providers.json) — the hub-hosted `rpc.json-rpc` reference provider (`"hosting": "hub"`, with its `repo` field pointing at this repository). The `rpc.json-rpc` entry has no `vouched` field; it has not yet gone through the Vouched badge review process. The registry field `nuget` for this provider is `Vouchfx.Community.JsonRpc`.
 
 ### Field Rules
 
@@ -163,7 +163,7 @@ If you own a provider that is already listed:
 
 When a new entry is added or updated, the maintainers verify:
 - For external entries: the NuGet package exists and is publicly resolvable
-- For hub-hosted entries: the source under `community/` builds and its conformance lane is green (when a `nuget` field is present, a release tag cannot be cut until the provider's dependencies — particularly `Platform.Sdk` — are publicly resolvable from NuGet.org; e.g. `rpc.json-rpc`'s package ships from hub CI only once the engine has published `Platform.Sdk` at the pinned version)
+- For hub-hosted entries: the source under `community/` builds and its conformance lane is green (when a `nuget` field is present, a release tag cannot be cut until the provider's dependencies — particularly `Vouchfx.Sdk` — are publicly resolvable from NuGet.org; e.g. `rpc.json-rpc`'s package ships from hub CI only once the engine has published `Vouchfx.Sdk` at the pinned version)
 - The repository URL is valid and accessible
 - The entry validates against the schema (CI enforces this on every PR)
 - The `stepKindId` does not conflict with existing entries or a Core provider (duplicates are rejected)

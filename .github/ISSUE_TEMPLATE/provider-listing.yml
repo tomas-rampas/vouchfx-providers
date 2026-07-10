@@ -93,7 +93,7 @@ body:
       options:
         - label: My provider is licenced under Apache-2.0 (or a compatible licence)
           required: true
-        - label: My provider follows the vouchfx provider contract and uses a non-reserved namespace (not `Platform.Engine.*` or `Platform.Steps.*`)
+        - label: My provider follows the vouchfx provider contract and uses a non-reserved namespace (not `Vouchfx.Engine.*` or `Vouchfx.Steps.*`)
           required: true
         - label: My provider is published on NuGet.org and is publicly resolvable
           required: true

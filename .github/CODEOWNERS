@@ -13,7 +13,7 @@
 # (licence/DCO/namespace hygiene/conformance only — not a code review; hosting
 # is not endorsement). When a submission merges, append a line here giving the
 # author ownership of their folder, e.g.:
-#   /community/Community.Steps.Foo/  @their-github-handle
+#   /community/Vouchfx.Community.Foo/  @their-github-handle
 /community/          @tomas-rampas
 
 # Registry index — controls what is publicly discoverable. This also gates

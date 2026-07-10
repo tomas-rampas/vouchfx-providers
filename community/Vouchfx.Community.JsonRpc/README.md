@@ -105,7 +105,7 @@ steps:
 ```
 
 `verifyMode: RETRY` is a purely **engine-side** wrapper (`CsxAssembler` /
-`Platform.Engine.Abstractions.Retry.RetryRunner`) that re-invokes this provider's
+`Vouchfx.Engine.Abstractions.Retry.RetryRunner`) that re-invokes this provider's
 emitted block, unchanged, until it passes or `timeout` elapses. The provider does not
 implement (and does not need) any "RETRY capability" interface — the only contract it
 honours is: write exactly one `StepOutcome` on every invocation, and use `Fail` (never
@@ -226,18 +226,18 @@ expected-vs-observed table in supporting renderers, exactly as the Core
   against `environment.services`/`environment.dependencies` the way `http.rest` and
   `mail-expect.smtp` have.
 - **This provider needs a `JsonPath.Net` `PackageReference`** (pinned to `3.0.2`, matching
-  the engine's own `Directory.Packages.props` entry) beyond `Platform.Sdk` — verified,
+  the engine's own `Directory.Packages.props` entry) beyond `Vouchfx.Sdk` — verified,
   not assumed: the engine's `capture:` field (and this provider's own `expect.result`)
   is evaluated with JSONPath.Net **inside the provider's own emitted CSX**, exactly as
   the Core `http.rest` and `mq-expect.*` providers do, which requires both the compile-time
   package reference (so `ICompileReferenceContributor` can name the type) and the
   contributor interface itself.
 - **Conformance tests use a small custom harness (`JsonRpcHarness`), not only the
-  published `Platform.Sdk.Testing.ProviderTestHarness`.** `ProviderTestHarness` does not
+  published `Vouchfx.Sdk.Testing.ProviderTestHarness`.** `ProviderTestHarness` does not
   run the `ICompileReferenceContributor` stage, and its default Roslyn reference set
   lacks `System.Net.Http` / `System.Text.Json` / `JsonPath.Net` entirely — a genuine
   HTTP-calling provider's execution tests cannot compile through it as-is. See
-  `Community.Steps.JsonRpc.Tests/JsonRpcHarness.cs` for the full explanation and the
+  `Vouchfx.Community.JsonRpc.Tests/JsonRpcHarness.cs` for the full explanation and the
   engine-repo precedent (`HttpRestExecutionTests.cs`) this mirrors. Tests that halt
   *before* any compile (schema/model-validation rejection) use the published harness
   directly, with no workaround needed.
@@ -251,8 +251,8 @@ the hub itself so the tier has a canonical, CI-tested reference implementation. 
 carry the Vouched badge: it has not been through the Vouched rubric. If you want to build on
 it as your own, independently-shipped provider:
 
-1. Copy `Community.Steps.JsonRpc` to your own repository under your own namespace
-   (never `Platform.Steps.*` / `Platform.Engine.*`).
+1. Copy `Vouchfx.Community.JsonRpc` to your own repository under your own namespace
+   (never `Vouchfx.Steps.*` / `Vouchfx.Engine.*`).
 2. Publish it as a NuGet package under Apache-2.0.
 3. List it in the [community provider index](../../registry/README.md) (Community tier),
    or work towards the [Vouched badge rubric](../../VOUCHED_CHECKLIST.md) if you

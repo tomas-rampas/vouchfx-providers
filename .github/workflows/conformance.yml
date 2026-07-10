@@ -2,20 +2,22 @@
 #
 # Triggers: push and pull_request to main.
 #
-# PRECONDITION (SECURITY) — VERIFY BEFORE UN-DRAFTING THIS PR
+# PRECONDITION (SECURITY) — SATISFIED as of v1.0.0-alpha.4
 # -----------------------------------------------------------------------------
 # This dual-feed configuration (nuget.org + packages-local/, see
-# nuget.config's packageSourceMapping) is safe ONLY once the engine has
-# PUBLISHED AND OWNS the Platform.*/vouchfx package IDs on nuget.org —
-# ideally with reserved ID prefixes. Merging or running this lane before
-# then re-opens the dependency-confusion window the previous exclusive-local
-# mapping had closed. NOTE: the window applies to EVERY CI RUN of this
-# branch, not just to merging — a pull_request run of Lane A restores
-# Platform.Sdk from nuget.org (today an unowned ID: the restore simply
-# 404s, but a squatted package would build). Verify POSITIVE OWNERSHIP
-# (nuget.org "Owners" tab / reserved-prefix confirmation for the
-# publishing account) BEFORE PUSHING FURTHER COMMITS or re-running CI on
-# this branch, and again before un-drafting — NOT merely that
+# nuget.config's packageSourceMapping) is safe only once the engine has
+# PUBLISHED AND OWNS the Vouchfx.* package IDs on nuget.org — ideally with
+# reserved ID prefixes. As of the engine's v1.0.0-alpha.4 release (the first
+# publish of the Vouchfx.* IDs after the pre-GA Platform.*-to-Vouchfx.*
+# namespace rebrand, engine PR #193), the engine legitimately owns and
+# publishes Vouchfx.Sdk / Vouchfx.Sdk.Testing / Vouchfx.Engine.* on
+# nuget.org, so this precondition IS satisfied — a pull_request run of
+# Lane A now restores Vouchfx.Sdk from a legitimately-owned, published ID,
+# not an unowned one. The six retired Platform.* IDs are being unlisted and
+# deprecated with alternate-package pointers per the engine's RELEASING.md
+# rebrand runbook. Re-verify POSITIVE OWNERSHIP (nuget.org "Owners" tab /
+# reserved-prefix confirmation for the publishing account) whenever the SDK
+# is repinned to a materially different package surface — NOT merely that
 # `dotnet restore` resolves a matching version, since a squatted package
 # under the same ID would resolve identically and this workflow cannot
 # tell the difference.
@@ -23,7 +25,7 @@
 # TWO LANES
 # ---------
 # Lane A (job `conformance`, the required merge-gate check) restores
-# Platform.Sdk / Platform.Sdk.Testing from nuget.org at the
+# Vouchfx.Sdk / Vouchfx.Sdk.Testing from nuget.org at the
 # $(VouchfxSdkVersion) pin (root MSBuild property, consumed by every
 # SDK-closure PackageReference — six across the four consuming projects)
 # — exactly what a real consumer experiences.
@@ -42,7 +44,7 @@
 # (packages-local/ + nuget.org). That is a collision guard only, not a
 # publication guard: the distinct version string does not, by itself, stop
 # a third party from ALSO publishing a package called "1.0.0-enginemain"
-# under a Platform.* id — no version string can prevent that. What prevents
+# under a vouchfx* id — no version string can prevent that. What prevents
 # it is package-ID OWNERSHIP on nuget.org (see the PRECONDITION above), not
 # this workflow. Lane B threads -p:VouchfxSdkVersion=1.0.0-enginemain
 # through every dotnet invocation so the template/community projects
@@ -55,10 +57,10 @@
 # tagged and its SDK closure published to nuget.org (re-verify ownership per
 # the PRECONDITION above), bump the root <VouchfxSdkVersion> MSBuild property
 # to the new version (Lane A picks it up automatically — no workflow edit
-# needed), update the hardcoded Platform.Sdk version literals that exist
+# needed), update the hardcoded Vouchfx.Sdk version literals that exist
 # for OUT-OF-REPO consumers who cannot inherit the property — the sample in
 # docs/implementing-a-provider.md and the conditioned fallback in the two
-# template/Community.Steps.Hello* csprojs — and separately re-pin Lane B's
+# template/Vouchfx.Community.Hello* csprojs — and separately re-pin Lane B's
 # engine checkout `ref:` below to the engine's new main SHA, so Lane B
 # keeps tracking "what's coming next" rather than what was just released.
 #
@@ -111,7 +113,7 @@ jobs:
           global-json-file: global.json
 
       # ── Step 3: Restore (providers solution) ──────────────────────────────────
-      # Resolves Platform.Sdk / Platform.Sdk.Testing from the PUBLISHED
+      # Resolves Vouchfx.Sdk / Vouchfx.Sdk.Testing from the PUBLISHED
       # nuget.org package at the $(VouchfxSdkVersion) root MSBuild property
       # pin — exactly what a real consumer experiences. No local-feed
       # bootstrap needed (see the header comment above).
@@ -129,11 +131,11 @@ jobs:
         run: dotnet format vouchfx-providers.sln --verify-no-changes --no-restore
 
       # ── Step 6a: Template provider conformance test (always required) ─────────
-      # Community.Steps.Hello.Tests contains the ProviderTestHarness conformance
+      # Vouchfx.Community.Hello.Tests contains the ProviderTestHarness conformance
       # test — the canonical gate every provider must pass.
       - name: Test — template provider conformance
         run: >
-          dotnet test template/Community.Steps.Hello.Tests
+          dotnet test template/Vouchfx.Community.Hello.Tests
           -c Release
           --no-build
           --logger "console;verbosity=normal"
@@ -197,8 +199,8 @@ jobs:
       # mis-resolves for anything other than the flat
       # community/<Name>/<Name>.csproj convention (e.g. it would wrongly
       # derive "src" from a hypothetical community/<Name>/src/<Name>.csproj).
-      # The current rpc.json-rpc layout is flat (community/Community.Steps.JsonRpc/
-      # + community/Community.Steps.JsonRpc.Tests/), where both derivations
+      # The current rpc.json-rpc layout is flat (community/Vouchfx.Community.JsonRpc/
+      # + community/Vouchfx.Community.JsonRpc.Tests/), where both derivations
       # happen to agree — this comment documents the general rule, not just
       # today's one example.
       - name: Pack gate — every hub provider must produce a valid package
@@ -517,14 +519,14 @@ jobs:
       # silently alter what gets packed and built against here. Full 40-char
       # SHA required: actions/checkout treats a short SHA as a branch/tag glob
       # (refs/heads/<ref>*) and fails the cross-repo fetch.
-      # Engine main = dbbe671b (repin procedure: see conformance.yml's header
+      # Engine main = a24a3f5b (repin procedure: see conformance.yml's header
       # comment — bump this SHA at engine release cadence, independently of
       # Lane A's <VouchfxSdkVersion> pin).
       - name: Checkout engine (tomas-rampas/vouchfx → engine/)
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           repository: tomas-rampas/vouchfx
-          ref: dbbe671b6a126896c8eca63ccd0d7c8f9ae0fbf1
+          ref: a24a3f5beae0ff78ba97b69ab1f2fefa4d7eff99
           path: engine
 
       # ── Step 3: Set up .NET SDK (version from global.json: 8.0.400) ──────────
@@ -536,12 +538,12 @@ jobs:
       # ── Step 4: Pack SDK-closure projects into packages-local/ ───────────────
       # at the distinct version 1.0.0-enginemain — this is a COLLISION guard,
       # not a publication guard: it keeps this local pack from colliding with
-      # the legitimately published Platform.Sdk version this branch's
+      # the legitimately published Vouchfx.Sdk version this branch's
       # $(VouchfxSdkVersion) pin resolves in the same dual-mapped feed
       # (packages-local/ + nuget.org; see nuget.config's
       # packageSourceMapping). It does NOT, by itself, stop a third party
       # from also publishing a package called "1.0.0-enginemain" under a
-      # Platform.* id — see the workflow header's PRECONDITION note: that
+      # vouchfx* id — see the workflow header's PRECONDITION note: that
       # protection is package-ID ownership on nuget.org, not this version
       # string. Packs exactly five projects — the minimal closure the
       # template provider and tests depend on. Order follows the dependency
@@ -553,11 +555,11 @@ jobs:
         run: |
           set -euo pipefail
           for csproj in \
-            engine/src/Engine/Platform.Engine.Abstractions/Platform.Engine.Abstractions.csproj \
-            engine/src/Engine/Platform.Engine.Authoring/Platform.Engine.Authoring.csproj \
-            engine/src/Engine/Platform.Engine.Compilation/Platform.Engine.Compilation.csproj \
-            engine/src/Sdk/Platform.Sdk/Platform.Sdk.csproj \
-            engine/src/Sdk/Platform.Sdk.Testing/Platform.Sdk.Testing.csproj ; do
+            engine/src/Engine/Vouchfx.Engine.Abstractions/Vouchfx.Engine.Abstractions.csproj \
+            engine/src/Engine/Vouchfx.Engine.Authoring/Vouchfx.Engine.Authoring.csproj \
+            engine/src/Engine/Vouchfx.Engine.Compilation/Vouchfx.Engine.Compilation.csproj \
+            engine/src/Sdk/Vouchfx.Sdk/Vouchfx.Sdk.csproj \
+            engine/src/Sdk/Vouchfx.Sdk.Testing/Vouchfx.Sdk.Testing.csproj ; do
             echo "::group::pack $csproj"
             dotnet pack "$csproj" -c Release -o packages-local/ --nologo -p:Version=1.0.0-enginemain
             echo "::endgroup::"
@@ -585,7 +587,7 @@ jobs:
       # ── Step 7a: Template provider conformance test (engine main) ────────────
       - name: Test — template provider conformance (engine main)
         run: >
-          dotnet test template/Community.Steps.Hello.Tests
+          dotnet test template/Vouchfx.Community.Hello.Tests
           -c Release
           --no-build
           -p:VouchfxSdkVersion=1.0.0-enginemain

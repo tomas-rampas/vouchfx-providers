@@ -11,17 +11,17 @@
 
   <ItemGroup>
     <!-- Provider under test. -->
-    <ProjectReference Include="..\Community.Steps.JsonRpc\Community.Steps.JsonRpc.csproj" />
+    <ProjectReference Include="..\Vouchfx.Community.JsonRpc\Vouchfx.Community.JsonRpc.csproj" />
 
-    <!-- Published harness packages — Platform.Engine.Abstractions / Authoring /
+    <!-- Published harness packages — Vouchfx.Engine.Abstractions / Authoring /
          Compilation (CsxAssembler, RoslynScriptCompiler, StepCompilePlan, Verdict,
          StepOutcome, VarKeys, ScriptGlobalVariables) flow in TRANSITIVELY through
-         Platform.Sdk.Testing's own package dependencies — mirroring exactly how the
-         template's Community.Steps.Hello.Tests.csproj consumes Platform.Engine.Abstractions
+         Vouchfx.Sdk.Testing's own package dependencies — mirroring exactly how the
+         template's Vouchfx.Community.Hello.Tests.csproj consumes Vouchfx.Engine.Abstractions
          with no explicit reference to it. See JsonRpcHarness.cs for why this provider
          needs a small custom harness alongside the published ProviderTestHarness. -->
-    <PackageReference Include="Platform.Sdk" Version="$(VouchfxSdkVersion)" />
-    <PackageReference Include="Platform.Sdk.Testing" Version="$(VouchfxSdkVersion)" />
+    <PackageReference Include="Vouchfx.Sdk" Version="$(VouchfxSdkVersion)" />
+    <PackageReference Include="Vouchfx.Sdk.Testing" Version="$(VouchfxSdkVersion)" />
   </ItemGroup>
 
 </Project>

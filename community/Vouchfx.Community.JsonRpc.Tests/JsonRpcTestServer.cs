@@ -1,9 +1,9 @@
-// Community.Steps.JsonRpc.Tests — JsonRpcTestServer.
+// Vouchfx.Community.JsonRpc.Tests — JsonRpcTestServer.
 //
 // Self-hosts a minimal JSON-RPC 2.0 responder on loopback using System.Net.HttpListener
 // (BCL-only, no Docker, no WireMock). Mirrors the engine's own Docker-free HTTP test
 // pattern verified in the engine repo at
-// tests/Platform.Engine.Compilation.Tests/HttpRestExecutionTests.cs:
+// tests/Vouchfx.Engine.Compilation.Tests/HttpRestExecutionTests.cs:
 //   • HttpListener prefixes cannot bind port 0, so a free port is discovered by binding
 //     a TcpListener to port 0, reading the OS-assigned port, then releasing it
 //     (FindFreePort below — copied verbatim from that engine test).
@@ -21,7 +21,7 @@ using System.Net.Sockets;
 using System.Text;
 using System.Text.Json.Nodes;
 
-namespace Community.Steps.JsonRpc.Tests;
+namespace Vouchfx.Community.JsonRpc.Tests;
 
 /// <summary>
 /// A minimal, in-process JSON-RPC 2.0 HTTP responder used by the conformance tests.

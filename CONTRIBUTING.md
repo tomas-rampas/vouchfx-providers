@@ -19,9 +19,9 @@ All providers in this repository must meet these baseline requirements:
 - **Developer Certificate of Origin (DCO) sign-off.** Commits must be signed off with `git commit -s` or the GitHub web UI "Sign off" checkbox. The DCO confirms you have the right to license your work. It is lighter-weight than a Contributor Licence Agreement and is industry standard.
 
 ### The Provider Contract
-- Your provider must implement the four required interfaces from `Platform.Sdk`: `IStepProvider`, `IStepBinder<TModel>`, `IStepValidator<TModel>`, and `IStepCompiler<TModel>`.
+- Your provider must implement the four required interfaces from `Vouchfx.Sdk`: `IStepProvider`, `IStepBinder<TModel>`, `IStepValidator<TModel>`, and `IStepCompiler<TModel>`.
 - Your model must be a strongly-typed record (never `Dictionary<string,object>`).
-- You must NOT use the reserved namespace prefixes: `Platform.Engine.*` or `Platform.Steps.*`. Use your own namespace (e.g. `MyOrg.Steps.Kafka`, `Community.Steps.Snowflake`).
+- You must NOT use the reserved namespace prefixes: `Vouchfx.Engine.*` or `Vouchfx.Steps.*`. Use your own namespace (e.g. `MyOrg.Steps.Kafka`, `Vouchfx.Community.Snowflake`).
 - Your provider must be discoverable at suite startup via the reflective `StepKindRegistry`. Add the `[StepProvider]` attribute to your provider class; no manual registration is required.
 
 ### CsxFragment Composition
@@ -36,7 +36,7 @@ When your `IStepCompiler<TModel>` emits a `CsxFragment`, you must follow the str
 See the engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) for worked code examples and the blueprint (§13.3.1) for full details.
 
 ### Testing
-- You must have a test suite that exercises your provider. Use the `Platform.Sdk.Testing` package:
+- You must have a test suite that exercises your provider. Use the `Vouchfx.Sdk.Testing` package:
   - For dependency-free providers: use `ProviderTestHarness.RunSingleStepAsync()` for end-to-end unit tests (no Docker needed).
   - For infrastructure providers: author an integration-test fixture using the vouchfx engine's topology orchestration.
 - Local tests must pass: `dotnet test <your-provider.Tests> -c Release --filter "requires!=docker"`.
@@ -54,17 +54,17 @@ All Community-tier providers follow one contribution flow with two hosting choic
 
 **Option B — hub hosting (source PR into `community/`, no NuGet account needed).** Contribute the provider source itself:
 
-1. Start from [`template/`](template/) (`Community.Steps.Hello` + its tests) or model on [`community/Community.Steps.JsonRpc`](community/Community.Steps.JsonRpc/), the hub's worked reference.
-2. Name your projects `community/<YourProvider>/` + `community/<YourProvider>.Tests/`; use a non-reserved namespace (the `Community.Steps.<Name>` convention is recommended — never `Platform.Engine.*`/`Platform.Steps.*`).
-3. Build standalone against the pinned SDK (see "Building against the SDK" below). Your projects do **not** need to join the `.sln` — CI discovers `community/**/*.Tests.csproj` by glob and runs each submission in its own step. Every public member of your provider must have an XML-doc comment (CS1591 enforced by the repo's TreatWarningsAsErrors setting); the reference provider [`Community.Steps.JsonRpc`](community/Community.Steps.JsonRpc) demonstrates this quality bar. When you publish to NuGet, the pack gate validates per-provider metadata: `Description` (not the MSBuild default), `PackageTags`, `PackageReadmeFile` + a packaged `README.md` file; `PackageId`, repository URL, and Apache-2.0 licence expression are set automatically from `community/Directory.Build.props`.
-4. Add your registry entry with `"hosting": "hub"`. If your provider will be published to NuGet (recommended for discoverability), set `nuget` to the provider directory name (e.g. `nuget: "Community.Steps.JsonRpc"` for `community/Community.Steps.JsonRpc`); the publish workflow requires this field to cut a release tag (`<Provider>/vX.Y.Z`). **Release timing:** no `<Provider>/vX.Y.Z` tag may be cut until your provider's `Platform.Sdk` dependency pin is publicly restorable from NuGet.org; whilst `Platform.Sdk` is a pre-release, release tags must also carry pre-release versions (e.g. `Community.Steps.JsonRpc/v1.0.0-alpha.1`), since NuGet's NU5104 rule prevents stable versions from carrying pre-release dependencies, with stable releases possible only once `Platform.Sdk` 1.0.0 ships. The publish workflow enforces this with a dependency-resolvability preflight check — publishing an unrestorable package would burn an immutable version number.
+1. Start from [`template/`](template/) (`Vouchfx.Community.Hello` + its tests) or model on [`community/Vouchfx.Community.JsonRpc`](community/Vouchfx.Community.JsonRpc/), the hub's worked reference.
+2. Name your projects `community/<YourProvider>/` + `community/<YourProvider>.Tests/`; use a non-reserved namespace (the `Vouchfx.Community.<Name>` convention is recommended — never `Vouchfx.Engine.*`/`Vouchfx.Steps.*`).
+3. Build standalone against the pinned SDK (see "Building against the SDK" below). Your projects do **not** need to join the `.sln` — CI discovers `community/**/*.Tests.csproj` by glob and runs each submission in its own step. Every public member of your provider must have an XML-doc comment (CS1591 enforced by the repo's TreatWarningsAsErrors setting); the reference provider [`Vouchfx.Community.JsonRpc`](community/Vouchfx.Community.JsonRpc) demonstrates this quality bar. When you publish to NuGet, the pack gate validates per-provider metadata: `Description` (not the MSBuild default), `PackageTags`, `PackageReadmeFile` + a packaged `README.md` file; `PackageId`, repository URL, and Apache-2.0 licence expression are set automatically from `community/Directory.Build.props`.
+4. Add your registry entry with `"hosting": "hub"`. If your provider will be published to NuGet (recommended for discoverability), set `nuget` to the provider directory name (e.g. `nuget: "Vouchfx.Community.JsonRpc"` for `community/Vouchfx.Community.JsonRpc`); the publish workflow requires this field to cut a release tag (`<Provider>/vX.Y.Z`). **Release timing:** no `<Provider>/vX.Y.Z` tag may be cut until your provider's `Vouchfx.Sdk` dependency pin is publicly restorable from NuGet.org. The publish workflow enforces this with a dependency-resolvability preflight check — publishing an unrestorable package would burn an immutable version number. Whilst `Vouchfx.Sdk` is a pre-release, release tags must also carry pre-release versions (e.g. `Vouchfx.Community.JsonRpc/v1.0.0-alpha.1`): NuGet's NU5104 rule prevents a stable version from carrying a pre-release dependency, so a stable tag fails the publish pack by design, with stable provider releases possible once `Vouchfx.Sdk` 1.0.0 ships at GA.
 5. Open the PR using the [community submission template](.github/PULL_REQUEST_TEMPLATE/community-submission.md), with every commit DCO-signed (`git commit -s`).
 
 The merge bar for Option B is **hygiene, not review**: Apache-2.0 licence, DCO, namespace rules, no step-kind collision, and a green conformance lane. **Hosting in this repository is not endorsement** — your provider's README must open with the Community-tier notice, and you remain the owner of your folder (a CODEOWNERS line is added at merge). The published Vouched rubric is the feedback for what is needed to work towards the Vouched badge.
 
 ## Building against the SDK
 
-Once the engine's next tagged pre-release is published to [NuGet.org](https://www.nuget.org), the `Platform.Sdk` and `Platform.Sdk.Testing` packages are pinned in `Directory.Build.props` via the `$(VouchfxSdkVersion)` property; until then, use the "Building against engine main (optional)" path below. To build:
+The `Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` packages are published to [NuGet.org](https://www.nuget.org) and pinned in `Directory.Build.props` via the `$(VouchfxSdkVersion)` property. To build:
 
 ```bash
 dotnet restore
@@ -80,11 +80,11 @@ For advanced work testing against the engine's unreleased `main` branch, pack th
 ```bash
 # From the vouchfx-providers repo root, with the engine checked out at <engine>:
 for p in \
-  src/Engine/Platform.Engine.Abstractions/Platform.Engine.Abstractions.csproj \
-  src/Engine/Platform.Engine.Authoring/Platform.Engine.Authoring.csproj \
-  src/Engine/Platform.Engine.Compilation/Platform.Engine.Compilation.csproj \
-  src/Sdk/Platform.Sdk/Platform.Sdk.csproj \
-  src/Sdk/Platform.Sdk.Testing/Platform.Sdk.Testing.csproj ; do
+  src/Engine/Vouchfx.Engine.Abstractions/Vouchfx.Engine.Abstractions.csproj \
+  src/Engine/Vouchfx.Engine.Authoring/Vouchfx.Engine.Authoring.csproj \
+  src/Engine/Vouchfx.Engine.Compilation/Vouchfx.Engine.Compilation.csproj \
+  src/Sdk/Vouchfx.Sdk/Vouchfx.Sdk.csproj \
+  src/Sdk/Vouchfx.Sdk.Testing/Vouchfx.Sdk.Testing.csproj ; do
   dotnet pack "<engine>/$p" -c Release -o packages-local
 done
 
@@ -129,12 +129,12 @@ For the complete checklist, see [`VOUCHED_CHECKLIST.md`](VOUCHED_CHECKLIST.md). 
 ## Namespace Rules
 
 **Reserved prefixes (you cannot use these):**
-- `Platform.Engine.*` — reserved for vouchfx engine code
-- `Platform.Steps.*` — reserved for Core providers
+- `Vouchfx.Engine.*` — reserved for vouchfx engine code
+- `Vouchfx.Steps.*` — reserved for Core providers
 
 **Your provider's namespace must be unique.** Examples:
 - `MyOrg.Steps.Kafka`
-- `Community.Steps.Snowflake`
+- `Vouchfx.Community.Snowflake`
 - `Example.Steps.Hello`
 
 A unique namespace prevents assembly-graph collisions and makes it clear which team owns the code.

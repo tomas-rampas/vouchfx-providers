@@ -22,7 +22,7 @@ project.lock.json
 packages/
 
 ## Local pre-release SDK feed — the .nupkg artifacts packed from the engine for
-## building against Platform.Sdk before v1.0 is published to nuget.org. The folder
+## building against Vouchfx.Sdk before v1.0 is published to nuget.org. The folder
 ## itself is kept (packages-local/.gitkeep) so the nuget.config source path resolves.
 packages-local/*.nupkg
 packages-local/*.snupkg

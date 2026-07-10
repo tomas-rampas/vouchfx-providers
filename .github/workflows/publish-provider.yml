@@ -7,29 +7,34 @@
 # publishes exactly one provider per run — never the whole repository — so
 # providers can be released on their own schedule.
 #
-# PRECONDITION (SECURITY) — VERIFY BEFORE RELYING ON THIS WORKFLOW
+# PRECONDITION (SECURITY) — SATISFIED as of v1.0.0-alpha.4
 # -----------------------------------------------------------------------------
-# Every restore/pack/test step below resolves Platform.Sdk /
-# Platform.Sdk.Testing from nuget.org at the root <VouchfxSdkVersion> pin —
-# no local-feed bootstrap. That is safe ONLY once the engine has PUBLISHED
-# AND OWNS the Platform.*/vouchfx* package ids on nuget.org, ideally with
+# Every restore/pack/test step below resolves Vouchfx.Sdk /
+# Vouchfx.Sdk.Testing from nuget.org at the root <VouchfxSdkVersion> pin —
+# no local-feed bootstrap. That is safe only once the engine has PUBLISHED
+# AND OWNS the Vouchfx.*/vouchfx* package ids on nuget.org, ideally with
 # reserved ID prefixes (see conformance.yml's header for the full rationale
-# — this workflow shares the same precondition). A version resolving from
-# nuget.org is NOT proof of legitimate ownership: a squatted package under
-# the same id/version resolves identically, and this workflow cannot
-# distinguish the two. Verify POSITIVE OWNERSHIP (nuget.org "Owners" tab /
-# reserved-prefix confirmation) independently of this workflow before
-# treating a green run — including a real publish — as trustworthy.
+# — this workflow shares the same precondition). As of the engine's
+# v1.0.0-alpha.4 release (the first publish of the Vouchfx.* IDs after the
+# pre-GA Platform.*-to-Vouchfx.* namespace rebrand, engine PR #193), the
+# engine legitimately owns and publishes these IDs, so this precondition IS
+# satisfied. A version resolving from nuget.org is still NOT, by itself,
+# proof of legitimate ownership: a squatted package under the same
+# id/version resolves identically, and this workflow cannot distinguish the
+# two. Re-verify POSITIVE OWNERSHIP (nuget.org "Owners" tab / reserved-prefix
+# confirmation) independently of this workflow whenever the SDK is repinned
+# to a materially different package surface, before treating a green run —
+# including a real publish — as trustworthy.
 #
 # Tag convention (the tag IS the publish trigger)
 # ------------------------------------------------
-#   <ProviderDirName>/v<semver>   e.g.  Community.Steps.JsonRpc/v1.0.0
+#   <ProviderDirName>/v<semver>   e.g.  Vouchfx.Community.JsonRpc/v1.0.0
 #
 # NU5104 / pre-release SDK constraint: while the root <VouchfxSdkVersion> pin
-# is itself a PRE-RELEASE (currently 1.0.0-alpha.3), every provider release
+# is itself a PRE-RELEASE (currently 1.0.0-alpha.4), every provider release
 # tag MUST also carry a pre-release version — e.g.
-# Community.Steps.JsonRpc/v1.0.0-alpha.1, never
-# Community.Steps.JsonRpc/v1.0.0. This is NuGet's own compatibility rule
+# Vouchfx.Community.JsonRpc/v1.0.0-alpha.1, never
+# Vouchfx.Community.JsonRpc/v1.0.0. This is NuGet's own compatibility rule
 # (NU5104: a stable package must not carry a prerelease dependency), promoted
 # to a hard error by this repo's TreatWarningsAsErrors. community/'s
 # prerelease DEFAULT version (1.0.0-0.local — see
@@ -39,7 +44,7 @@
 # -p:Version="$VERSION" from the tag, which overrides that default — so a
 # stable tag fails NU5104 there, by design: a stable provider version would
 # otherwise force every consumer's restore onto a pre-release SDK. Stable
-# provider versions become possible once Platform.Sdk 1.0.0 final ships at
+# provider versions become possible once Vouchfx.Sdk 1.0.0 final ships at
 # GA and <VouchfxSdkVersion> is repinned to a stable version.
 #
 # ProviderDirName must equal the provider's directory name under community/
@@ -107,7 +112,7 @@ on:
   workflow_dispatch:
     inputs:
       provider:
-        description: "Provider directory name under community/ (== PackageId), e.g. Community.Steps.JsonRpc"
+        description: "Provider directory name under community/ (== PackageId), e.g. Vouchfx.Community.JsonRpc"
         required: true
         type: string
       version:
@@ -172,7 +177,7 @@ jobs:
             VERSION="$INPUT_VERSION"
           elif [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
             # TAG_REF is github.ref_name for a tag push, e.g.
-            # "Community.Steps.JsonRpc/v1.0.0". The trigger glob ('*/v*') does
+            # "Vouchfx.Community.JsonRpc/v1.0.0". The trigger glob ('*/v*') does
             # not let '*' cross '/', so the ref is expected to already contain
             # exactly one '/' — but that expectation is not trusted blindly
             # (manual re-run, workflow edited elsewhere, ruleset gap); re-derive
@@ -208,7 +213,7 @@ jobs:
           # Conservative PackageId-shaped pattern for PROVIDER (it IS a .NET
           # PackageId — see community/Directory.Build.props): one or more
           # alphanumeric SEGMENTS separated by single dots (the
-          # Community.Steps.<Name> convention). No path separators, no shell
+          # Vouchfx.Community.<Name> convention). No path separators, no shell
           # metacharacters, and — critically — no consecutive dots: each dot
           # must be immediately followed by at least one alphanumeric
           # character, so '..', a leading '.x', a trailing 'x.', and an
@@ -279,11 +284,11 @@ jobs:
           global-json-file: global.json
 
       # ── Step 5: Test the provider (required — no test project, no publish) ───
-      # Platform.Sdk / Platform.Sdk.Testing resolve straight from nuget.org
+      # Vouchfx.Sdk / Vouchfx.Sdk.Testing resolve straight from nuget.org
       # at the $(VouchfxSdkVersion) root MSBuild property pin (see
       # conformance.yml) — no local-feed bootstrap needed here. This is safe
       # only under the PRECONDITION in this file's header (the engine
-      # legitimately owns and has published the Platform.*/vouchfx* ids).
+      # legitimately owns and has published the Vouchfx.*/vouchfx* ids).
       # If the pin points at an SDK version not resolvable at all on
       # nuget.org, restore fails right here with a generic NU1101 error; if
       # restore is instead satisfied by something illegitimate (a squatted
@@ -317,14 +322,14 @@ jobs:
 
       # ── Step 6b: Preflight — dependency resolvability on nuget.org (push-only) ─
       # PRECONDITION (see this file's header): this step's value depends on
-      # the engine legitimately owning the Platform.*/vouchfx* ids it
+      # the engine legitimately owning the Vouchfx.*/vouchfx* ids it
       # resolves against on nuget.org — it checks that a version STRING
       # appears in the package index, which is not proof of legitimate
       # ownership (a squatted package resolves identically).
       #
       # PRIMARY failure mode for an unpublished/mismatched SDK pin: `dotnet
       # test` (Step 5) or `dotnet pack` (Step 6) above already resolves
-      # Platform.Sdk straight from nuget.org, so an unpublished dependency
+      # Vouchfx.Sdk straight from nuget.org, so an unpublished dependency
       # normally fails there FIRST, with a generic NU1101 restore error —
       # this Preflight step never even runs in that case, because the job
       # has already stopped.
@@ -423,7 +428,7 @@ jobs:
           fi
           nupkg="${candidates[0]}"
 
-          echo "Extracting Platform.*/vouchfx* dependencies from ${PROVIDER}.nuspec..."
+          echo "Extracting Vouchfx.*/vouchfx* dependencies from ${PROVIDER}.nuspec..."
           nuspec_content="$(unzip -p "$nupkg" "${PROVIDER}.nuspec")"
           dep_tags="$(grep -oP '<dependency\b[^>]*/>' <<<"$nuspec_content" || true)"
 
@@ -432,13 +437,13 @@ jobs:
             [[ -z "$tag" ]] && continue
             dep_id="$(grep -oP '(?<=\bid=")[^"]+' <<<"$tag" || true)"
             dep_version="$(grep -oP '(?<=\bversion=")[^"]+' <<<"$tag" || true)"
-            if [[ "$dep_id" == Platform.* || "$dep_id" == vouchfx* ]]; then
+            if [[ "$dep_id" == Vouchfx.* || "$dep_id" == vouchfx* ]]; then
               deps+="${dep_id}"$'\t'"${dep_version}"$'\n'
             fi
           done <<< "$dep_tags"
 
           if [[ -z "$deps" ]]; then
-            echo "No Platform.*/vouchfx* dependencies declared in ${PROVIDER}.nuspec — nothing to preflight."
+            echo "No Vouchfx.*/vouchfx* dependencies declared in ${PROVIDER}.nuspec — nothing to preflight."
             exit 0
           fi
 
@@ -458,7 +463,7 @@ jobs:
             exit 1
           fi
 
-          echo "Preflight passed: every Platform.*/vouchfx* dependency of $PROVIDER $VERSION is resolvable from nuget.org."
+          echo "Preflight passed: every Vouchfx.*/vouchfx* dependency of $PROVIDER $VERSION is resolvable from nuget.org."
 
       # ── Step 7: SLSA build provenance attestation ─────────────────────────────
       # NOTE: the engine's own release.yml references this action as

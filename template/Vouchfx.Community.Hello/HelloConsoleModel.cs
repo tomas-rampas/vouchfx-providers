@@ -3,16 +3,16 @@
 //
 // This file is the model for the `hello.console` template step kind.
 // When you copy this project to start your own provider:
-//   1. Rename the namespace (Community.Steps.Hello → YourOrg.Steps.YourKind).
+//   1. Rename the namespace (Vouchfx.Community.Hello → YourOrg.Steps.YourKind).
 //   2. Rename this record and adjust the fields to match your step's YAML shape.
 //   3. Update HelloConsoleProvider.cs to match.
 //
 // §13 INVARIANT: models are RECORDS implementing IStepModel.
 //               Never use Dictionary<string,object> for a step model.
 // ─────────────────────────────────────────────────────────────────────────────
-using Platform.Sdk;
+using Vouchfx.Sdk;
 
-namespace Community.Steps.Hello;
+namespace Vouchfx.Community.Hello;
 
 /// <summary>
 /// Strongly-typed model for the template <c>hello.console</c> step kind.

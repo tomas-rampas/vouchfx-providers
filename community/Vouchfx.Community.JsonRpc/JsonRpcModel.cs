@@ -1,4 +1,4 @@
-// Community.Steps.JsonRpc — rpc.json-rpc step model.
+// Vouchfx.Community.JsonRpc — rpc.json-rpc step model.
 //
 // Strongly-typed records only (no Dictionary<string,object> — engine hard invariant,
 // CLAUDE.md §13 / blueprint §13). Three records:
@@ -24,9 +24,9 @@
 //     sum: "$.result.sum"
 //   verifyMode: RETRY
 //   timeout: PT3S
-using Platform.Sdk;
+using Vouchfx.Sdk;
 
-namespace Community.Steps.JsonRpc;
+namespace Vouchfx.Community.JsonRpc;
 
 /// <summary>
 /// A single JSONPath assertion evaluated against the JSON-RPC response envelope's

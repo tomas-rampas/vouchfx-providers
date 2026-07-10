@@ -1,41 +1,41 @@
-// Community.Steps.JsonRpc — rpc.json-rpc step provider (JSON-RPC 2.0 over HTTP).
+// Vouchfx.Community.JsonRpc — rpc.json-rpc step provider (JSON-RPC 2.0 over HTTP).
 //
 // The FIRST Community-tier provider for the vouchfx hub (hub-hosted, listed in
 // registry/community-providers.json; not badge-vouched): a real
 // BCL-plus-JsonPath.Net transport provider, mirroring the engine's own Core
 // http.rest / mail-expect.smtp providers, but living entirely outside the engine repo
-// against the frozen v1 Platform.Sdk contract.  See community/Community.Steps.JsonRpc/README.md
+// against the frozen v1 Vouchfx.Sdk contract.  See community/Vouchfx.Community.JsonRpc/README.md
 // for worked .e2e.yaml examples, the full verdict-mapping table, and known limitations.
 //
-// §5.6 ASSEMBLY-GRAPH HYGIENE: namespace is Community.Steps.JsonRpc — never
-// Platform.Steps.* / Platform.Engine.* (reserved, refused at suite startup).
+// §5.6 ASSEMBLY-GRAPH HYGIENE: namespace is Vouchfx.Community.JsonRpc — never
+// Vouchfx.Steps.* / Vouchfx.Engine.* (reserved, refused at suite startup).
 //
-// §5 MEMORY MODEL: this provider takes NO reference to Platform.Engine.Abstractions.
+// §5 MEMORY MODEL: this provider takes NO reference to Vouchfx.Engine.Abstractions.
 // The emitted CSX reaches the run environment ONLY through the engine-injected
 // Vars/Secrets globals and refers to engine types (Verdict, StepOutcome, VarKeys,
 // ISecretAccessor, SecretResolutionException) by fully-qualified name inside the
-// emitted text — the engine already references Platform.Engine.Abstractions when it
+// emitted text — the engine already references Vouchfx.Engine.Abstractions when it
 // compiles the assembled script, so no static handle from this provider bridges the
 // collectible AssemblyLoadContext boundary.
 //
 // RETRY model: verifyMode: RETRY is a purely engine-side wrapper (CsxAssembler /
-// Platform.Engine.Abstractions.Retry.RetryRunner) that re-invokes ANY provider's
+// Vouchfx.Engine.Abstractions.Retry.RetryRunner) that re-invokes ANY provider's
 // emitted block unchanged — there is no provider-side "RETRY capability" interface
 // or flag to declare.  The ONLY contract this provider must honour is: write exactly
-// one Platform.Engine.Abstractions.StepOutcome into Vars[VarKeys.Outcome(stepId)] on
+// one Vouchfx.Engine.Abstractions.StepOutcome into Vars[VarKeys.Outcome(stepId)] on
 // every invocation, and never write Verdict.Inconclusive for a merely-not-yet-matching
 // assertion — RpcJsonRpc_Helpers writes Fail for a mismatch, exactly like http.rest's
 // status assertion; the engine's RetryRunner is what turns a sustained Fail into
 // Inconclusive once the step's timeout elapses (verified against
-// Platform.Engine.Abstractions.Retry.RetryRunner in the engine repo).
+// Vouchfx.Engine.Abstractions.Retry.RetryRunner in the engine repo).
 using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Platform.Sdk;
+using Vouchfx.Sdk;
 using YamlDotNet.RepresentationModel;
 
-namespace Community.Steps.JsonRpc;
+namespace Vouchfx.Community.JsonRpc;
 
 /// <summary>
 /// Community provider for the <c>rpc.json-rpc</c> step kind — JSON-RPC 2.0 requests over
@@ -44,7 +44,7 @@ namespace Community.Steps.JsonRpc;
 /// </summary>
 /// <remarks>
 /// <para>
-/// Implements the four mandatory <see cref="Platform.Sdk"/> provider interfaces
+/// Implements the four mandatory <see cref="Vouchfx.Sdk"/> provider interfaces
 /// (<see cref="IStepProvider"/>, <see cref="IStepBinder{TModel}"/>,
 /// <see cref="IStepValidator{TModel}"/>, <see cref="IStepCompiler{TModel}"/>) plus two
 /// optional ones that are both part of the frozen v1 SDK surface:
@@ -468,7 +468,7 @@ public sealed class JsonRpcProvider
         "System.Net.Http",
         "System.Diagnostics",
         "System.Threading.Tasks",
-        "Platform.Engine.Abstractions",
+        "Vouchfx.Engine.Abstractions",
     };
 
     /// <summary>
@@ -478,7 +478,7 @@ public sealed class JsonRpcProvider
     private static readonly IReadOnlyList<string> s_shortCircuitUsings = new[]
     {
         "System",
-        "Platform.Engine.Abstractions",
+        "Vouchfx.Engine.Abstractions",
     };
 
     /// <summary>
@@ -507,7 +507,7 @@ public sealed class JsonRpcProvider
             // only for a timeout or an unmet capture).
             public static async System.Threading.Tasks.Task ExecuteAsync(
                 System.Collections.Generic.IDictionary<string, object?> vars,
-                Platform.Engine.Abstractions.Secrets.ISecretAccessor secrets,
+                Vouchfx.Engine.Abstractions.Secrets.ISecretAccessor secrets,
                 string stepId,
                 string urlTemplate,
                 string method,
@@ -521,7 +521,7 @@ public sealed class JsonRpcProvider
                 string[] captureExprs)
             {
                 var sw = System.Diagnostics.Stopwatch.StartNew();
-                var verdict = Platform.Engine.Abstractions.Verdict.EnvironmentError;
+                var verdict = Vouchfx.Engine.Abstractions.Verdict.EnvironmentError;
                 var observation = "{\"error\":\"unexpected\"}";
 
                 var handler = new System.Net.Http.HttpClientHandler { AllowAutoRedirect = false };
@@ -583,7 +583,7 @@ public sealed class JsonRpcProvider
                             {
                                 // Fire-and-forget: assert transport success only. No envelope is read.
                                 var ok = statusCode is >= 200 and < 300;
-                                verdict = ok ? Platform.Engine.Abstractions.Verdict.Pass : Platform.Engine.Abstractions.Verdict.Fail;
+                                verdict = ok ? Vouchfx.Engine.Abstractions.Verdict.Pass : Vouchfx.Engine.Abstractions.Verdict.Fail;
                                 observation = "{\"notification\":true,\"status\":" + statusCode.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}";
                             }
                             else
@@ -594,7 +594,7 @@ public sealed class JsonRpcProvider
 
                                 if (envNode is not System.Text.Json.Nodes.JsonObject envObj)
                                 {
-                                    verdict = Platform.Engine.Abstractions.Verdict.EnvironmentError;
+                                    verdict = Vouchfx.Engine.Abstractions.Verdict.EnvironmentError;
                                     observation = "{\"error\":\"non-json-envelope\"}";
                                 }
                                 else
@@ -612,17 +612,17 @@ public sealed class JsonRpcProvider
                                         // expect.result declared.
                                         if (hasError)
                                         {
-                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                            verdict = Vouchfx.Engine.Abstractions.Verdict.Fail;
                                             observation = "{\"unexpectedError\":true}";
                                         }
                                         else if (!idMatches)
                                         {
-                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                            verdict = Vouchfx.Engine.Abstractions.Verdict.Fail;
                                             observation = "{\"idMismatch\":true}";
                                         }
                                         else if (!hasResult)
                                         {
-                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                            verdict = Vouchfx.Engine.Abstractions.Verdict.Fail;
                                             observation = "{\"malformedEnvelope\":\"missing result and error\"}";
                                         }
                                         else
@@ -662,7 +662,7 @@ public sealed class JsonRpcProvider
 
                                             if (mismatchPath is not null)
                                             {
-                                                verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                                verdict = Vouchfx.Engine.Abstractions.Verdict.Fail;
                                                 var diag = new System.Text.Json.Nodes.JsonObject
                                                 {
                                                     ["resultMismatch"] = new System.Text.Json.Nodes.JsonObject
@@ -676,7 +676,7 @@ public sealed class JsonRpcProvider
                                             }
                                             else
                                             {
-                                                verdict = Platform.Engine.Abstractions.Verdict.Pass;
+                                                verdict = Vouchfx.Engine.Abstractions.Verdict.Pass;
                                                 observation = "{\"matched\":true}";
                                             }
                                         }
@@ -686,12 +686,12 @@ public sealed class JsonRpcProvider
                                         // expect.error.code declared — a negative test.
                                         if (hasResult && !hasError)
                                         {
-                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                            verdict = Vouchfx.Engine.Abstractions.Verdict.Fail;
                                             observation = "{\"unexpectedResult\":true}";
                                         }
                                         else if (!hasError)
                                         {
-                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                            verdict = Vouchfx.Engine.Abstractions.Verdict.Fail;
                                             observation = "{\"missingError\":true}";
                                         }
                                         else
@@ -708,12 +708,12 @@ public sealed class JsonRpcProvider
 
                                             if (actualCode.HasValue && actualCode.Value == expectedErrorCode.Value)
                                             {
-                                                verdict = Platform.Engine.Abstractions.Verdict.Pass;
+                                                verdict = Vouchfx.Engine.Abstractions.Verdict.Pass;
                                                 observation = "{\"errorCode\":" + actualCode.Value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}";
                                             }
                                             else
                                             {
-                                                verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                                verdict = Vouchfx.Engine.Abstractions.Verdict.Fail;
                                                 var diag = new System.Text.Json.Nodes.JsonObject
                                                 {
                                                     ["errorCodeMismatch"] = new System.Text.Json.Nodes.JsonObject
@@ -733,17 +733,17 @@ public sealed class JsonRpcProvider
                                         // JSON-RPC error envelope arrives.
                                         if (hasError)
                                         {
-                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                            verdict = Vouchfx.Engine.Abstractions.Verdict.Fail;
                                             observation = "{\"unexpectedError\":true}";
                                         }
                                         else if (!idMatches)
                                         {
-                                            verdict = Platform.Engine.Abstractions.Verdict.Fail;
+                                            verdict = Vouchfx.Engine.Abstractions.Verdict.Fail;
                                             observation = "{\"idMismatch\":true}";
                                         }
                                         else
                                         {
-                                            verdict = Platform.Engine.Abstractions.Verdict.Pass;
+                                            verdict = Vouchfx.Engine.Abstractions.Verdict.Pass;
                                             observation = "{\"matched\":true}";
                                         }
                                     }
@@ -754,7 +754,7 @@ public sealed class JsonRpcProvider
                                     // equivalent at this point in the control flow (verdict can only
                                     // be Pass or Fail here), but this provider is the reference pattern
                                     // contributors copy.
-                                    if (captureVarNames.Length > 0 && verdict != Platform.Engine.Abstractions.Verdict.Fail)
+                                    if (captureVarNames.Length > 0 && verdict != Vouchfx.Engine.Abstractions.Verdict.Fail)
                                     {
                                         var matchedFlags = new bool[captureVarNames.Length];
                                         for (int ci = 0; ci < captureVarNames.Length; ci++)
@@ -779,11 +779,11 @@ public sealed class JsonRpcProvider
                                             matchedFlags[ci] = matched;
                                             if (!matched)
                                             {
-                                                verdict = Platform.Engine.Abstractions.Verdict.Inconclusive;
+                                                verdict = Vouchfx.Engine.Abstractions.Verdict.Inconclusive;
                                                 observation = "{\"captureUnmet\":" + System.Text.Json.JsonSerializer.Serialize(captureVarNames[ci]) + "}";
                                             }
                                         }
-                                        vars[Platform.Engine.Abstractions.VarKeys.CaptureStatus(stepId)] =
+                                        vars[Vouchfx.Engine.Abstractions.VarKeys.CaptureStatus(stepId)] =
                                             string.Join(",", System.Array.ConvertAll(matchedFlags, f => f ? "1" : "0"));
                                     }
                                 }
@@ -795,11 +795,11 @@ public sealed class JsonRpcProvider
                         }
                     }
                 }
-                catch (Platform.Engine.Abstractions.Secrets.SecretResolutionException sre)
+                catch (Vouchfx.Engine.Abstractions.Secrets.SecretResolutionException sre)
                 {
                     // Missing/unknown secret = EnvironmentError (§12.1), reference-only (§17):
                     // never the value, never even the exception's own Message.
-                    verdict = Platform.Engine.Abstractions.Verdict.EnvironmentError;
+                    verdict = Vouchfx.Engine.Abstractions.Verdict.EnvironmentError;
                     observation = "{\"secretError\":\"secret resolution failed\"" +
                         ",\"source\":" + System.Text.Json.JsonSerializer.Serialize(sre.SecretSource) +
                         ",\"path\":" + System.Text.Json.JsonSerializer.Serialize(sre.SecretPath) + "}";
@@ -808,14 +808,14 @@ public sealed class JsonRpcProvider
                 {
                     // Timeout = Inconclusive (§12.1): the test could not complete due to a
                     // stall, not because the target responded incorrectly — mirrors http.rest.
-                    verdict = Platform.Engine.Abstractions.Verdict.Inconclusive;
+                    verdict = Vouchfx.Engine.Abstractions.Verdict.Inconclusive;
                     observation = "{\"timeout\":true}";
                 }
                 catch (System.Exception ex)
                 {
                     // Connection refused / DNS failure / TLS failure / non-json-envelope /
                     // bad scheme = EnvironmentError (§12.1): a run-environment problem.
-                    verdict = Platform.Engine.Abstractions.Verdict.EnvironmentError;
+                    verdict = Vouchfx.Engine.Abstractions.Verdict.EnvironmentError;
                     observation = "{\"error\":" + System.Text.Json.JsonSerializer.Serialize(ex.GetType().Name) + "}";
                 }
                 finally
@@ -824,8 +824,8 @@ public sealed class JsonRpcProvider
                     client.Dispose();
                 }
 
-                vars[Platform.Engine.Abstractions.VarKeys.Outcome(stepId)] =
-                    new Platform.Engine.Abstractions.StepOutcome(verdict, sw.ElapsedMilliseconds, observation);
+                vars[Vouchfx.Engine.Abstractions.VarKeys.Outcome(stepId)] =
+                    new Vouchfx.Engine.Abstractions.StepOutcome(verdict, sw.ElapsedMilliseconds, observation);
             }
 
             // Resolves every STRING LEAF in a parsed `params` JsonNode tree (object or
@@ -840,7 +840,7 @@ public sealed class JsonRpcProvider
             // replace one JSON string value with another, never inject structure.
             private static void ResolveParamsLeaves(
                 System.Text.Json.Nodes.JsonNode? node,
-                Platform.Engine.Abstractions.Secrets.ISecretAccessor secrets,
+                Vouchfx.Engine.Abstractions.Secrets.ISecretAccessor secrets,
                 System.Collections.Generic.IDictionary<string, object?> vars)
             {
                 if (node is System.Text.Json.Nodes.JsonObject obj)
@@ -900,9 +900,9 @@ public sealed class JsonRpcProvider
 
             var shortCircuitBlock = $$"""
                 {
-                    Vars[Platform.Engine.Abstractions.VarKeys.Outcome({{JsonSerializer.Serialize(safeId)}})] =
-                        new Platform.Engine.Abstractions.StepOutcome(
-                            Platform.Engine.Abstractions.Verdict.Fail,
+                    Vars[Vouchfx.Engine.Abstractions.VarKeys.Outcome({{JsonSerializer.Serialize(safeId)}})] =
+                        new Vouchfx.Engine.Abstractions.StepOutcome(
+                            Vouchfx.Engine.Abstractions.Verdict.Fail,
                             0,
                             {{observationLiteral}});
                 }

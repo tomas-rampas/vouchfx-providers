@@ -21,8 +21,8 @@
          - ImplicitUsings is REQUIRED for this test project's files to compile as
            written: they have no explicit `using` statements and rely on the SDK's
            implicit global usings — without it, restore succeeds but the build fails.
-         - VouchfxSdkVersion, left undefined, would restore Platform.Sdk /
-           Platform.Sdk.Testing with an empty Version and fail confusingly. The literal
+         - VouchfxSdkVersion, left undefined, would restore Vouchfx.Sdk /
+           Vouchfx.Sdk.Testing with an empty Version and fail confusingly. The literal
            below pins the latest published pre-release SDK — substitute it for whatever
            is current when you copy this template. This literal is on the REPIN
            PROCEDURE checklist in conformance.yml's header: it is bumped there whenever
@@ -34,17 +34,17 @@
   <PropertyGroup>
     <TargetFramework Condition="'$(TargetFramework)' == ''">net8.0</TargetFramework>
     <ImplicitUsings Condition="'$(ImplicitUsings)' == ''">enable</ImplicitUsings>
-    <VouchfxSdkVersion Condition="'$(VouchfxSdkVersion)' == ''">1.0.0-alpha.3</VouchfxSdkVersion>
+    <VouchfxSdkVersion Condition="'$(VouchfxSdkVersion)' == ''">1.0.0-alpha.4</VouchfxSdkVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- Provider under test. -->
-    <ProjectReference Include="..\Community.Steps.Hello\Community.Steps.Hello.csproj" />
+    <ProjectReference Include="..\Vouchfx.Community.Hello\Vouchfx.Community.Hello.csproj" />
 
     <!-- Published harness packages — the out-of-repo path uses these instead of
-         in-tree ProjectReferences to Platform.Engine.* assemblies. -->
-    <PackageReference Include="Platform.Sdk" Version="$(VouchfxSdkVersion)" />
-    <PackageReference Include="Platform.Sdk.Testing" Version="$(VouchfxSdkVersion)" />
+         in-tree ProjectReferences to Vouchfx.Engine.* assemblies. -->
+    <PackageReference Include="Vouchfx.Sdk" Version="$(VouchfxSdkVersion)" />
+    <PackageReference Include="Vouchfx.Sdk.Testing" Version="$(VouchfxSdkVersion)" />
   </ItemGroup>
 
 </Project>

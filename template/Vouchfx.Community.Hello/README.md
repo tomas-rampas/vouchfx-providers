@@ -2,7 +2,7 @@
 
 > **Replace this whole file.** It ships only so a copy of this template packs and
 > passes the hub's pack gate on day one — `PackageReadmeFile=README.md` in
-> [`Community.Steps.Hello.csproj`](Community.Steps.Hello.csproj) requires a
+> [`Vouchfx.Community.Hello.csproj`](Vouchfx.Community.Hello.csproj) requires a
 > `README.md` to exist right here, at the package root, so `dotnet pack` (and the
 > CI pack gate that validates every `community/` submission) never fails on a
 > missing readme. Every section below is a placeholder — swap the title, the
@@ -10,7 +10,7 @@
 
 `hello.console` is the smallest meaningful step kind: it emits a message and
 asserts it equals a constant. It has no infrastructure dependency, which is why
-[`Community.Steps.Hello.Tests`](../Community.Steps.Hello.Tests) runs the
+[`Vouchfx.Community.Hello.Tests`](../Vouchfx.Community.Hello.Tests) runs the
 conformance test end to end without Docker — copy this project to bootstrap your
 own provider; see [`CONTRIBUTING.md`](../../CONTRIBUTING.md) for the full walk-through.
 
@@ -56,6 +56,6 @@ your own:
    header comment in [`HelloConsoleProvider.cs`](HelloConsoleProvider.cs).
 2. Rewrite every section above for your own provider.
 3. Replace `Description`, `Authors`, and `PackageTags` in
-   [`Community.Steps.Hello.csproj`](Community.Steps.Hello.csproj) — the hub's
+   [`Vouchfx.Community.Hello.csproj`](Vouchfx.Community.Hello.csproj) — the hub's
    pack gate validates all three (plus this readme) once your copy lives under
    `community/`.

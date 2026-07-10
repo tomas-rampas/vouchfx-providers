@@ -1,4 +1,4 @@
-// Community.Steps.JsonRpc.Tests — JsonRpcProviderTests.
+// Vouchfx.Community.JsonRpc.Tests — JsonRpcProviderTests.
 //
 // TWO test categories, mirroring the template's split:
 //
@@ -6,7 +6,7 @@
 //      compile -> run-isolated, either via JsonRpcHarness (execution tests — see
 //      JsonRpcHarness.cs for why a small custom harness is needed alongside the
 //      published ProviderTestHarness) or via the plain, published
-//      Platform.Sdk.Testing.ProviderTestHarness for the two tests that halt BEFORE
+//      Vouchfx.Sdk.Testing.ProviderTestHarness for the two tests that halt BEFORE
 //      any Roslyn compile (schema / model validation rejection).
 //
 //   2. UNIT (emit surface) — calls JsonRpcProvider.Emit directly via TestCompileContext
@@ -17,14 +17,14 @@
 // JSON-RPC 2.0 responder on loopback (see JsonRpcTestServer.cs).
 using System.Text.Json;
 using System.Text.Json.Nodes;
-using Platform.Engine.Abstractions;
-using Platform.Engine.Abstractions.Secrets;
-using Platform.Sdk;
-using Platform.Sdk.Testing;
-using Platform.Sdk.Testing.Contexts;
+using Vouchfx.Engine.Abstractions;
+using Vouchfx.Engine.Abstractions.Secrets;
+using Vouchfx.Sdk;
+using Vouchfx.Sdk.Testing;
+using Vouchfx.Sdk.Testing.Contexts;
 using Xunit;
 
-namespace Community.Steps.JsonRpc.Tests;
+namespace Vouchfx.Community.JsonRpc.Tests;
 
 /// <summary>
 /// Conformance and unit tests for the <c>rpc.json-rpc</c> community provider.
@@ -251,7 +251,7 @@ public sealed class JsonRpcProviderTests : IClassFixture<JsonRpcTestServerFixtur
     }
 
     // (c) `${secret:env/...}` in `url`, resolved through a REAL SecretAccessor wired to
-    // the published EnvironmentSecretResolver (Platform.Engine.Abstractions.Secrets) —
+    // the published EnvironmentSecretResolver (Vouchfx.Engine.Abstractions.Secrets) —
     // usable here because both types are published (not engine-internal), unlike the
     // Vault resolver. Proves the secret-token half of ResolveTemplate end to end, not
     // just the placeholder half.
@@ -330,7 +330,7 @@ public sealed class JsonRpcProviderTests : IClassFixture<JsonRpcTestServerFixtur
         var result = await JsonRpcHarness.RunAsync(
             model, "flaky-exhausted", retry: true, timeoutMs: 1500);
 
-        // The engine's RetryRunner (Platform.Engine.Abstractions.Retry.RetryRunner)
+        // The engine's RetryRunner (Vouchfx.Engine.Abstractions.Retry.RetryRunner)
         // converts a sustained Fail into Inconclusive once the polling window elapses
         // (RetryRunner.TimedOut / .Classify in the engine repo) — asserted here as the
         // actual, observed result, not assumed.
@@ -505,7 +505,7 @@ public sealed class JsonRpcProviderTests : IClassFixture<JsonRpcTestServerFixtur
 
         // RequiredUsings: bare namespace strings only (§13.3.1).
         Assert.Contains("System.Net.Http", fragment.RequiredUsings);
-        Assert.Contains("Platform.Engine.Abstractions", fragment.RequiredUsings);
+        Assert.Contains("Vouchfx.Engine.Abstractions", fragment.RequiredUsings);
         Assert.All(fragment.RequiredUsings, u => Assert.False(
             u.TrimStart().StartsWith("using ", StringComparison.Ordinal),
             $"RequiredUsings must be bare namespace strings, got: '{u}'"));
