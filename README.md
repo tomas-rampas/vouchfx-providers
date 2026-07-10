@@ -45,7 +45,7 @@ After a Community provider is listed in the registry, a maintainer can award the
 
 A Community provider is consumed via **source-level build**: clone the provider repository, reference its project in your build, and rebuild your application host to integrate the provider at compile time. This is the distribution model through v1.0 and beyond.
 
-Per-provider NuGet packages will be published from this hub's own CI once the SDK is restorable from NuGet.org; until then, build from source.
+Per-provider NuGet packages are published from this hub's CI when maintainers cut release tags; until a given provider is published, build from source.
 
 ## How to Get Your Provider Listed
 
