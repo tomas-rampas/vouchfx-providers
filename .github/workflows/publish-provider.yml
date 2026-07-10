@@ -7,9 +7,40 @@
 # publishes exactly one provider per run — never the whole repository — so
 # providers can be released on their own schedule.
 #
+# PRECONDITION (SECURITY) — VERIFY BEFORE RELYING ON THIS WORKFLOW
+# -----------------------------------------------------------------------------
+# Every restore/pack/test step below resolves Platform.Sdk /
+# Platform.Sdk.Testing from nuget.org at the root <VouchfxSdkVersion> pin —
+# no local-feed bootstrap. That is safe ONLY once the engine has PUBLISHED
+# AND OWNS the Platform.*/vouchfx* package ids on nuget.org, ideally with
+# reserved ID prefixes (see conformance.yml's header for the full rationale
+# — this workflow shares the same precondition). A version resolving from
+# nuget.org is NOT proof of legitimate ownership: a squatted package under
+# the same id/version resolves identically, and this workflow cannot
+# distinguish the two. Verify POSITIVE OWNERSHIP (nuget.org "Owners" tab /
+# reserved-prefix confirmation) independently of this workflow before
+# treating a green run — including a real publish — as trustworthy.
+#
 # Tag convention (the tag IS the publish trigger)
 # ------------------------------------------------
 #   <ProviderDirName>/v<semver>   e.g.  Community.Steps.JsonRpc/v1.0.0
+#
+# NU5104 / pre-release SDK constraint: while the root <VouchfxSdkVersion> pin
+# is itself a PRE-RELEASE (currently 1.0.0-alpha.3), every provider release
+# tag MUST also carry a pre-release version — e.g.
+# Community.Steps.JsonRpc/v1.0.0-alpha.1, never
+# Community.Steps.JsonRpc/v1.0.0. This is NuGet's own compatibility rule
+# (NU5104: a stable package must not carry a prerelease dependency), promoted
+# to a hard error by this repo's TreatWarningsAsErrors. community/'s
+# prerelease DEFAULT version (1.0.0-0.local — see
+# community/Directory.Build.props) keeps NU5104 silent for the
+# conformance.yml pack gate and other bare (no -p:Version) packs, but this
+# workflow's "Pack the provider" step below always passes an explicit
+# -p:Version="$VERSION" from the tag, which overrides that default — so a
+# stable tag fails NU5104 there, by design: a stable provider version would
+# otherwise force every consumer's restore onto a pre-release SDK. Stable
+# provider versions become possible once Platform.Sdk 1.0.0 final ships at
+# GA and <VouchfxSdkVersion> is repinned to a stable version.
 #
 # ProviderDirName must equal the provider's directory name under community/
 # (which is also its PackageId — see community/Directory.Build.props and the
@@ -22,10 +53,11 @@
 # Trust model
 # -----------
 #   - GitHub resolves and executes THIS WORKFLOW FILE — together with the
-#     checkout, nuget.config, and the pinned engine SHA it references — AS
-#     THEY EXIST AT THE TAGGED COMMIT. Whoever controls the content of the
-#     tagged commit therefore also controls every validation this workflow
-#     performs against that commit: no in-workflow check below (the ancestry
+#     checkout, nuget.config, and the root <VouchfxSdkVersion> pin it
+#     restores against — AS THEY EXIST AT THE TAGGED COMMIT. Whoever controls
+#     the content of the tagged commit therefore also controls every
+#     validation this workflow performs against that commit: no in-workflow
+#     check below (the ancestry
 #     gate, the governance-registry gate, the PROVIDER/VERSION regex
 #     validation) can contain a party who is able to push the tag that
 #     triggers it — a compromised or malicious tagged commit could simply ship
@@ -106,7 +138,7 @@ jobs:
       attestations: write  # store the SLSA provenance attestation via the GitHub API
       # (attestations: write is not part of the minimal contents/id-token pair
       # a Trusted-Publishing-only job would need, but actions/attest-build-
-      # provenance in step 8 below requires it — omitting it would make that
+      # provenance in step 7 below requires it — omitting it would make that
       # step fail on every run, including the workflow_dispatch smoke lane.)
 
     steps:
@@ -159,6 +191,15 @@ jobs:
 
           # Fail-closed semver validation — copied verbatim from the engine's
           # release.yml "Determine release version" step (vouchfx repo).
+          #
+          # NOTE: this regex accepts BOTH stable (1.0.0) and pre-release
+          # (1.0.0-alpha.1) forms — it does not itself enforce the
+          # pre-release requirement described in the header's "NU5104 /
+          # pre-release SDK constraint" note. While <VouchfxSdkVersion> is a
+          # pre-release, a stable VERSION passes this check but is refused
+          # later, at the "Pack the provider" step, by NuGet's own NU5104
+          # rule (a stable package must not depend on a prerelease package) —
+          # not re-validated redundantly here.
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::Refusing to publish: version '$VERSION' is not a valid semver."
             exit 1
@@ -237,41 +278,19 @@ jobs:
         with:
           global-json-file: global.json
 
-      # ── Step 5: Bootstrap the SDK-closure local feed [REMOVE AFTER SDK PUBLISHED] ─
-      # Platform.Sdk / Platform.Sdk.Testing v1.0.0 are not yet on nuget.org (they
-      # ship with the vouchfx v1.0 GA release). Until then this workflow needs
-      # the exact same local-feed bootstrap conformance.yml uses so that
-      # `dotnet test`/`dotnet pack` below can restore Platform.Sdk — identical
-      # engine checkout SHA and pack-5-projects loop, kept byte-for-byte
-      # equivalent so the eventual repin PR can delete both in one sweep.
-      - name: Checkout engine (tomas-rampas/vouchfx → engine/) [REMOVE AFTER SDK PUBLISHED]
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          repository: tomas-rampas/vouchfx
-          # Full 40-char SHA required: actions/checkout treats a short SHA as a
-          # branch/tag glob (refs/heads/<ref>*) and fails the cross-repo fetch.
-          # Kept identical to conformance.yml's pinned engine SHA — update both
-          # together.
-          ref: f5bf109651bd5ea4c2f3653d4a62d34fe2ba1011
-          path: engine
-
-      - name: Pack SDK-closure projects into packages-local/ [REMOVE AFTER SDK PUBLISHED]
-        run: |
-          set -euo pipefail
-          for csproj in \
-            engine/src/Engine/Platform.Engine.Abstractions/Platform.Engine.Abstractions.csproj \
-            engine/src/Engine/Platform.Engine.Authoring/Platform.Engine.Authoring.csproj \
-            engine/src/Engine/Platform.Engine.Compilation/Platform.Engine.Compilation.csproj \
-            engine/src/Sdk/Platform.Sdk/Platform.Sdk.csproj \
-            engine/src/Sdk/Platform.Sdk.Testing/Platform.Sdk.Testing.csproj ; do
-            echo "::group::pack $csproj"
-            dotnet pack "$csproj" -c Release -o packages-local/ --nologo
-            echo "::endgroup::"
-          done
-          echo "Packages staged in packages-local/:"
-          ls packages-local/*.nupkg
-
-      # ── Step 6: Test the provider (required — no test project, no publish) ───
+      # ── Step 5: Test the provider (required — no test project, no publish) ───
+      # Platform.Sdk / Platform.Sdk.Testing resolve straight from nuget.org
+      # at the $(VouchfxSdkVersion) root MSBuild property pin (see
+      # conformance.yml) — no local-feed bootstrap needed here. This is safe
+      # only under the PRECONDITION in this file's header (the engine
+      # legitimately owns and has published the Platform.*/vouchfx* ids).
+      # If the pin points at an SDK version not resolvable at all on
+      # nuget.org, restore fails right here with a generic NU1101 error; if
+      # restore is instead satisfied by something illegitimate (a squatted
+      # package, or a stale cache on a self-hosted runner), the "Preflight —
+      # dependency resolvability on nuget.org" step further below
+      # (push-only) is the belt-and-braces guard that still queries
+      # nuget.org directly before publish — see its own comment for detail.
       - name: Test the provider's sibling test project
         run: |
           set -euo pipefail
@@ -282,7 +301,7 @@ jobs:
           fi
           dotnet test "$test_csproj" -c Release --logger "console;verbosity=normal"
 
-      # ── Step 7: Pack the provider at the requested version ───────────────────
+      # ── Step 6: Pack the provider at the requested version ───────────────────
       # Package-metadata validation (license/readme/description/repository/
       # tags/id — the pack gate) is enforced at PR time on main by
       # conformance.yml; the ancestry gate above guarantees the tagged commit
@@ -296,23 +315,32 @@ jobs:
             -o artifacts/nuget
           ls -lh artifacts/nuget/
 
-      # ── Step 7b: Preflight — dependency resolvability on nuget.org (push-only) ─
-      # Guards against cutting a provider release tag while its packed
-      # Platform.*/vouchfx* dependency pin (e.g. Platform.Sdk) is not yet
-      # resolvable from nuget.org: Step 5's packages-local/ bootstrap feed
-      # makes `dotnet pack` above succeed regardless of what's actually live
-      # on nuget.org, so pack succeeding is NOT evidence the package is
-      # installable. A consumer who `dotnet add package`s the just-published
-      # provider on a clean machine (no packages-local/ bootstrap) would hit
-      # an unresolvable dependency — and nuget.org packages are IMMUTABLE
-      # (see the header note), so that would be a PERMANENTLY broken release
-      # needing a brand-new patch version to fix, not a re-run.
+      # ── Step 6b: Preflight — dependency resolvability on nuget.org (push-only) ─
+      # PRECONDITION (see this file's header): this step's value depends on
+      # the engine legitimately owning the Platform.*/vouchfx* ids it
+      # resolves against on nuget.org — it checks that a version STRING
+      # appears in the package index, which is not proof of legitimate
+      # ownership (a squatted package resolves identically).
       #
-      # This check SELF-HEALS: once Platform.Sdk ships to nuget.org and every
-      # "[REMOVE AFTER SDK PUBLISHED]" step above is deleted, every
-      # Platform.*/vouchfx* dependency will resolve and this step becomes a
-      # normal no-op pass — it stays in place permanently as a release-time
-      # safety net, not a bootstrap-era workaround to remove later.
+      # PRIMARY failure mode for an unpublished/mismatched SDK pin: `dotnet
+      # test` (Step 5) or `dotnet pack` (Step 6) above already resolves
+      # Platform.Sdk straight from nuget.org, so an unpublished dependency
+      # normally fails there FIRST, with a generic NU1101 restore error —
+      # this Preflight step never even runs in that case, because the job
+      # has already stopped.
+      #
+      # What this step actually guards is the RESIDUAL case: restore was
+      # satisfied by something other than a legitimate, intended publish —
+      # e.g. a stale entry already sitting in the runner's local NuGet HTTP
+      # cache (relevant if this workflow is ever run on a persistent
+      # self-hosted runner rather than an ephemeral GitHub-hosted one), or a
+      # squatted package published under the same id/version by a third
+      # party — while the dependency this provider actually needs is not
+      # legitimately published. In that residual case, `dotnet pack` above
+      # would already have succeeded, so this step is what still catches it
+      # by querying nuget.org directly, before the IMMUTABLE, irreversible
+      # NuGet.org push further below. It remains in place permanently as
+      # that belt-and-braces guard, independent of the bootstrap era.
       - name: Preflight — dependency resolvability on nuget.org
         if: github.event_name == 'push'
         run: |
@@ -362,7 +390,7 @@ jobs:
             body="$(sed '$d' <<<"$raw")"
 
             if [[ "$http_code" == "404" ]]; then
-              echo "::error::DEPENDENCY NOT PUBLISHED: $dep_id does not exist at all on nuget.org (404 at $url). Publishing $PROVIDER now would ship a permanently broken, immutable package for any consumer without the local packages-local/ bootstrap feed. Wait until $dep_id is published, or update the dependency pin, before cutting this tag."
+              echo "::error::DEPENDENCY NOT PUBLISHED: $dep_id does not exist at all on nuget.org (404 at $url). Publishing $PROVIDER now would ship a permanently broken, immutable package — every consumer resolves this dependency straight from nuget.org. Wait until $dep_id is published, or update the dependency pin, before cutting this tag."
               echo "::endgroup::"
               return 1
             fi
@@ -374,7 +402,7 @@ jobs:
             fi
 
             if ! jq -e --arg v "$dep_version" '(.versions // []) | index($v) != null' <<<"$body" > /dev/null 2>&1; then
-              echo "::error::DEPENDENCY NOT PUBLISHED: $dep_id $dep_version is not present in nuget.org's version index ($url). Publishing $PROVIDER now would ship a permanently broken, immutable package for any consumer without the local packages-local/ bootstrap feed. Wait until $dep_id $dep_version is published, or update the dependency pin, before cutting this tag."
+              echo "::error::DEPENDENCY NOT PUBLISHED: $dep_id $dep_version is not present in nuget.org's version index ($url). Publishing $PROVIDER now would ship a permanently broken, immutable package — every consumer resolves this dependency straight from nuget.org. Wait until $dep_id $dep_version is published, or update the dependency pin, before cutting this tag."
               echo "::endgroup::"
               return 1
             fi
@@ -432,7 +460,7 @@ jobs:
 
           echo "Preflight passed: every Platform.*/vouchfx* dependency of $PROVIDER $VERSION is resolvable from nuget.org."
 
-      # ── Step 8: SLSA build provenance attestation ─────────────────────────────
+      # ── Step 7: SLSA build provenance attestation ─────────────────────────────
       # NOTE: the engine's own release.yml references this action as
       # actions/attest-build-provenance@v4 WITHOUT a pinned SHA (verified by
       # inspection — it is the one action in that workflow left unpinned), so
@@ -453,7 +481,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch'
         run: echo "::notice::Skipping SLSA provenance attestation — workflow_dispatch is a smoke-test lane and must not mint a real attestation subject."
 
-      # ── Step 9: Publish to NuGet.org — Trusted Publishing (push-only) ────────
+      # ── Step 8: Publish to NuGet.org — Trusted Publishing (push-only) ────────
       # Gated on BOTH github.event_name == 'push' and the exact repository, so
       # the workflow_dispatch smoke lane never pushes and a fork can never
       # publish (a fork also has no matching Trusted Publishing policy, so the
@@ -480,7 +508,7 @@ jobs:
               --skip-duplicate
           done
 
-      # ── Step 10: Smoke-test summary (dispatch-only, nothing was pushed) ──────
+      # ── Step 9: Smoke-test summary (dispatch-only, nothing was pushed) ───────
       - name: Smoke-test summary — nothing was pushed
         if: github.event_name == 'workflow_dispatch'
         run: |

@@ -38,12 +38,43 @@
     <None Include="README.md" Pack="true" PackagePath="\" />
   </ItemGroup>
 
+  <!-- Out-of-repo fallbacks. Inside this hub, the root Directory.Build.props defines
+       ALL THREE properties below before the project body is evaluated, so every
+       Condition here is always false and these fallbacks are skipped. Once this
+       template is copied OUT of the repo, there is no root Directory.Build.props to
+       inherit from:
+         - TargetFramework is REQUIRED for `dotnet restore` to even start — without it,
+           NuGet's target-framework inference fails outright (NETSDK1013), before
+           PackageReference versions are ever considered. net8.0 matches the hub's own
+           pin.
+         - ImplicitUsings is REQUIRED for this file to compile as written: it has no
+           explicit `using` statements and relies on the SDK's implicit global usings
+           (e.g. System.Collections.Generic for IReadOnlyList<T>) — without it, restore
+           succeeds but the build fails with CS0246.
+         - VouchfxSdkVersion, left undefined, would restore Platform.Sdk with an empty
+           Version and fail confusingly. The literal below pins the latest published
+           pre-release SDK — substitute it for whatever is current when you copy this
+           template. This literal is on the REPIN PROCEDURE checklist in
+           conformance.yml's header: it is bumped there whenever the hub's own
+           $(VouchfxSdkVersion) moves.
+       Other root-only properties (LangVersion, Nullable, TreatWarningsAsErrors, ...)
+       fall back to the .NET SDK's own defaults once copied out of the repo — different
+       from the hub's settings, but not a hard failure like the three above (e.g. the
+       `?` nullable annotations in this file degrade to a CS8632 warning, not an error,
+       with no TreatWarningsAsErrors out-of-repo to escalate it) — so no fallback is
+       provided for those here. -->
+  <PropertyGroup>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">net8.0</TargetFramework>
+    <ImplicitUsings Condition="'$(ImplicitUsings)' == ''">enable</ImplicitUsings>
+    <VouchfxSdkVersion Condition="'$(VouchfxSdkVersion)' == ''">1.0.0-alpha.3</VouchfxSdkVersion>
+  </PropertyGroup>
+
   <ItemGroup>
     <!-- A community provider depends ONLY on the frozen v1 SDK contract.
          No reference to Platform.Engine.* is needed or permitted: the engine drives
          the provider through these interfaces, and cross-step state reaches the run
          environment solely through the engine-injected Vars global. -->
-    <PackageReference Include="Platform.Sdk" Version="1.0.0" />
+    <PackageReference Include="Platform.Sdk" Version="$(VouchfxSdkVersion)" />
   </ItemGroup>
 
 </Project>

@@ -32,7 +32,7 @@
          interfaces, and the emitted CSX reaches the run environment solely through the
          engine-injected Vars/Secrets globals (referenced by fully-qualified name in the
          emitted text — see JsonRpcProvider.Emit). -->
-    <PackageReference Include="Platform.Sdk" Version="1.0.0" />
+    <PackageReference Include="Platform.Sdk" Version="$(VouchfxSdkVersion)" />
 
     <!-- DEVIATION FROM THE MINIMAL "BCL-only, zero new packages" STARTING ASSUMPTION —
          verified necessary, not guessed (see README "Known limitations" + the delivery

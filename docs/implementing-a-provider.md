@@ -96,7 +96,7 @@ cd src/Community.Steps.MyKind
 ### The `.csproj` File
 
 Your provider project must:
-- Reference **only** `Platform.Sdk` (version 1.0.0 or later)
+- Reference **only** `Platform.Sdk` (pinned to the latest published pre-release version on NuGet.org)
 - Use a **non-reserved namespace** (never `Platform.Engine.*` or `Platform.Steps.*`)
 - Target `.NET 8.0`
 
@@ -112,16 +112,15 @@ Here is the minimal structure:
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Frozen v1 SDK contract — no engine dependencies needed. -->
-    <PackageReference Include="Platform.Sdk" Version="1.0.0" />
+    <!-- Frozen v1 SDK contract — no engine dependencies needed.
+         Substitute the newest published pre-release version (e.g. 1.0.0-alpha.3). -->
+    <PackageReference Include="Platform.Sdk" Version="1.0.0-alpha.3" />
   </ItemGroup>
 
 </Project>
 ```
 
-**Until the SDK's first published pre-release:** Pack the SDK locally from the engine repository (see `CONTRIBUTING.md` "Building Before the SDK is on NuGet.org" for the command).
-
-**Once the engine has published the SDK (next tagged pre-release onward):** Restore from NuGet.org directly.
+Restore the SDK from NuGet.org at the pinned version (see `CONTRIBUTING.md` "Building against the SDK"). For advanced use cases testing against the engine's unreleased `main` branch, see the "Building against engine main (optional)" subsection in `CONTRIBUTING.md`.
 
 ### Assembly-Graph Hygiene
 

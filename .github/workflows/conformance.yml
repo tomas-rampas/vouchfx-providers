@@ -2,22 +2,71 @@
 #
 # Triggers: push and pull_request to main.
 #
-# NOTE ON SDK BOOTSTRAP
-# ---------------------
-# Platform.Sdk and Platform.Sdk.Testing v1.0.0 are not yet published to nuget.org
-# (they ship with the vouchfx v1.0 engine release — S12-D-01).  Until that
-# release, this workflow checks out the engine repo alongside and packs only the
-# five SDK-closure projects individually into packages-local/ so the providers
-# solution can restore and build.  Aspire AppHost projects are deliberately
-# excluded — building them would require the Aspire workload.
+# PRECONDITION (SECURITY) — VERIFY BEFORE UN-DRAFTING THIS PR
+# -----------------------------------------------------------------------------
+# This dual-feed configuration (nuget.org + packages-local/, see
+# nuget.config's packageSourceMapping) is safe ONLY once the engine has
+# PUBLISHED AND OWNS the Platform.*/vouchfx package IDs on nuget.org —
+# ideally with reserved ID prefixes. Merging or running this lane before
+# then re-opens the dependency-confusion window the previous exclusive-local
+# mapping had closed. NOTE: the window applies to EVERY CI RUN of this
+# branch, not just to merging — a pull_request run of Lane A restores
+# Platform.Sdk from nuget.org (today an unowned ID: the restore simply
+# 404s, but a squatted package would build). Verify POSITIVE OWNERSHIP
+# (nuget.org "Owners" tab / reserved-prefix confirmation for the
+# publishing account) BEFORE PUSHING FURTHER COMMITS or re-running CI on
+# this branch, and again before un-drafting — NOT merely that
+# `dotnet restore` resolves a matching version, since a squatted package
+# under the same ID would resolve identically and this workflow cannot
+# tell the difference.
 #
-# Once Platform.Sdk 1.0.0 is published to nuget.org the two steps labelled
-# "REMOVE AFTER SDK PUBLISHED" can be deleted and restore will come straight
-# from nuget.org.
+# TWO LANES
+# ---------
+# Lane A (job `conformance`, the required merge-gate check) restores
+# Platform.Sdk / Platform.Sdk.Testing from nuget.org at the
+# $(VouchfxSdkVersion) pin (root MSBuild property, consumed by every
+# SDK-closure PackageReference — six across the four consuming projects)
+# — exactly what a real consumer experiences.
+# The "[REMOVE AFTER SDK PUBLISHED]" engine-checkout + source-pack bootstrap
+# steps have been removed from this lane; see the PRECONDITION above before
+# treating that removal as safe to merge.
+#
+# Lane B (job `engine-main`, non-blocking on PRs) is the early-warning lane
+# and deliberately KEEPS the source-pack pattern — but points it at the
+# engine's CURRENT main SHA (not a tagged release), so providers are proven
+# to build/test against upcoming engine changes ahead of the next tagged SDK
+# release. It packs the five SDK-closure projects at a distinct version,
+# 1.0.0-enginemain, so that LOCAL pack can never COLLIDE WITH the
+# legitimately published 1.0.0-alpha.N (or later) version this branch's
+# $(VouchfxSdkVersion) pin resolves, in the same dual-mapped feed
+# (packages-local/ + nuget.org). That is a collision guard only, not a
+# publication guard: the distinct version string does not, by itself, stop
+# a third party from ALSO publishing a package called "1.0.0-enginemain"
+# under a Platform.* id — no version string can prevent that. What prevents
+# it is package-ID OWNERSHIP on nuget.org (see the PRECONDITION above), not
+# this workflow. Lane B threads -p:VouchfxSdkVersion=1.0.0-enginemain
+# through every dotnet invocation so the template/community projects
+# resolve that local pack instead of the nuget.org-published pin. It is
+# non-blocking (`continue-on-error: true`) on pull_request — unreleased
+# engine churn must never block a contributor's PR — and hard-fails on push
+# to main, where a real break must be visible to maintainers.
+#
+# REPIN PROCEDURE (at engine release cadence): when a new engine version is
+# tagged and its SDK closure published to nuget.org (re-verify ownership per
+# the PRECONDITION above), bump the root <VouchfxSdkVersion> MSBuild property
+# to the new version (Lane A picks it up automatically — no workflow edit
+# needed), update the hardcoded Platform.Sdk version literals that exist
+# for OUT-OF-REPO consumers who cannot inherit the property — the sample in
+# docs/implementing-a-provider.md and the conditioned fallback in the two
+# template/Community.Steps.Hello* csprojs — and separately re-pin Lane B's
+# engine checkout `ref:` below to the engine's new main SHA, so Lane B
+# keeps tracking "what's coming next" rather than what was just released.
 #
 # NOTE ON VERSION MATRIX
 # ----------------------
-# This workflow runs against the engine main SDK only.  The Vouched badge rubric's
+# Lane A (the required check) runs against the PUBLISHED pinned SDK
+# ($(VouchfxSdkVersion)); Lane B tracks the engine main SDK non-blockingly.
+# Neither lane is a version matrix: the Vouched badge rubric's
 # multi-version conformance matrix (a provider's integration-test fixture passing
 # on the engine main branch plus the two preceding minor releases) is validated by
 # a maintainer at badge-review time, not by this workflow — it is not automated
@@ -55,76 +104,31 @@ jobs:
       - name: Checkout vouchfx-providers
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      # ── Step 2: Checkout the engine into engine/ [REMOVE AFTER SDK PUBLISHED] ─
-      # Provides the SDK-closure source projects so they can be packed below.
-      # ref is pinned to a specific commit SHA rather than the moving `main` ref
-      # so that a force-push or compromised commit on the engine repo cannot
-      # silently alter what gets packed into the community-provider CI job.
-      # Update this SHA when pulling in a new engine release; once the engine
-      # publishes v1.0 to nuget.org this entire step is removed (see note above).
-      - name: Checkout engine (tomas-rampas/vouchfx → engine/)
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          repository: tomas-rampas/vouchfx
-          # Full 40-char SHA required: actions/checkout treats a short SHA as a branch/tag
-          # glob (refs/heads/<ref>*) and fails the cross-repo fetch. This is engine main =
-          # f5bf109 (Sprint 12: 18 Core providers + SUT env-configuration surface); track the engine release tag once v1.0 is tagged.
-          # Repinned 2026-07-06: the engine repo's main branch history was rewritten
-          # (de-published internal plan/ + docs/reviews/ material, redacted a few commit
-          # messages) and force-pushed, orphaning the previous SHA. The old and new SHAs
-          # point at the same logical commit — same author, timestamp, message, and an
-          # identical src/ subtree (git rev-parse <sha>:src is unchanged) — only non-code
-          # paths (plan/, docs/reviews/, docs/03_MVP_Project_Plan.md) differ. See the
-          # engine-sha-repin PR for the full verification.
-          ref: f5bf109651bd5ea4c2f3653d4a62d34fe2ba1011
-          path: engine
-
-      # ── Step 3: Set up .NET SDK (version from global.json: 8.0.400) ──────────
+      # ── Step 2: Set up .NET SDK (version from global.json: 8.0.400) ──────────
       - name: Set up .NET SDK (reads global.json)
         uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
         with:
           global-json-file: global.json
 
-      # ── Step 4: Pack SDK-closure projects into packages-local/ ───────────────
-      # [REMOVE AFTER SDK PUBLISHED]
-      #
-      # Packs exactly five projects — the minimal closure the template provider
-      # and tests depend on.  Order follows the dependency graph (Abstractions
-      # first) to keep each pack's implicit restore efficient.  Aspire AppHost
-      # projects are intentionally excluded: they embed the DCP binary path at
-      # build time and require the Aspire workload, neither of which belongs in
-      # a community-provider CI job.
-      - name: Pack SDK-closure projects into packages-local/
-        run: |
-          set -euo pipefail
-          for csproj in \
-            engine/src/Engine/Platform.Engine.Abstractions/Platform.Engine.Abstractions.csproj \
-            engine/src/Engine/Platform.Engine.Authoring/Platform.Engine.Authoring.csproj \
-            engine/src/Engine/Platform.Engine.Compilation/Platform.Engine.Compilation.csproj \
-            engine/src/Sdk/Platform.Sdk/Platform.Sdk.csproj \
-            engine/src/Sdk/Platform.Sdk.Testing/Platform.Sdk.Testing.csproj ; do
-            echo "::group::pack $csproj"
-            dotnet pack "$csproj" -c Release -o packages-local/ --nologo
-            echo "::endgroup::"
-          done
-          echo "Packages staged in packages-local/:"
-          ls packages-local/*.nupkg
-
-      # ── Restore (providers solution, now that local feed is populated) ────────
+      # ── Step 3: Restore (providers solution) ──────────────────────────────────
+      # Resolves Platform.Sdk / Platform.Sdk.Testing from the PUBLISHED
+      # nuget.org package at the $(VouchfxSdkVersion) root MSBuild property
+      # pin — exactly what a real consumer experiences. No local-feed
+      # bootstrap needed (see the header comment above).
       - name: Restore dependencies
         run: dotnet restore vouchfx-providers.sln
 
-      # ── Step 5: Build (0-warning gate) ───────────────────────────────────────
+      # ── Step 4: Build (0-warning gate) ───────────────────────────────────────
       # TreatWarningsAsErrors is enforced by Directory.Build.props; -warnaserror
       # is added here as belt-and-suspenders per the CI contract.
       - name: Build (Release, 0-warning gate)
         run: dotnet build vouchfx-providers.sln -c Release --no-restore -warnaserror
 
-      # ── Step 6: Format gate ───────────────────────────────────────────────────
+      # ── Step 5: Format gate ───────────────────────────────────────────────────
       - name: Format gate (dotnet format --verify-no-changes)
         run: dotnet format vouchfx-providers.sln --verify-no-changes --no-restore
 
-      # ── Step 7a: Template provider conformance test (always required) ─────────
+      # ── Step 6a: Template provider conformance test (always required) ─────────
       # Community.Steps.Hello.Tests contains the ProviderTestHarness conformance
       # test — the canonical gate every provider must pass.
       - name: Test — template provider conformance
@@ -134,14 +138,15 @@ jobs:
           --no-build
           --logger "console;verbosity=normal"
 
-      # ── Step 7b: Community provider tests (shell-glob over community/) ───────
+      # ── Step 6b: Community provider tests (shell-glob over community/) ───────
       # community/ is now the only hosted-source lane — any contributor may PR a
       # provider in (see CONTRIBUTING.md); rpc.json-rpc is the first and doubles
       # as the guide's reference implementation. Every
       # community/**/*.Tests.csproj is discovered and run in its OWN
       # restore/build/test (no --no-build, no sln-membership requirement): a
-      # submission that breaks can only fail its own step output, and the
-      # packages-local feed (nuget.config) resolves the SDK closure standalone.
+      # submission that breaks can only fail its own step output, and
+      # nuget.org (via the root $(VouchfxSdkVersion) pin) resolves the SDK
+      # closure standalone for each project — no shared local feed involved.
       # At least one project must be found — rpc.json-rpc always exists, so an
       # empty glob means the checkout/glob itself is broken, not "no submissions".
       - name: Test — community providers (glob over community/)
@@ -161,7 +166,7 @@ jobs:
             exit 1
           fi
 
-      # ── Step 7b1: Pack gate — every hub provider must produce a valid package ─
+      # ── Step 6b1: Pack gate — every hub provider must produce a valid package ─
       # publish-provider.yml (the separate tag-triggered NuGet publish workflow)
       # assumes every community/<Name>/<Name>.csproj packs cleanly with real,
       # conformant metadata — it does not re-derive or re-check any of this at
@@ -171,6 +176,16 @@ jobs:
       # the publish workflow will (Release, no -p:Version — this gate validates
       # metadata, not version) and inspects the resulting .nuspec + package
       # contents for the shape community/Directory.Build.props promises.
+      #
+      # NU5104 note: with no -p:Version override, this gate packs at
+      # community/Directory.Build.props's prerelease DEFAULT version
+      # (1.0.0-0.local) — which keeps NuGet's NU5104 rule (a stable package
+      # must not carry a prerelease dependency) silent here even while the
+      # root $(VouchfxSdkVersion) pin is itself a pre-release. That silence
+      # is specific to this default-version gate/local pack path — it does
+      # NOT apply to publish-provider.yml's real pack step, which packs at
+      # the tag's own version and so DOES enforce NU5104 for a stable tag
+      # (see that workflow's header for the full rationale).
       #
       # Discovery mirrors the community-tests glob above: globstar over
       # community/**/*.csproj, filtered by filename suffix (*.Tests.csproj is
@@ -358,7 +373,7 @@ jobs:
 
           echo "Pack gate passed for ${#provider_csprojs[@]} provider package(s)."
 
-      # ── Step 7b2: Registry index validation ──────────────────────────────────
+      # ── Step 6b2: Registry index validation ──────────────────────────────────
       # Every entry in community-providers.json must validate against the
       # registry schema (draft 2020-12) — including the hosting-conditional
       # rule (external entries require a nuget id; hub-hosted entries may omit
@@ -370,7 +385,7 @@ jobs:
           -s registry/community-providers.schema.json
           -d registry/community-providers.json
 
-      # ── Step 7c: Tripwire — vouched badge changes are maintainer-only ───────
+      # ── Step 6c: Tripwire — vouched badge changes are maintainer-only ───────
       # This is a TRIPWIRE, not a hard gate: `gh pr merge --admin` bypasses
       # required status checks (this one included), so the real control is
       # policy, not CI — NEVER --admin-merge a PR that touches the vouched /
@@ -473,3 +488,126 @@ jobs:
           fi
 
           echo "::notice::Endorsement-state change detected (${changed_entries}), authored by maintainer ($PR_ACTOR) — allowed to proceed."
+
+  # ═══════════════════════════════════════════════════════════════════════════
+  # Lane B — early-warning: build/test against the engine's CURRENT main SHA
+  # ═══════════════════════════════════════════════════════════════════════════
+  # NOT a required merge-gate check (see conformance.yml header). Proves
+  # providers still build and pass their tests against unreleased engine
+  # changes, well ahead of the next tagged SDK release. Deliberately keeps
+  # the engine-checkout + source-pack pattern that Lane A no longer needs.
+  engine-main:
+    name: "Engine-main early warning (non-blocking on PRs)"
+    runs-on: ubuntu-latest
+    # PRs: unreleased engine churn must never block a contributor. Push to
+    # main: a real break must be visible/blocking to maintainers.
+    continue-on-error: ${{ github.event_name == 'pull_request' }}
+
+    permissions:
+      contents: read
+
+    steps:
+      # ── Step 1: Checkout this repo (vouchfx-providers) ───────────────────────
+      - name: Checkout vouchfx-providers
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+
+      # ── Step 2: Checkout the engine at its CURRENT main SHA ──────────────────
+      # Pinned to a specific commit SHA rather than the moving `main` ref so
+      # that a force-push or compromised commit on the engine repo cannot
+      # silently alter what gets packed and built against here. Full 40-char
+      # SHA required: actions/checkout treats a short SHA as a branch/tag glob
+      # (refs/heads/<ref>*) and fails the cross-repo fetch.
+      # Engine main = dbbe671b (repin procedure: see conformance.yml's header
+      # comment — bump this SHA at engine release cadence, independently of
+      # Lane A's <VouchfxSdkVersion> pin).
+      - name: Checkout engine (tomas-rampas/vouchfx → engine/)
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          repository: tomas-rampas/vouchfx
+          ref: dbbe671b6a126896c8eca63ccd0d7c8f9ae0fbf1
+          path: engine
+
+      # ── Step 3: Set up .NET SDK (version from global.json: 8.0.400) ──────────
+      - name: Set up .NET SDK (reads global.json)
+        uses: actions/setup-dotnet@67a3573c9a986a3f9c594539f4ab511d57bb3ce9 # v4.3.1
+        with:
+          global-json-file: global.json
+
+      # ── Step 4: Pack SDK-closure projects into packages-local/ ───────────────
+      # at the distinct version 1.0.0-enginemain — this is a COLLISION guard,
+      # not a publication guard: it keeps this local pack from colliding with
+      # the legitimately published Platform.Sdk version this branch's
+      # $(VouchfxSdkVersion) pin resolves in the same dual-mapped feed
+      # (packages-local/ + nuget.org; see nuget.config's
+      # packageSourceMapping). It does NOT, by itself, stop a third party
+      # from also publishing a package called "1.0.0-enginemain" under a
+      # Platform.* id — see the workflow header's PRECONDITION note: that
+      # protection is package-ID ownership on nuget.org, not this version
+      # string. Packs exactly five projects — the minimal closure the
+      # template provider and tests depend on. Order follows the dependency
+      # graph (Abstractions first) to keep each pack's implicit restore
+      # efficient. Aspire AppHost projects are intentionally excluded: they
+      # embed the DCP binary path at build time and require the Aspire
+      # workload, neither of which belongs in a community-provider CI job.
+      - name: Pack SDK-closure projects into packages-local/ (engine main)
+        run: |
+          set -euo pipefail
+          for csproj in \
+            engine/src/Engine/Platform.Engine.Abstractions/Platform.Engine.Abstractions.csproj \
+            engine/src/Engine/Platform.Engine.Authoring/Platform.Engine.Authoring.csproj \
+            engine/src/Engine/Platform.Engine.Compilation/Platform.Engine.Compilation.csproj \
+            engine/src/Sdk/Platform.Sdk/Platform.Sdk.csproj \
+            engine/src/Sdk/Platform.Sdk.Testing/Platform.Sdk.Testing.csproj ; do
+            echo "::group::pack $csproj"
+            dotnet pack "$csproj" -c Release -o packages-local/ --nologo -p:Version=1.0.0-enginemain
+            echo "::endgroup::"
+          done
+          echo "Packages staged in packages-local/:"
+          ls packages-local/*.nupkg
+
+      # ── Step 5: Restore (providers solution) against the engine-main pack ────
+      # -p:VouchfxSdkVersion=1.0.0-enginemain overrides the root
+      # <VouchfxSdkVersion> MSBuild property so every SDK-closure
+      # PackageReference resolves the just-packed local build instead of the
+      # nuget.org-published pin Lane A uses.
+      - name: Restore dependencies (engine main)
+        run: dotnet restore vouchfx-providers.sln -p:VouchfxSdkVersion=1.0.0-enginemain
+
+      # ── Step 6: Build (0-warning gate) ───────────────────────────────────────
+      - name: Build (Release, 0-warning gate, engine main)
+        run: >
+          dotnet build vouchfx-providers.sln
+          -c Release
+          --no-restore
+          -warnaserror
+          -p:VouchfxSdkVersion=1.0.0-enginemain
+
+      # ── Step 7a: Template provider conformance test (engine main) ────────────
+      - name: Test — template provider conformance (engine main)
+        run: >
+          dotnet test template/Community.Steps.Hello.Tests
+          -c Release
+          --no-build
+          -p:VouchfxSdkVersion=1.0.0-enginemain
+          --logger "console;verbosity=normal"
+
+      # ── Step 7b: Community provider tests (engine main, glob over community/) ─
+      # Mirrors Lane A's own-restore/build/test-per-project glob (see
+      # conformance.yml Step 6b) — each community/**/*.Tests.csproj is
+      # discovered and tested against the engine-main pack independently.
+      - name: Test — community providers (engine main, glob over community/)
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          found=0
+          for csproj in community/**/*.Tests.csproj; do
+            echo "::group::Running community test project: $csproj"
+            dotnet test "$csproj" -c Release -p:VouchfxSdkVersion=1.0.0-enginemain --logger "console;verbosity=normal"
+            echo "::endgroup::"
+            found=1
+          done
+          if [[ "$found" -eq 0 ]]; then
+            echo "::error::No community/**/*.Tests.csproj found — rpc.json-rpc should always be present."
+            exit 1
+          fi

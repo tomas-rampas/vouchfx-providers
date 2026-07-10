@@ -94,11 +94,22 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 - **Schema Validation only** — your registry entry's JSON Schema fragment
 
-**Note:** For hub-hosted submissions, CI runs your conformance tests against the engine `main` SDK only. The Vouched rubric requires you to verify your provider's integration-test fixture also passes on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers during the Vouched review, not an automated CI check.
+**Note:** For hub-hosted submissions, the required CI lane runs your conformance tests against the published pinned SDK (`$(VouchfxSdkVersion)`) — exactly what consumers restore; a separate non-blocking lane also builds them against the engine's `main` branch as an early warning. The Vouched rubric additionally requires your integration-test fixture to pass on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers during the Vouched review, not an automated CI check.
 
-## Building Before the SDK is on NuGet.org
+## Building against the SDK
 
-The vouchfx SDK (`Platform.Sdk` and `Platform.Sdk.Testing`) is wired into the engine's release pipeline and ships with the engine's next tagged pre-release. Until that release is published to [NuGet.org](https://www.nuget.org), to build providers locally, pack the five SDK-closure projects from the engine:
+Once the engine's next tagged pre-release is published to [NuGet.org](https://www.nuget.org), the vouchfx SDK (`Platform.Sdk` and `Platform.Sdk.Testing`) is pinned in `Directory.Build.props` via the `$(VouchfxSdkVersion)` property and restores from NuGet.org at that version; until then, use the "Building against engine main (optional)" path below. To build providers locally:
+
+```bash
+dotnet restore
+dotnet build
+```
+
+That's it. The `nuget.config` in this repository is already configured to restore from NuGet.org; `dotnet restore` will pull the SDK at the pinned version. Bumping the SDK (when the engine releases a new version) requires a single property change in `Directory.Build.props` — maintainers do this at engine release cadence.
+
+### Building against engine main (optional)
+
+For advanced contributors who want to test against the engine's unreleased `main` branch, you can build locally against an unpublished SDK by packing the five SDK-closure projects from the engine and overriding the pinned version:
 
 ```bash
 # From the vouchfx-providers repo root, with the engine checked out at <engine>:
@@ -110,9 +121,13 @@ for p in \
   src/Sdk/Platform.Sdk.Testing/Platform.Sdk.Testing.csproj ; do
   dotnet pack "<engine>/$p" -c Release -o packages-local
 done
+
+# Override the pinned version to use the locally packed pre-release
+dotnet restore -p:VouchfxSdkVersion=1.0.0-enginemain
+dotnet build
 ```
 
-This repository's committed `nuget.config` already references the `packages-local` source, so local builds will consume the packed SDK.
+This is the pattern CI's early-warning lane (Lane B) uses to detect compatibility issues with engine `main` before the next engine release is cut.
 
 ## Triage and Support
 
@@ -144,7 +159,7 @@ The vouchfx maintainers allocate **one half-day per week** (4 hours) for provide
 ├── template/                           (starter provider scaffold)
 ├── community/                          (hub-hosted Community-tier providers, hub-CI-tested)
 │   └── Community.Steps.JsonRpc/        (rpc.json-rpc — the first community provider; see its README)
-├── packages-local/                     (local SDK feed during pre-v1.0)
+├── packages-local/                     (local SDK feed for optional engine-main builds; used by CI Lane B)
 └── .github/
     ├── ISSUE_TEMPLATE/
     │   ├── provider-listing.yml        (Community listing form)

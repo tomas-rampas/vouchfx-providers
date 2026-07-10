@@ -20,8 +20,8 @@
          template's Community.Steps.Hello.Tests.csproj consumes Platform.Engine.Abstractions
          with no explicit reference to it. See JsonRpcHarness.cs for why this provider
          needs a small custom harness alongside the published ProviderTestHarness. -->
-    <PackageReference Include="Platform.Sdk" Version="1.0.0" />
-    <PackageReference Include="Platform.Sdk.Testing" Version="1.0.0" />
+    <PackageReference Include="Platform.Sdk" Version="$(VouchfxSdkVersion)" />
+    <PackageReference Include="Platform.Sdk.Testing" Version="$(VouchfxSdkVersion)" />
   </ItemGroup>
 
 </Project>

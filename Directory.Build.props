@@ -8,6 +8,19 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <Deterministic>true</Deterministic>
+    <!-- Single source of truth for the published SDK pin. Six PackageReference elements
+         across the four consuming csprojs use $(VouchfxSdkVersion) rather than a literal
+         version — Platform.Sdk in all four (community/Community.Steps.JsonRpc,
+         community/Community.Steps.JsonRpc.Tests, template/Community.Steps.Hello,
+         template/Community.Steps.Hello.Tests), plus Platform.Sdk.Testing in the two
+         *.Tests projects only — so bumping the SDK is a one-line change here. The pin is
+         deliberately an EXACT pre-release version (no floating, no ranges):
+         reproducibility requires it, and Platform.Sdk.Testing is versioned but NOT
+         frozen (unlike the v1 Platform.Sdk contract itself), so test projects must move
+         in lock-step with the exact SDK version they were validated against.
+         CI's engine-main early-warning lane overrides this at build time via
+         -p:VouchfxSdkVersion=1.0.0-enginemain to catch breaking changes before release. -->
+    <VouchfxSdkVersion>1.0.0-alpha.3</VouchfxSdkVersion>
     <!-- This repo hosts the community provider index + hosted community providers.
          community/ providers ARE packed and published from this repo's CI as their own
          NuGet packages (see community/Directory.Build.props, which overrides IsPackable
