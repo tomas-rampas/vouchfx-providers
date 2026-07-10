@@ -1,12 +1,12 @@
-// Community.Steps.JsonRpc.Tests — JsonRpcHarness.
+// Vouchfx.Community.JsonRpc.Tests — JsonRpcHarness.
 //
 // WHY THIS EXISTS (a documented deviation from the brief's default expectation that
-// every conformance test drives Platform.Sdk.Testing.ProviderTestHarness.RunSingleStepAsync):
+// every conformance test drives Vouchfx.Sdk.Testing.ProviderTestHarness.RunSingleStepAsync):
 //
 // ProviderTestHarness.RunSingleStepAsync explicitly does NOT run the engine's
 // IResourceContributor / IHostResourceContributor / ICompileReferenceContributor
 // contributor stages (see its own XML doc remarks, "Scope — what this single-step
-// path runs and what it does not", in Platform.Sdk.Testing in the engine repo). It
+// path runs and what it does not", in Vouchfx.Sdk.Testing in the engine repo). It
 // calls RoslynScriptCompiler.CompileOnce(assembled.CsxSource) with NO
 // additionalReferencePaths. RoslynScriptCompiler's own default reference set (see
 // RoslynScriptCompiler.BuildTpaReferences in the engine repo) is deliberately minimal:
@@ -18,16 +18,16 @@
 // JsonPath.Net at Roslyn compile time (exactly like the engine's own Core http.rest /
 // mail-expect.smtp providers — see JsonRpcProvider's ICompileReferenceContributor).
 // Driven through the plain ProviderTestHarness, every execution test below would throw
-// a Platform.Engine.Compilation.ScriptCompilationException (CS0246, type not found) —
+// a Vouchfx.Engine.Compilation.ScriptCompilationException (CS0246, type not found) —
 // not a soft Verdict. This is a genuine, cited SDK/tooling gap this provider surfaces,
 // not a guess: the engine's OWN docker-free test for http.rest
-// (tests/Platform.Engine.Compilation.Tests/HttpRestExecutionTests.cs) works around the
+// (tests/Vouchfx.Engine.Compilation.Tests/HttpRestExecutionTests.cs) works around the
 // identical limitation by driving Emit -> CsxAssembler.Assemble ->
 // RoslynScriptCompiler.CompileOnce(..., additionalReferencePaths: ...) ->
 // RunIsolatedAsync directly, bypassing ProviderTestHarness entirely. This harness
 // mirrors that exact, already-proven-in-the-engine pattern, using only PUBLICLY
-// published packages (Platform.Sdk.Testing's own transitive dependencies on
-// Platform.Engine.Abstractions / Authoring / Compilation) — no engine repo changes,
+// published packages (Vouchfx.Sdk.Testing's own transitive dependencies on
+// Vouchfx.Engine.Abstractions / Authoring / Compilation) — no engine repo changes,
 // no reflection hacks.
 //
 // It adds two things ProviderTestHarness does not offer at all:
@@ -43,13 +43,13 @@
 // halt BEFORE Roslyn ever compiles anything) and use the plain, published
 // ProviderTestHarness.RunSingleStepAsync instead — see
 // JsonRpcProviderTests.Conformance_MissingUrlAndMethod_FailsSchemaValidation.
-using Platform.Engine.Abstractions;
-using Platform.Engine.Abstractions.Secrets;
-using Platform.Engine.Compilation;
-using Platform.Sdk;
-using Platform.Sdk.Testing.Contexts;
+using Vouchfx.Engine.Abstractions;
+using Vouchfx.Engine.Abstractions.Secrets;
+using Vouchfx.Engine.Compilation;
+using Vouchfx.Sdk;
+using Vouchfx.Sdk.Testing.Contexts;
 
-namespace Community.Steps.JsonRpc.Tests;
+namespace Vouchfx.Community.JsonRpc.Tests;
 
 /// <summary>
 /// Drives <see cref="JsonRpcProvider"/> end to end (Validate -&gt; Emit -&gt; assemble
@@ -85,7 +85,7 @@ internal static class JsonRpcHarness
     /// <param name="retry">
     /// <see langword="true"/> to wrap the emitted block in the engine-owned
     /// <c>verifyMode: RETRY</c> polling loop, exactly as
-    /// <c>Platform.Engine.Runtime.ProviderPipeline</c> / the published
+    /// <c>Vouchfx.Engine.Runtime.ProviderPipeline</c> / the published
     /// <c>ProviderTestHarness</c> do — see <c>StepCompilePlan.Retry</c>.
     /// </param>
     /// <param name="timeoutMs">

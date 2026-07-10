@@ -1,4 +1,4 @@
-// Community.Steps.Hello.Tests — conformance + unit tests for the template provider.
+// Vouchfx.Community.Hello.Tests — conformance + unit tests for the template provider.
 //
 // TWO test categories:
 //
@@ -18,14 +18,14 @@
 // BDD: the conformance test was written FIRST (RED — the stub Emit wrote no outcome),
 // then the real Emit was implemented to make it pass (GREEN).
 
-using Community.Steps.Hello;
-using Platform.Engine.Abstractions;
-using Platform.Sdk;
-using Platform.Sdk.Testing;
-using Platform.Sdk.Testing.Contexts;
+using Vouchfx.Community.Hello;
+using Vouchfx.Engine.Abstractions;
+using Vouchfx.Sdk;
+using Vouchfx.Sdk.Testing;
+using Vouchfx.Sdk.Testing.Contexts;
 using Xunit;
 
-namespace Community.Steps.Hello.Tests;
+namespace Vouchfx.Community.Hello.Tests;
 
 /// <summary>
 /// Conformance and unit tests for the <c>hello.console</c> template provider.
@@ -37,7 +37,7 @@ public sealed class HelloConsoleProviderTests
     /// <summary>
     /// End-to-end conformance gate: a <c>hello.console</c> step with a matching
     /// <c>expect</c> value runs through the full published engine pipeline and
-    /// resolves to <see cref="Platform.Engine.Abstractions.Verdict.Pass"/>.
+    /// resolves to <see cref="Vouchfx.Engine.Abstractions.Verdict.Pass"/>.
     /// </summary>
     /// <remarks>
     /// This test is the CI merge gate for the template provider — and the pattern
@@ -143,7 +143,7 @@ public sealed class HelloConsoleProviderTests
 
         // RequiredUsings: bare namespace strings only (§13.3.1).
         Assert.Contains("System", fragment.RequiredUsings);
-        Assert.Contains("Platform.Engine.Abstractions", fragment.RequiredUsings);
+        Assert.Contains("Vouchfx.Engine.Abstractions", fragment.RequiredUsings);
         // No inline `using` keyword — the engine emits those.
         Assert.All(fragment.RequiredUsings, u => Assert.False(
             u.TrimStart().StartsWith("using ", StringComparison.Ordinal),

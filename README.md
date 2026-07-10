@@ -11,7 +11,7 @@ A vouchfx *provider* is a `<family>.<provider>` step type (e.g. `db-assert.postg
 
 ## What is a Provider?
 
-A provider is a compile-time, source-level plugin to the vouchfx engine. It exposes a new **step type** (a capability, like asserting a database state or publishing a message) by implementing four required interfaces from the `Platform.Sdk`:
+A provider is a compile-time, source-level plugin to the vouchfx engine. It exposes a new **step type** (a capability, like asserting a database state or publishing a message) by implementing four required interfaces from the `Vouchfx.Sdk`:
 
 - **`IStepProvider`** — your provider's identity and metadata
 - **`IStepBinder<TModel>`** — deserialise a YAML step into a strongly-typed model record
@@ -36,7 +36,7 @@ All community-authored providers with no platform-team endorsement. Community pr
 - Must be Apache-2.0 licensed and follow the reflective-discovery contract
 - Can be hosted **externally** (your own repository, published on NuGet) or **hub-hosted** (contributed as source into this repository's `community/` directory — no NuGet account needed; CI runs each provider's tests in isolation and you keep ownership of your folder)
 
-Hosting here is **not** endorsement. The hub's first entry, [`rpc.json-rpc`](community/Community.Steps.JsonRpc/README.md) (`community/Community.Steps.JsonRpc`), is hub-hosted and doubles as the canonical, CI-tested reference implementation the [implementing-a-provider guide](docs/implementing-a-provider.md) walks through.
+Hosting here is **not** endorsement. The hub's first entry, [`rpc.json-rpc`](community/Vouchfx.Community.JsonRpc/README.md) (`community/Vouchfx.Community.JsonRpc`), is hub-hosted and doubles as the canonical, CI-tested reference implementation the [implementing-a-provider guide](docs/implementing-a-provider.md) walks through.
 
 ### The Vouched Badge
 After a Community provider is listed in the registry, a maintainer can award the optional **Vouched badge** — registry metadata (`"vouched": true`) signifying platform-team review and endorsement. To earn it, a provider must meet the published rubric in [`VOUCHED_CHECKLIST.md`](VOUCHED_CHECKLIST.md) and undergo security review. The badge does not move the provider to a new tier; it remains Community-hosted and community-owned; it is a post-listing endorsement only. Badge revocation is reversible by a maintainer PR; the provider source stays where it is.
@@ -45,7 +45,7 @@ After a Community provider is listed in the registry, a maintainer can award the
 
 A Community provider is consumed via **source-level build**: clone the provider repository, reference its project in your build, and rebuild your application host to integrate the provider at compile time. This is the distribution model through v1.0 and beyond.
 
-Per-provider NuGet packages will be published from this hub's own CI once the SDK is restorable from NuGet.org; until then, build from source.
+Per-provider NuGet packages are published from this hub's CI when maintainers cut release tags; until a given provider is published, build from source.
 
 ## How to Get Your Provider Listed
 
@@ -85,7 +85,7 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 **For hub-hosted source submissions (Option 3)**, CI automatically runs:
 
-1. **Compile** — your provider and its test assembly against the `Platform.Sdk`
+1. **Compile** — your provider and its test assembly against the `Vouchfx.Sdk`
 2. **Unit Tests** — your test suite (unit and integration-capable tests)
 3. **Integration Tests** — your integration-test fixture against the engine `main` branch
 4. **Schema Validation** — your provider's JSON Schema fragment against the engine's validator
@@ -98,7 +98,7 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 ## Building against the SDK
 
-Once the engine's next tagged pre-release is published to [NuGet.org](https://www.nuget.org), the vouchfx SDK (`Platform.Sdk` and `Platform.Sdk.Testing`) is pinned in `Directory.Build.props` via the `$(VouchfxSdkVersion)` property and restores from NuGet.org at that version; until then, use the "Building against engine main (optional)" path below. To build providers locally:
+The vouchfx SDK (`Vouchfx.Sdk` and `Vouchfx.Sdk.Testing`) is published to [NuGet.org](https://www.nuget.org) and pinned in `Directory.Build.props` via the `$(VouchfxSdkVersion)` property; it restores from NuGet.org at that version. To build providers locally:
 
 ```bash
 dotnet restore
@@ -114,11 +114,11 @@ For advanced contributors who want to test against the engine's unreleased `main
 ```bash
 # From the vouchfx-providers repo root, with the engine checked out at <engine>:
 for p in \
-  src/Engine/Platform.Engine.Abstractions/Platform.Engine.Abstractions.csproj \
-  src/Engine/Platform.Engine.Authoring/Platform.Engine.Authoring.csproj \
-  src/Engine/Platform.Engine.Compilation/Platform.Engine.Compilation.csproj \
-  src/Sdk/Platform.Sdk/Platform.Sdk.csproj \
-  src/Sdk/Platform.Sdk.Testing/Platform.Sdk.Testing.csproj ; do
+  src/Engine/Vouchfx.Engine.Abstractions/Vouchfx.Engine.Abstractions.csproj \
+  src/Engine/Vouchfx.Engine.Authoring/Vouchfx.Engine.Authoring.csproj \
+  src/Engine/Vouchfx.Engine.Compilation/Vouchfx.Engine.Compilation.csproj \
+  src/Sdk/Vouchfx.Sdk/Vouchfx.Sdk.csproj \
+  src/Sdk/Vouchfx.Sdk.Testing/Vouchfx.Sdk.Testing.csproj ; do
   dotnet pack "<engine>/$p" -c Release -o packages-local
 done
 
@@ -158,7 +158,7 @@ The vouchfx maintainers allocate **one half-day per week** (4 hours) for provide
 │   └── community-providers.schema.json (JSON Schema)
 ├── template/                           (starter provider scaffold)
 ├── community/                          (hub-hosted Community-tier providers, hub-CI-tested)
-│   └── Community.Steps.JsonRpc/        (rpc.json-rpc — the first community provider; see its README)
+│   └── Vouchfx.Community.JsonRpc/      (rpc.json-rpc — the first community provider; see its README)
 ├── packages-local/                     (local SDK feed for optional engine-main builds; used by CI Lane B)
 └── .github/
     ├── ISSUE_TEMPLATE/

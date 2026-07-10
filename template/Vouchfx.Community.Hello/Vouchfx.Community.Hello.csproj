@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- §5.6 ASSEMBLY-GRAPH HYGIENE: keep this namespace in the Community.Steps.*
-         space — never Platform.Steps.* or Platform.Engine.* (both reserved and refused
+    <!-- §5.6 ASSEMBLY-GRAPH HYGIENE: keep this namespace in the Vouchfx.Community.*
+         space — never Vouchfx.Steps.* or Vouchfx.Engine.* (both reserved and refused
          at startup). Rename to your own namespace when you copy this template. -->
-    <RootNamespace>Community.Steps.Hello</RootNamespace>
+    <RootNamespace>Vouchfx.Community.Hello</RootNamespace>
   </PropertyGroup>
 
   <!-- Per-provider package metadata — REPLACE every value below when you copy this
@@ -51,7 +51,7 @@
            explicit `using` statements and relies on the SDK's implicit global usings
            (e.g. System.Collections.Generic for IReadOnlyList<T>) — without it, restore
            succeeds but the build fails with CS0246.
-         - VouchfxSdkVersion, left undefined, would restore Platform.Sdk with an empty
+         - VouchfxSdkVersion, left undefined, would restore Vouchfx.Sdk with an empty
            Version and fail confusingly. The literal below pins the latest published
            pre-release SDK — substitute it for whatever is current when you copy this
            template. This literal is on the REPIN PROCEDURE checklist in
@@ -66,15 +66,15 @@
   <PropertyGroup>
     <TargetFramework Condition="'$(TargetFramework)' == ''">net8.0</TargetFramework>
     <ImplicitUsings Condition="'$(ImplicitUsings)' == ''">enable</ImplicitUsings>
-    <VouchfxSdkVersion Condition="'$(VouchfxSdkVersion)' == ''">1.0.0-alpha.3</VouchfxSdkVersion>
+    <VouchfxSdkVersion Condition="'$(VouchfxSdkVersion)' == ''">1.0.0-alpha.4</VouchfxSdkVersion>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- A community provider depends ONLY on the frozen v1 SDK contract.
-         No reference to Platform.Engine.* is needed or permitted: the engine drives
+         No reference to Vouchfx.Engine.* is needed or permitted: the engine drives
          the provider through these interfaces, and cross-step state reaches the run
          environment solely through the engine-injected Vars global. -->
-    <PackageReference Include="Platform.Sdk" Version="$(VouchfxSdkVersion)" />
+    <PackageReference Include="Vouchfx.Sdk" Version="$(VouchfxSdkVersion)" />
   </ItemGroup>
 
 </Project>

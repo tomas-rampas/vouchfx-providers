@@ -14,7 +14,7 @@
        IsPackable therefore defaults to TRUE here, rather than requiring each provider to
        opt in: a forgotten opt-in on a new community/ submission must not silently ship a
        provider with no package. The metadata below is deliberately the same shape as the
-       engine's own frozen-SDK package (src/Sdk/Platform.Sdk/Platform.Sdk.csproj in the
+       engine's own frozen-SDK package (src/Sdk/Vouchfx.Sdk/Vouchfx.Sdk.csproj in the
        engine repo) — repository/license/SourceLink/symbols — so a future CI pack step has
        real metadata to validate for every hub-hosted provider, not just the first one.
 
@@ -35,10 +35,10 @@
     <IsPackable>true</IsPackable>
     <PackageId>$(MSBuildProjectName)</PackageId>
     <!-- Same hardening as the engine's own packable csprojs (e.g.
-         src/Sdk/Platform.Sdk/Platform.Sdk.csproj in the vouchfx repo). Buys two things:
+         src/Sdk/Vouchfx.Sdk/Vouchfx.Sdk.csproj in the vouchfx repo). Buys two things:
          (1) a bare/gate `dotnet pack` (no -p:Version — this is how the conformance pack
          gate packs every submission) yields 1.0.0-0.local, a prerelease. That matters
-         because every provider here takes a Platform.Sdk PackageReference pinned to
+         because every provider here takes a Vouchfx.Sdk PackageReference pinned to
          $(VouchfxSdkVersion) (root Directory.Build.props), which is itself a pre-release
          while the SDK is pre-v1.0 — a STABLE provider version depending on a pre-release
          SDK trips NU5104 ("a stable release should not have a prerelease dependency"),
@@ -47,7 +47,7 @@
          suffix ("0.local") also sorts below every published pre-release (alpha, beta, rc),
          so a local/gate pack can never outrank a real release.
          (2) `-p:Version` at publish time still overrides both VersionPrefix and
-         VersionSuffix, exactly as it does for Platform.Sdk itself — this default only
+         VersionSuffix, exactly as it does for Vouchfx.Sdk itself — this default only
          governs unversioned packs (the conformance gate), never a real release.
          Consequence for release tags: while $(VouchfxSdkVersion) is a pre-release, every
          provider RELEASE tag (community-submission.yml's `<Provider>/vX.Y.Z`) must also
@@ -63,7 +63,7 @@
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>https://tomas-rampas.github.io/vouchfx-providers/</PackageProjectUrl>
     <!-- SourceLink + symbols: let a provider consumer step into the package's source
-         straight from GitHub, mirroring Platform.Sdk's own packaging exactly. -->
+         straight from GitHub, mirroring Vouchfx.Sdk's own packaging exactly. -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>

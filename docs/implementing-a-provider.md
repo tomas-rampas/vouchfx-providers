@@ -42,7 +42,7 @@ Your provider talks directly to a service the test author supplies as an absolut
 **What you need:**
 - Define the step model (YAML shape)
 - Implement the four provider interfaces
-- Emit CSX that uses only System.* and user-supplied libraries (see section 6 on reference contributors)
+- Emit CSX that uses only System.* and user-supplied libraries (see the `ICompileReferenceContributor` subsection of section 5, The Contract Surfaces)
 - Write conformance tests (the template's `ProviderTestHarness` pattern)
 
 ### Infrastructure Providers — Observing Engine-Managed Dependencies
@@ -71,7 +71,7 @@ Your provider observes a dependency type the engine **already manages** via Aspi
 
 Your provider needs Aspire to manage a **new container type** not in the list above (for example, a custom gRPC server, a proprietary database, a third-party cloud emulator). **This requires engine-side support.**
 
-The orchestration layer's dependency registry (`EnvironmentMapper`'s internal `s_dependencyRegistry` in `Platform.Engine.Orchestration`) is a fixed table of thirteen supported dependency types; supporting a new one means adding an entry there plus the matching validator/schema surface — it is not something a provider package can extend from outside the engine. That change therefore arrives via a contribution to, and release of, the engine itself (https://github.com/tomas-rampas/vouchfx), not from your provider repository.
+The orchestration layer's dependency registry (`EnvironmentMapper`'s internal `s_dependencyRegistry` in `Vouchfx.Engine.Orchestration`) is a fixed table of thirteen supported dependency types; supporting a new one means adding an entry there plus the matching validator/schema surface — it is not something a provider package can extend from outside the engine. That change therefore arrives via a contribution to, and release of, the engine itself (https://github.com/tomas-rampas/vouchfx), not from your provider repository.
 
 This is not a blocker — it is a deliberate separation of concerns. The engine's orchestration layer is the single source of truth for topology setup; providers plug into it, not the other way around. If you need a new dependency type, open an issue or pull request against the engine repository; in the meantime, a protocol provider that talks to an already-running instance by URL (see "Protocol Providers" above) needs no orchestration change at all.
 
@@ -85,19 +85,21 @@ Copy the template to get started:
 # Navigate to your repository
 cd your-provider-repo
 
-# Copy the template and rename
-cp -r template/Community.Steps.Hello src/Community.Steps.MyKind
-cd src/Community.Steps.MyKind
+# Copy the template and rename to YOUR organisation's prefix
+# (Vouchfx.Community.* is reserved for providers hosted in the hub's
+#  community/ directory — external providers use <Org>.Steps.<Name>)
+cp -r template/Vouchfx.Community.Hello src/YourOrg.Steps.YourKind
+cd src/YourOrg.Steps.YourKind
 
 # Rename the namespace (via find/replace in your IDE)
-# Community.Steps.Hello → YourOrg.Steps.YourKind
+# Vouchfx.Community.Hello → YourOrg.Steps.YourKind
 ```
 
 ### The `.csproj` File
 
 Your provider project must:
-- Reference **only** `Platform.Sdk` (pinned to the latest published pre-release version on NuGet.org)
-- Use a **non-reserved namespace** (never `Platform.Engine.*` or `Platform.Steps.*`)
+- Reference **only** `Vouchfx.Sdk` (pinned to the latest published version on NuGet.org)
+- Use a **non-reserved namespace** (never `Vouchfx.Engine.*` or `Vouchfx.Steps.*`)
 - Target `.NET 8.0`
 
 Here is the minimal structure:
@@ -113,8 +115,8 @@ Here is the minimal structure:
 
   <ItemGroup>
     <!-- Frozen v1 SDK contract — no engine dependencies needed.
-         Substitute the newest published pre-release version (e.g. 1.0.0-alpha.3). -->
-    <PackageReference Include="Platform.Sdk" Version="1.0.0-alpha.3" />
+         Substitute the newest published version (e.g. 1.0.0-alpha.4). -->
+    <PackageReference Include="Vouchfx.Sdk" Version="1.0.0-alpha.4" />
   </ItemGroup>
 
 </Project>
@@ -126,12 +128,12 @@ Restore the SDK from NuGet.org at the pinned version (see `CONTRIBUTING.md` "Bui
 
 The engine refuses provider DLLs that declare the reserved namespaces at startup:
 
-- `Platform.Engine.*` — reserved for engine internals
-- `Platform.Steps.*` — reserved for Core providers
+- `Vouchfx.Engine.*` — reserved for engine internals
+- `Vouchfx.Steps.*` — reserved for Core providers
 
-Use your own namespace: `MyOrg.Steps.Kafka`, `Community.Steps.Snowflake`, `Example.Steps.Hello`. This prevents collisions when multiple providers are loaded together.
+Use your own namespace: `MyOrg.Steps.Kafka`, `Vouchfx.Community.Snowflake`, `Example.Steps.Hello`. This prevents collisions when multiple providers are loaded together.
 
-**Why this matters:** Your provider DLL is loaded into the host process alongside others. If two providers both declare `Platform.Steps.Foo`, the assembly-graph loader sees a collision and refuses the suite. Using a unique namespace keeps the host assembly graph clean.
+**Why this matters:** Your provider DLL is loaded into the host process alongside others. If two providers both declare `Vouchfx.Steps.Foo`, the assembly-graph loader sees a collision and refuses the suite. Using a unique namespace keeps the host assembly graph clean.
 
 ### Build Warnings
 
@@ -149,12 +151,12 @@ Your step model is an immutable `record` implementing `IStepModel`. It represent
 
 ### Example: JsonRpc Model
 
-From the first community provider, `Community.Steps.JsonRpc`:
+From the first community provider, `Vouchfx.Community.JsonRpc`:
 
 ```csharp
-using Platform.Sdk;
+using Vouchfx.Sdk;
 
-namespace Community.Steps.JsonRpc;
+namespace Vouchfx.Community.JsonRpc;
 
 /// <summary>
 /// A single JSONPath assertion evaluated against the JSON-RPC response envelope's result.
@@ -208,7 +210,7 @@ This maps to YAML like:
 
 ## 5. The Contract Surfaces
 
-Your provider class implements four mandatory `Platform.Sdk` interfaces: `IStepProvider`, `IStepBinder<TModel>`, `IStepValidator<TModel>`, and `IStepCompiler<TModel>`. Beyond those, the SDK exposes six further **optional** extension interfaces that a provider implements only when it needs the capability: `ICompileReferenceContributor`, `IResourceContributor<TModel>`, `IHostResourceContributor<TModel>`, `IRuntimeServiceContributor`, `IStepDiffRenderer`, and `IProviderModule`. Adding any of these to a provider does not change the frozen v1 contract — they are additive-only extensions (§13.8.1). This guide details three of them below: `ICompileReferenceContributor`, `IResourceContributor<TModel>`, and `IStepDiffRenderer`.
+Your provider class implements four mandatory `Vouchfx.Sdk` interfaces: `IStepProvider`, `IStepBinder<TModel>`, `IStepValidator<TModel>`, and `IStepCompiler<TModel>`. Beyond those, the SDK exposes six further **optional** extension interfaces that a provider implements only when it needs the capability: `ICompileReferenceContributor`, `IResourceContributor<TModel>`, `IHostResourceContributor<TModel>`, `IRuntimeServiceContributor`, `IStepDiffRenderer`, and `IProviderModule`. Adding any of these to a provider does not change the frozen v1 contract — they are additive-only extensions (§13.8.1). This guide details three of them below: `ICompileReferenceContributor`, `IResourceContributor<TModel>`, and `IStepDiffRenderer`.
 
 ### Mandatory Interface 1: `IStepProvider`
 
@@ -340,11 +342,11 @@ public CsxFragment Emit(MyKindModel model, ICompileContext ctx)
 
             var __verdict_{{safeId}} =
                 MyKind_Helpers.Check(__value_{{safeId}}, "expected")
-                    ? Platform.Engine.Abstractions.Verdict.Pass
-                    : Platform.Engine.Abstractions.Verdict.Fail;
+                    ? Vouchfx.Engine.Abstractions.Verdict.Pass
+                    : Vouchfx.Engine.Abstractions.Verdict.Fail;
 
-            Vars[Platform.Engine.Abstractions.VarKeys.Outcome("{{safeId}}")] =
-                new Platform.Engine.Abstractions.StepOutcome(
+            Vars[Vouchfx.Engine.Abstractions.VarKeys.Outcome("{{safeId}}")] =
+                new Vouchfx.Engine.Abstractions.StepOutcome(
                     __verdict_{{safeId}},
                     __sw_{{safeId}}.ElapsedMilliseconds,
                     "{}");
@@ -476,12 +478,12 @@ var block = $$"""
 {
     var __sw_{{safeId}} = System.Diagnostics.Stopwatch.StartNew();
     // ... step-specific code, ending by assigning these two ...
-    var __verdict_{{safeId}} = Platform.Engine.Abstractions.Verdict.Pass;
+    var __verdict_{{safeId}} = Vouchfx.Engine.Abstractions.Verdict.Pass;
     var __observation_{{safeId}} = "{}";
     __sw_{{safeId}}.Stop();
 
-    Vars[Platform.Engine.Abstractions.VarKeys.Outcome("{{safeId}}")] =
-        new Platform.Engine.Abstractions.StepOutcome(
+    Vars[Vouchfx.Engine.Abstractions.VarKeys.Outcome("{{safeId}}")] =
+        new Vouchfx.Engine.Abstractions.StepOutcome(
             __verdict_{{safeId}},
             __sw_{{safeId}}.ElapsedMilliseconds,
             __observation_{{safeId}});
@@ -533,8 +535,8 @@ Read previous steps' captured output from `Vars`; write your outcome there:
 var priorValue = Vars.TryGetValue("step-1::result", out var raw) ? raw?.ToString() : null;
 
 // Write your outcome:
-Vars[Platform.Engine.Abstractions.VarKeys.Outcome(safeId)] =
-    new Platform.Engine.Abstractions.StepOutcome(…);
+Vars[Vouchfx.Engine.Abstractions.VarKeys.Outcome(safeId)] =
+    new Vouchfx.Engine.Abstractions.StepOutcome(…);
 
 // Capture a value for later steps:
 Vars["my-step::extracted"] = extractedValue;
@@ -575,23 +577,23 @@ The Roslyn script parser does not support `using var` syntax (even though the ho
 Your emitted code refers to engine types by fully-qualified name:
 
 ```csharp
-// Never: using Platform.Engine.Abstractions;
+// Never: using Vouchfx.Engine.Abstractions;
 // Instead, splice fully-qualified names:
 
 var block = $$"""
 {
     var __verdict_{{safeId}} =
         someCondition
-            ? Platform.Engine.Abstractions.Verdict.Pass
-            : Platform.Engine.Abstractions.Verdict.Fail;
+            ? Vouchfx.Engine.Abstractions.Verdict.Pass
+            : Vouchfx.Engine.Abstractions.Verdict.Fail;
 
-    Vars[Platform.Engine.Abstractions.VarKeys.Outcome("{{safeId}}")] =
-        new Platform.Engine.Abstractions.StepOutcome(…);
+    Vars[Vouchfx.Engine.Abstractions.VarKeys.Outcome("{{safeId}}")] =
+        new Vouchfx.Engine.Abstractions.StepOutcome(…);
 }
 """;
 ```
 
-Your provider does not reference `Platform.Engine.Abstractions` (its `using` would bind to it at compile time, creating a static link that bridges the collectible `AssemblyLoadContext` boundary — breaking the memory model). The emitted script references it by name; the engine already has it in scope when it compiles the joined CSX.
+Your provider does not reference `Vouchfx.Engine.Abstractions` (its `using` would bind to it at compile time, creating a static link that bridges the collectible `AssemblyLoadContext` boundary — breaking the memory model). The emitted script references it by name; the engine already has it in scope when it compiles the joined CSX.
 
 ## 7. Verdicts — Taxonomy and Exception Handling
 
@@ -612,7 +614,7 @@ Wrap your operation in a try-catch and map exceptions to verdicts:
 var block = $$"""
 {
     var __sw_{{safeId}} = System.Diagnostics.Stopwatch.StartNew();
-    var __verdict_{{safeId}} = Platform.Engine.Abstractions.Verdict.EnvironmentError;
+    var __verdict_{{safeId}} = Vouchfx.Engine.Abstractions.Verdict.EnvironmentError;
     var __observation_{{safeId}} = "{\"error\":\"unexpected\"}";
 
     try
@@ -623,27 +625,27 @@ var block = $$"""
         // Assertion logic
         var __pass_{{safeId}} = response.IsSuccess;
         __verdict_{{safeId}} = __pass_{{safeId}}
-            ? Platform.Engine.Abstractions.Verdict.Pass
-            : Platform.Engine.Abstractions.Verdict.Fail;
+            ? Vouchfx.Engine.Abstractions.Verdict.Pass
+            : Vouchfx.Engine.Abstractions.Verdict.Fail;
         __observation_{{safeId}} = __pass_{{safeId}} ? "{\"matched\":true}" : "{\"matched\":false}";
     }
     catch (System.Net.Http.HttpRequestException ex)
     when (ex.InnerException is System.Net.Sockets.SocketException)
     {
         // Connection refused / DNS failure → environment error
-        __verdict_{{safeId}} = Platform.Engine.Abstractions.Verdict.EnvironmentError;
+        __verdict_{{safeId}} = Vouchfx.Engine.Abstractions.Verdict.EnvironmentError;
         __observation_{{safeId}} = "{\"error\":\"network unreachable\"}";
     }
     catch (System.OperationCanceledException)
     {
         // Client-side timeout → inconclusive
-        __verdict_{{safeId}} = Platform.Engine.Abstractions.Verdict.Inconclusive;
+        __verdict_{{safeId}} = Vouchfx.Engine.Abstractions.Verdict.Inconclusive;
         __observation_{{safeId}} = "{\"timeout\":true}";
     }
     catch (System.Text.Json.JsonException)
     {
         // Response body is not valid JSON → environment error
-        __verdict_{{safeId}} = Platform.Engine.Abstractions.Verdict.EnvironmentError;
+        __verdict_{{safeId}} = Vouchfx.Engine.Abstractions.Verdict.EnvironmentError;
         __observation_{{safeId}} = "{\"badJson\":true}";
     }
     finally
@@ -651,8 +653,8 @@ var block = $$"""
         __sw_{{safeId}}.Stop();
     }
 
-    Vars[Platform.Engine.Abstractions.VarKeys.Outcome("{{safeId}}")] =
-        new Platform.Engine.Abstractions.StepOutcome(
+    Vars[Vouchfx.Engine.Abstractions.VarKeys.Outcome("{{safeId}}")] =
+        new Vouchfx.Engine.Abstractions.StepOutcome(
             __verdict_{{safeId}},
             __sw_{{safeId}}.ElapsedMilliseconds,
             __observation_{{safeId}});
@@ -672,7 +674,7 @@ See the JsonRpc provider's README "Verdict-mapping table" for a comprehensive de
 
 ### Engine-Owned RETRY
 
-If the step declares `verifyMode: RETRY`, the engine wraps your statement block in a polling loop (via `Platform.Engine.Abstractions.Retry.RetryRunner`). Your block runs unchanged, multiple times, until it passes or `timeout` elapses.
+If the step declares `verifyMode: RETRY`, the engine wraps your statement block in a polling loop (via `Vouchfx.Engine.Abstractions.Retry.RetryRunner`). Your block runs unchanged, multiple times, until it passes or `timeout` elapses.
 
 **You do not implement polling yourself.** Write a re-runnable block that:
 - Writes a verdict on every invocation
@@ -691,7 +693,7 @@ Your provider must resolve **every string field** the author might write (url, m
 
 ### The `Secret_Helpers` prerequisite
 
-`Secret_Helpers.ResolveTemplate` only exists inside the emitted script because your provider adds its canonical source, `Platform.Sdk.SecretHelper.Source`, to `CsxFragment.RequiredHelpers` — exactly as the JsonRpc provider does:
+`Secret_Helpers.ResolveTemplate` only exists inside the emitted script because your provider adds its canonical source, `Vouchfx.Sdk.SecretHelper.Source`, to `CsxFragment.RequiredHelpers` — exactly as the JsonRpc provider does:
 
 ```csharp
 return new CsxFragment(
@@ -710,7 +712,7 @@ Inside your `RequiredHelpers` method or `StatementBlock` — not in provider C# 
 var url = Secret_Helpers.ResolveTemplate(secrets, vars, urlTemplate);
 ```
 
-This is the real signature (`Platform.Sdk/SecretHelper.cs`): `internal static string ResolveTemplate(ISecretAccessor secrets, IDictionary<string, object?> vars, string template)` — **synchronous**, argument order `(secrets, vars, template)`. It resolves `${secret:source/path}` tokens and `{placeholder}` tokens in a single pass over the *original* text, so a substituted placeholder value is never re-scanned for secret tokens and a revealed secret value is never re-scanned for placeholders (§17). Call it inside your own guarded `try` region: a missing or unknown secret throws `SecretResolutionException`, which your `catch` must map to `Verdict.EnvironmentError` (§7).
+This is the real signature (`Vouchfx.Sdk/SecretHelper.cs`): `internal static string ResolveTemplate(ISecretAccessor secrets, IDictionary<string, object?> vars, string template)` — **synchronous**, argument order `(secrets, vars, template)`. It resolves `${secret:source/path}` tokens and `{placeholder}` tokens in a single pass over the *original* text, so a substituted placeholder value is never re-scanned for secret tokens and a revealed secret value is never re-scanned for placeholders (§17). Call it inside your own guarded `try` region: a missing or unknown secret throws `SecretResolutionException`, which your `catch` must map to `Verdict.EnvironmentError` (§7).
 
 **Important:** the revealed value is a transient destined for an injection sink — it is consumed immediately and **is never written back to `Vars`**. Resolved values must never reach observations, exceptions, or logs:
 
@@ -725,7 +727,7 @@ catch (System.Exception ex)
 }
 ```
 
-(mirrors `JsonRpcProvider.cs:790-795`.) `SecretString` (`Platform.Engine.Abstractions.Secrets.SecretString`) exists for the engine's own secrets subsystem to carry a resolved value with redaction enforced at the source (`ToString()` returns a fixed `***REDACTED***` marker, never the value) — its constructor is `internal`, so neither your provider nor your emitted CSX can construct one. Do not try to cache a revealed value in `Vars` for later reuse: if a later part of the same statement block needs the value again, call `ResolveTemplate` again on its template.
+(mirrors `JsonRpcProvider.cs:790-795`.) `SecretString` (`Vouchfx.Engine.Abstractions.Secrets.SecretString`) exists for the engine's own secrets subsystem to carry a resolved value with redaction enforced at the source (`ToString()` returns a fixed `***REDACTED***` marker, never the value) — its constructor is `internal`, so neither your provider nor your emitted CSX can construct one. Do not try to cache a revealed value in `Vars` for later reuse: if a later part of the same statement block needs the value again, call `ResolveTemplate` again on its template.
 
 **Walk string leaves, not raw JSON:** when a field like `params` is a JSON string, parse it into a tree, resolve each string leaf individually via `Secret_Helpers.ResolveTemplate`, then re-serialise — never template-substitute the raw JSON text (a resolved value containing a quote or brace would corrupt the structure):
 
@@ -733,7 +735,7 @@ catch (System.Exception ex)
 // Inside RequiredHelpers, mirroring JsonRpcProvider.cs:817-848 (ResolveParamsLeaves)
 private static void ResolveParamsLeaves(
     System.Text.Json.Nodes.JsonNode? node,
-    Platform.Engine.Abstractions.Secrets.ISecretAccessor secrets,
+    Vouchfx.Engine.Abstractions.Secrets.ISecretAccessor secrets,
     System.Collections.Generic.IDictionary<string, object?> vars)
 {
     if (node is System.Text.Json.Nodes.JsonObject obj)
@@ -806,7 +808,7 @@ for (int ci = 0; ci < captureVarNames.Length; ci++)
         // An unmet capture is not a Fail — it downgrades an otherwise-Pass
         // verdict to Inconclusive (§12.1), mirroring http.rest's own
         // "upstream-capture-unmet" convention.
-        verdict = Platform.Engine.Abstractions.Verdict.Inconclusive;
+        verdict = Vouchfx.Engine.Abstractions.Verdict.Inconclusive;
         observation = "{\"captureUnmet\":" + System.Text.Json.JsonSerializer.Serialize(captureVarNames[ci]) + "}";
     }
 }
@@ -829,10 +831,10 @@ Testing proves your provider works end-to-end through the full engine pipeline.
 For dependency-free providers (no infrastructure), use the published `ProviderTestHarness.RunSingleStepAsync()`:
 
 ```csharp
-using Platform.Sdk.Testing;
+using Vouchfx.Sdk.Testing;
 using Xunit;
 
-namespace Community.Steps.Hello.Tests;
+namespace Vouchfx.Community.Hello.Tests;
 
 public sealed class HelloConsoleProviderTests
 {
@@ -912,7 +914,7 @@ public sealed class HelloConsoleProviderTests
 
 If your provider implements `ICompileReferenceContributor` (because your emitted code calls `HttpClient`, `JsonPath.Net`, etc.), `ProviderTestHarness` will fail compilation — it does not include your contributed references.
 
-Use the custom-harness pattern (modelled on the engine's own `HttpRestExecutionTests`), as demonstrated by the JsonRpc provider (`community/Community.Steps.JsonRpc.Tests/JsonRpcHarness.cs`):
+Use the custom-harness pattern (modelled on the engine's own `HttpRestExecutionTests`), as demonstrated by the JsonRpc provider (`community/Vouchfx.Community.JsonRpc.Tests/JsonRpcHarness.cs`):
 
 ```csharp
 internal static class MyKindHarness
@@ -1017,14 +1019,14 @@ public void Unit_Emit_HyphenatedStepId_SanitisedInBlock()
 
 ### Docker Integration Tests
 
-For infrastructure providers, create integration tests that start a real Docker container and drive it through your provider. `Platform.Sdk` does not publish a container-lifecycle API of its own — the engine's own Docker-gated fixtures (e.g. `tests/Platform.Engine.Orchestration.Tests/CacheAssertRedisDockerTests.cs`) start containers through its internal `SuiteTopology`/Aspire fixture, which is engine-internal and not part of the published SDK surface your provider package can reference. Outside the engine repository, use whichever container-testing library you prefer (for example, Testcontainers for .NET) to start the container, then exercise your provider through the harness exactly as the conformance tests do:
+For infrastructure providers, create integration tests that start a real Docker container and drive it through your provider. `Vouchfx.Sdk` does not publish a container-lifecycle API of its own — the engine's own Docker-gated fixtures (e.g. `tests/Vouchfx.Engine.Orchestration.Tests/CacheAssertRedisDockerTests.cs`) start containers through its internal `SuiteTopology`/Aspire fixture, which is engine-internal and not part of the published SDK surface your provider package can reference. Outside the engine repository, use whichever container-testing library you prefer (for example, Testcontainers for .NET) to start the container, then exercise your provider through the harness exactly as the conformance tests do:
 
 ```csharp
 [Collection("Docker")]  // Serialise Docker tests
 public sealed class MyKindProviderIntegrationTests : IAsyncLifetime
 {
     // Container start-up/teardown is your own choice of tooling — not
-    // prescribed by Platform.Sdk. Whatever you use, expose the resulting
+    // prescribed by Vouchfx.Sdk. Whatever you use, expose the resulting
     // base URL so the model below can target it.
     private string? _baseUrl;
 
@@ -1113,7 +1115,7 @@ Once your provider is tested and documented, you have two hosting options for li
 
 Before opening a Community submission or requesting the Vouched badge:
 
-- [ ] **Namespace:** My provider uses a non-reserved namespace (never `Platform.Engine.*` or `Platform.Steps.*`)
+- [ ] **Namespace:** My provider uses a non-reserved namespace (never `Vouchfx.Engine.*` or `Vouchfx.Steps.*`)
 - [ ] **Four interfaces:** My provider implements `IStepProvider`, `IStepBinder<TModel>`, `IStepValidator<TModel>`, `IStepCompiler<TModel>`
 - [ ] **Model:** My step model is a strongly-typed record, never `Dictionary<string,object>`
 - [ ] **CSX composition:**

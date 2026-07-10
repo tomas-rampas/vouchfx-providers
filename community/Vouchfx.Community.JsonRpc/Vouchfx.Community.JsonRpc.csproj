@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <!-- §5.6 ASSEMBLY-GRAPH HYGIENE: keep this namespace in the Community.Steps.*
-         space — never Platform.Steps.* or Platform.Engine.* (both reserved and refused
+    <!-- §5.6 ASSEMBLY-GRAPH HYGIENE: keep this namespace in the Vouchfx.Community.*
+         space — never Vouchfx.Steps.* or Vouchfx.Engine.* (both reserved and refused
          at startup). -->
-    <RootNamespace>Community.Steps.JsonRpc</RootNamespace>
+    <RootNamespace>Vouchfx.Community.JsonRpc</RootNamespace>
   </PropertyGroup>
 
   <!-- Per-provider package metadata (feat/provider-packaging). The shared shape
@@ -28,11 +28,11 @@
 
   <ItemGroup>
     <!-- A community provider depends on the frozen v1 SDK contract. No reference to
-         Platform.Engine.* is taken here: the engine drives the provider through these
+         Vouchfx.Engine.* is taken here: the engine drives the provider through these
          interfaces, and the emitted CSX reaches the run environment solely through the
          engine-injected Vars/Secrets globals (referenced by fully-qualified name in the
          emitted text — see JsonRpcProvider.Emit). -->
-    <PackageReference Include="Platform.Sdk" Version="$(VouchfxSdkVersion)" />
+    <PackageReference Include="Vouchfx.Sdk" Version="$(VouchfxSdkVersion)" />
 
     <!-- DEVIATION FROM THE MINIMAL "BCL-only, zero new packages" STARTING ASSUMPTION —
          verified necessary, not guessed (see README "Known limitations" + the delivery
