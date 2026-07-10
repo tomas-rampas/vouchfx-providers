@@ -25,6 +25,23 @@
 # ------------------------------------------------
 #   <ProviderDirName>/v<semver>   e.g.  Community.Steps.JsonRpc/v1.0.0
 #
+# NU5104 / pre-release SDK constraint: while the root <VouchfxSdkVersion> pin
+# is itself a PRE-RELEASE (currently 1.0.0-alpha.3), every provider release
+# tag MUST also carry a pre-release version — e.g.
+# Community.Steps.JsonRpc/v1.0.0-alpha.1, never
+# Community.Steps.JsonRpc/v1.0.0. This is NuGet's own compatibility rule
+# (NU5104: a stable package must not carry a prerelease dependency), promoted
+# to a hard error by this repo's TreatWarningsAsErrors. community/'s
+# prerelease DEFAULT version (1.0.0-0.local — see
+# community/Directory.Build.props) keeps NU5104 silent for the
+# conformance.yml pack gate and other bare (no -p:Version) packs, but this
+# workflow's "Pack the provider" step below always passes an explicit
+# -p:Version="$VERSION" from the tag, which overrides that default — so a
+# stable tag fails NU5104 there, by design: a stable provider version would
+# otherwise force every consumer's restore onto a pre-release SDK. Stable
+# provider versions become possible once Platform.Sdk 1.0.0 final ships at
+# GA and <VouchfxSdkVersion> is repinned to a stable version.
+#
 # ProviderDirName must equal the provider's directory name under community/
 # (which is also its PackageId — see community/Directory.Build.props and the
 # conformance.yml pack-gate step that enforces <id> == directory name). The
@@ -174,6 +191,15 @@ jobs:
 
           # Fail-closed semver validation — copied verbatim from the engine's
           # release.yml "Determine release version" step (vouchfx repo).
+          #
+          # NOTE: this regex accepts BOTH stable (1.0.0) and pre-release
+          # (1.0.0-alpha.1) forms — it does not itself enforce the
+          # pre-release requirement described in the header's "NU5104 /
+          # pre-release SDK constraint" note. While <VouchfxSdkVersion> is a
+          # pre-release, a stable VERSION passes this check but is refused
+          # later, at the "Pack the provider" step, by NuGet's own NU5104
+          # rule (a stable package must not depend on a prerelease package) —
+          # not re-validated redundantly here.
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+([.-][0-9A-Za-z.-]+)?$ ]]; then
             echo "::error::Refusing to publish: version '$VERSION' is not a valid semver."
             exit 1

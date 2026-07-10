@@ -18,9 +18,12 @@
        engine repo) — repository/license/SourceLink/symbols — so a future CI pack step has
        real metadata to validate for every hub-hosted provider, not just the first one.
 
-       No Version/VersionPrefix/VersionSuffix is set anywhere here: a hub-hosted provider's
-       version comes from -p:Version at publish time (per-package, independent of every
-       other provider in this repo), never from a shared default.
+       VersionPrefix/VersionSuffix ARE set below (1.0.0-0.local), but only as the fallback
+       for an unversioned pack — see the comment on those properties for why (NU5104 vs.
+       the pre-release $(VouchfxSdkVersion) SDK pin). A hub-hosted provider's real,
+       published version still comes from -p:Version at publish time (per-package,
+       independent of every other provider in this repo), which overrides that fallback —
+       never from a shared default.
 
        Composition with the root import above: the root Directory.Build.props (imported
        first, on line 1) sets IsPackable=false for the whole repo. This PropertyGroup is
@@ -31,6 +34,30 @@
   <PropertyGroup Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">
     <IsPackable>true</IsPackable>
     <PackageId>$(MSBuildProjectName)</PackageId>
+    <!-- Same hardening as the engine's own packable csprojs (e.g.
+         src/Sdk/Platform.Sdk/Platform.Sdk.csproj in the vouchfx repo). Buys two things:
+         (1) a bare/gate `dotnet pack` (no -p:Version — this is how the conformance pack
+         gate packs every submission) yields 1.0.0-0.local, a prerelease. That matters
+         because every provider here takes a Platform.Sdk PackageReference pinned to
+         $(VouchfxSdkVersion) (root Directory.Build.props), which is itself a pre-release
+         while the SDK is pre-v1.0 — a STABLE provider version depending on a pre-release
+         SDK trips NU5104 ("a stable release should not have a prerelease dependency"),
+         promoted to a build error by TreatWarningsAsErrors. Forcing the default to a
+         prerelease keeps the gate green without suppressing the check. The numeric-leading
+         suffix ("0.local") also sorts below every published pre-release (alpha, beta, rc),
+         so a local/gate pack can never outrank a real release.
+         (2) `-p:Version` at publish time still overrides both VersionPrefix and
+         VersionSuffix, exactly as it does for Platform.Sdk itself — this default only
+         governs unversioned packs (the conformance gate), never a real release.
+         Consequence for release tags: while $(VouchfxSdkVersion) is a pre-release, every
+         provider RELEASE tag (community-submission.yml's `<Provider>/vX.Y.Z`) must also
+         carry a pre-release version (e.g. 1.0.0-alpha.1) — a stable `-p:Version=1.0.0` at
+         publish time would re-trigger NU5104 for the same reason, and correctly so: this
+         is NuGet's real compatibility rule, not a gate artefact, and it is deliberately
+         left unsuppressed here. Only once the SDK pin itself reaches a stable 1.0.0 can a
+         provider release a stable version. -->
+    <VersionPrefix>1.0.0</VersionPrefix>
+    <VersionSuffix>0.local</VersionSuffix>
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/tomas-rampas/vouchfx-providers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>

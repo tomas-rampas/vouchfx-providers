@@ -177,6 +177,16 @@ jobs:
       # metadata, not version) and inspects the resulting .nuspec + package
       # contents for the shape community/Directory.Build.props promises.
       #
+      # NU5104 note: with no -p:Version override, this gate packs at
+      # community/Directory.Build.props's prerelease DEFAULT version
+      # (1.0.0-0.local) — which keeps NuGet's NU5104 rule (a stable package
+      # must not carry a prerelease dependency) silent here even while the
+      # root $(VouchfxSdkVersion) pin is itself a pre-release. That silence
+      # is specific to this default-version gate/local pack path — it does
+      # NOT apply to publish-provider.yml's real pack step, which packs at
+      # the tag's own version and so DOES enforce NU5104 for a stable tag
+      # (see that workflow's header for the full rationale).
+      #
       # Discovery mirrors the community-tests glob above: globstar over
       # community/**/*.csproj, filtered by filename suffix (*.Tests.csproj is
       # excluded) rather than by directory-name heuristics — this finds a
