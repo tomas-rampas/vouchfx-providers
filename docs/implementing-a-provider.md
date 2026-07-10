@@ -42,7 +42,7 @@ Your provider talks directly to a service the test author supplies as an absolut
 **What you need:**
 - Define the step model (YAML shape)
 - Implement the four provider interfaces
-- Emit CSX that uses only System.* and user-supplied libraries (see section 5 on reference contributors)
+- Emit CSX that uses only System.* and user-supplied libraries (see the `ICompileReferenceContributor` subsection of section 5, The Contract Surfaces)
 - Write conformance tests (the template's `ProviderTestHarness` pattern)
 
 ### Infrastructure Providers — Observing Engine-Managed Dependencies
@@ -85,12 +85,14 @@ Copy the template to get started:
 # Navigate to your repository
 cd your-provider-repo
 
-# Copy the template and rename
-cp -r template/Vouchfx.Community.Hello src/Vouchfx.Community.MyKind
-cd src/Vouchfx.Community.MyKind
+# Copy the template and rename to YOUR organisation's prefix
+# (Vouchfx.Community.* is reserved for providers hosted in the hub's
+#  community/ directory — external providers use <Org>.Steps.<Name>)
+cp -r template/Vouchfx.Community.Hello src/YourOrg.Steps.YourKind
+cd src/YourOrg.Steps.YourKind
 
 # Rename the namespace (via find/replace in your IDE)
-# Vouchfx.Community.Hello → Vouchfx.Community.YourKind
+# Vouchfx.Community.Hello → YourOrg.Steps.YourKind
 ```
 
 ### The `.csproj` File
