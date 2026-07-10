@@ -55,12 +55,12 @@
 # tagged and its SDK closure published to nuget.org (re-verify ownership per
 # the PRECONDITION above), bump the root <VouchfxSdkVersion> MSBuild property
 # to the new version (Lane A picks it up automatically — no workflow edit
-# needed), update the hardcoded Platform.Sdk version literal in the
-# out-of-repo sample in docs/implementing-a-provider.md (external authors
-# cannot inherit the property, so the guide pins a concrete version), and
-# separately re-pin Lane B's engine checkout `ref:` below to the engine's
-# new main SHA, so Lane B keeps tracking "what's coming next" rather than
-# what was just released.
+# needed), update the hardcoded Platform.Sdk version literals that exist
+# for OUT-OF-REPO consumers who cannot inherit the property — the sample in
+# docs/implementing-a-provider.md and the conditioned fallback in the two
+# template/Community.Steps.Hello* csprojs — and separately re-pin Lane B's
+# engine checkout `ref:` below to the engine's new main SHA, so Lane B
+# keeps tracking "what's coming next" rather than what was just released.
 #
 # NOTE ON VERSION MATRIX
 # ----------------------
