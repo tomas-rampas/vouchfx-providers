@@ -58,7 +58,7 @@ The engine refuses provider DLLs that declare the reserved namespaces at startup
 - `Vouchfx.Engine.*` — reserved for engine internals
 - `Vouchfx.Steps.*` — reserved for Core providers
 
-Use your own namespace: `MyOrg.Steps.Kafka`, `Vouchfx.Community.Snowflake`, `Example.Steps.Hello`. This prevents collisions when multiple providers are loaded together.
+Use your own namespace: `MyOrg.Steps.Kafka` or `Example.Steps.Hello` for externally hosted providers (the `<Org>.Steps.<Name>` convention); `Vouchfx.Community.<Name>` is the convention reserved for providers hosted in this hub's `community/` directory. This prevents collisions when multiple providers are loaded together.
 
 **Why this matters:** Your provider DLL is loaded into the host process alongside others. If two providers both declare `Vouchfx.Steps.Foo`, the assembly-graph loader sees a collision and refuses the suite. Using a unique namespace keeps the host assembly graph clean.
 
