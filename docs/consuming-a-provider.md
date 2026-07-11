@@ -133,7 +133,7 @@ Add it the same way:
 The [`ledger-jsonrpc`](https://tomas-rampas.github.io/vouchfx-samples/samples/ledger-jsonrpc/README.html) sample application demonstrates both paths:
 
 - **NuGet path:** `runner/LedgerRunner.csproj` references `Vouchfx.Community.JsonRpc` as a NuGet package
-- **Source path:** The samples repository's [`docs/custom-runner.md`](https://tomas-rampas.github.io/vouchfx-samples/docs/custom-runner.html) documents the complete end-to-end walkthrough of building a runner, composing the step registry, parsing suites, and handling exit codes
+- **Source path:** The samples site's [custom-runner walkthrough](https://tomas-rampas.github.io/vouchfx-samples/docs/custom-runner.html) documents the complete end-to-end walkthrough of building a runner, composing the step registry, parsing suites, and handling exit codes
 
 The runner shows:
 
