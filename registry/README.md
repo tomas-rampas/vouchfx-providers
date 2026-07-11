@@ -16,9 +16,9 @@ A Community-tier provider can live in **either of two first-class places** — e
 
 The first entry — [`rpc.json-rpc`](../community/Vouchfx.Community.JsonRpc/README.md) — is hub-hosted and doubles as the worked reference for both the guide and the submission shape.
 
-Today, consuming a community provider requires a source-level build: clone the provider's repository (or this one, for hub-hosted providers), reference its project in your build, and rebuild your host to integrate the provider. A one-command install experience (`vouchfx providers install <package>`) is planned and tracked on the [engine's public roadmap](https://tomas-rampas.github.io/vouchfx/docs/roadmap.html).
+Today, a published community provider is consumed as a NuGet package referenced from a small custom runner ([`ledger-jsonrpc`](https://github.com/tomas-rampas/vouchfx-samples/tree/main/samples/ledger-jsonrpc) is the worked example); a provider without a published package is consumed via a source-level build — clone the provider's repository (or this one, for hub-hosted providers), reference its project in your build, and rebuild your host. A one-command install experience (`vouchfx providers install <package>`) is planned and tracked on the [engine's public roadmap](https://tomas-rampas.github.io/vouchfx/docs/roadmap.html).
 
-One neighbouring thing this registry is *not*: the [vouchfx-samples](https://github.com/tomas-rampas/vouchfx-samples) repository has nothing to do with providers or this registry at all — it hosts sample *applications* (systems under test in C#, Python and Java) with complete `.e2e.yaml` suites demonstrating how the engine tests them.
+One neighbouring thing this registry is *not*: the [vouchfx-samples](https://github.com/tomas-rampas/vouchfx-samples) repository hosts sample *applications* (systems under test in C#, Python and Java) with complete `.e2e.yaml` suites demonstrating how the engine tests them. It also includes the canonical worked example of consuming a community provider from this registry: [`ledger-jsonrpc`](https://github.com/tomas-rampas/vouchfx-samples/tree/main/samples/ledger-jsonrpc), which depends on `Vouchfx.Community.JsonRpc` from NuGet.
 
 ## About the Registry
 
@@ -32,7 +32,7 @@ The registry is human-readable and machine-consumable. It powers:
 - Planned tooling for provider discovery and installation, and a generated provider-listing page on the
   project website (both part of the engine roadmap)
 
-The first entry is [`rpc.json-rpc`](../community/Vouchfx.Community.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package (`Vouchfx.Community.JsonRpc`) will be published from this repository's own CI pipeline (planned); until then it is built from source here.
+The first entry is [`rpc.json-rpc`](../community/Vouchfx.Community.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) (version 1.0.0-alpha.1) is published from this repository's CI pipeline and ready to consume.
 
 ## How to Add an Entry
 
@@ -163,7 +163,7 @@ If you own a provider that is already listed:
 
 When a new entry is added or updated, the maintainers verify:
 - For external entries: the NuGet package exists and is publicly resolvable
-- For hub-hosted entries: the source under `community/` builds and its conformance lane is green (when a `nuget` field is present, a release tag cannot be cut until the provider's dependencies — particularly `Vouchfx.Sdk` — are publicly resolvable from NuGet.org; e.g. `rpc.json-rpc`'s package ships from hub CI only once the engine has published `Vouchfx.Sdk` at the pinned version)
+- For hub-hosted entries: the source under `community/` builds and its conformance lane is green (when a `nuget` field is present, a release tag cannot be cut until the provider's dependencies — particularly `Vouchfx.Sdk` — are publicly resolvable from NuGet.org; e.g. `rpc.json-rpc`'s package shipped from hub CI once the engine had published `Vouchfx.Sdk` at the pinned version)
 - The repository URL is valid and accessible
 - The entry validates against the schema (CI enforces this on every PR)
 - The `stepKindId` does not conflict with existing entries or a Core provider (duplicates are rejected)
