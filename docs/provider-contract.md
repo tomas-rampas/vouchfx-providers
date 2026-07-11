@@ -189,7 +189,7 @@ public IEnumerable<ResourceRequirement> Resources(MyKindModel model)
 {
     // This step targets the dependency named "my-db", declared under
     // environment.dependencies as `type: postgres`. Family must name one of
-    // the engine's own thirteen engine-managed dependency types (§2 above);
+    // the engine's managed dependency types (see the Overview's Infrastructure Providers list);
     // Image is conventionally left null today, so the engine uses its own
     // default image for that family (see EnvironmentMapper's dependency
     // registry, in the engine repository).

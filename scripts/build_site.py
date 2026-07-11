@@ -272,7 +272,7 @@ PORTAL = """<!DOCTYPE html>
 
   <section class="portal__group">
     <h2>Provider authoring journey</h2>
-    <p>Seven stages from template to published provider, with the reference implementation woven through.</p>
+    <p>Six stages from template to published provider, with the reference implementation woven through. Stage 7 (registry, Vouched badge) continues under Contributing.</p>
     <div class="doc-cards">
       <a class="doc-card" href="docs/implementing-a-provider.html">
         <span class="doc-card__k">START</span><h3>Overview & journey map</h3>
@@ -288,7 +288,7 @@ PORTAL = """<!DOCTYPE html>
       </a>
       <a class="doc-card" href="docs/provider-contract.html">
         <span class="doc-card__k">STAGE 3</span><h3>The contract surfaces</h3>
-        <p>The four mandatory interfaces and three optional extension interfaces.</p>
+        <p>The four mandatory interfaces and three of the optional extension interfaces.</p>
       </a>
       <a class="doc-card" href="docs/provider-csx-composition.html">
         <span class="doc-card__k">STAGE 4</span><h3>CSX composition</h3>

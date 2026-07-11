@@ -2,7 +2,7 @@
 
 Welcome to the vouchfx provider authoring guide. This page is your entry point to the seven-stage provider authoring journey. Below you will find a high-level overview of what a provider is, what you can build, and links to each stage.
 
-The full authoring journey is a **restructured** set of focused documentation pages (previously one large guide). Each stage covers a specific part of the process, with breadcrumbs and navigation links to move forward.
+The full authoring journey is a **restructured** set of focused documentation pages (previously one large guide). Each stage covers a specific part of the process, with breadcrumbs and navigation links to move forward. **Old deep-link anchors into the monolithic guide (e.g., `#what-a-provider-is`) have moved to the stage pages** — follow the breadcrumbs or the journey table below to find what you need.
 
 ## What a Provider Is
 
@@ -81,7 +81,7 @@ This is not a blocker — it is a deliberate separation of concerns. In the mean
 |-------|------|--------|
 | **1** | **[Template README](../template/Vouchfx.Community.Hello/README.md)** | Copy the scaffold provider; write documentation |
 | **2** | **[Project Setup](provider-project-setup.md)** | Create your `.csproj`, name your namespace, understand the model shape |
-| **3** | **[The Contract Surfaces](provider-contract.md)** | The four mandatory interfaces (`IStepProvider`, `IStepBinder`, `IStepValidator`, `IStepCompiler`) and three optional extension interfaces |
+| **3** | **[The Contract Surfaces](provider-contract.md)** | The four mandatory interfaces (`IStepProvider`, `IStepBinder`, `IStepValidator`, `IStepCompiler`) and three of the optional extension interfaces |
 | **4** | **[CSX Composition](provider-csx-composition.md)** | The Roslyn composition rules, verdicts (Pass/Fail/EnvironmentError/Inconclusive), secrets, and capture |
 | **5** | **[Testing](provider-testing.md)** | Conformance tests with `ProviderTestHarness`, custom harness pattern, unit tests, Docker integration tests |
 | **6** | **[Publishing & Submission](provider-publishing.md)** | Community listing (external and hub-hosted paths), the Vouched badge rubric, and submission checklist |

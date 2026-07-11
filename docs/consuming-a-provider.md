@@ -57,17 +57,16 @@ Once the engine reaches v1.0.0 GA and community providers do the same, this cons
 
 The engine's `StepKindRegistry` reflects over all loaded provider assemblies at suite startup and builds its step-kind map. Your provider is automatically discovered — no manual registration needed.
 
-In your custom runner (see the [ledger-jsonrpc custom-runner walkthrough](https://github.com/tomas-rampas/vouchfx-samples/blob/main/samples/ledger-jsonrpc/docs/custom-runner.md)), the engine discovers providers as it loads your application's assembly graph:
+In your custom runner (see the [ledger-jsonrpc custom-runner walkthrough](https://github.com/tomas-rampas/vouchfx-samples/blob/main/docs/custom-runner.md)), the engine discovers providers as it loads your application's assembly graph:
 
 ```csharp
-// The engine's ScenarioRunner discovers providers reflectively from loaded assemblies.
+// The engine's StepKindRegistry discovers providers reflectively from loaded assemblies.
 // As long as Vouchfx.Community.JsonRpc is in your dependencies and loaded,
-// the rpc.json-rpc step kind is available.
-var result = await ScenarioRunner.RunSuiteAsync(
-    suiteSource: "path/to/suite.e2e.yaml",
-    /* ... */
-);
+// the rpc.json-rpc step kind is available at suite startup.
+// The ScenarioRunner then accepts pre-parsed scenario ASTs and executes them.
 ```
+
+For a real implementation, see the samples walkthrough (Path B) which shows the complete runner pattern with AST parsing and discovery.
 
 ### Step 4: Publishing Cadence and Registry
 
@@ -110,7 +109,7 @@ Add the provider project to your solution:
 </ItemGroup>
 ```
 
-Build your application. The provider is compiled into your assembly graph and discovered at runtime.
+Build your application. The provider is compiled into your assembly graph and discovered at suite startup.
 
 ### External Repositories
 
@@ -133,8 +132,8 @@ Add it the same way:
 
 The [`ledger-jsonrpc`](https://github.com/tomas-rampas/vouchfx-samples/tree/main/samples/ledger-jsonrpc) sample application demonstrates both paths:
 
-- **NuGet path:** `ledger-jsonrpc.csproj` references `Vouchfx.Community.JsonRpc` as a NuGet package
-- **Source path:** The sample's own custom runner is documented in `docs/custom-runner.md` — read it for a complete end-to-end walkthrough of building a runner, composing the step registry, parsing suites, and handling exit codes
+- **NuGet path:** `runner/LedgerRunner.csproj` references `Vouchfx.Community.JsonRpc` as a NuGet package
+- **Source path:** The samples repository's [`docs/custom-runner.md`](https://github.com/tomas-rampas/vouchfx-samples/blob/main/docs/custom-runner.md) documents the complete end-to-end walkthrough of building a runner, composing the step registry, parsing suites, and handling exit codes
 
 The runner shows:
 

@@ -37,29 +37,43 @@
   </div>
 
   <section class="portal__group">
-    <h2>Start here</h2>
-    <p>From an empty project to a submitted provider.</p>
+    <h2>Author a provider</h2>
+    <p>The seven-stage authoring journey — from template to published provider.</p>
     <div class="doc-cards">
       <a class="doc-card" href="docs/implementing-a-provider.html">
-        <span class="doc-card__k">1 · GUIDE</span><h3>Implementing a provider</h3>
-        <p>The comprehensive walkthrough — the five contract surfaces, the CSX composition rules, the
-        four-verdict taxonomy, secrets and capture, Docker-free testing, and the submission checklist.</p>
+        <span class="doc-card__k">START</span><h3>Journey overview</h3>
+        <p>Entry point: what a provider is, the two governance tiers, what you can build self-contained, and the seven stages that follow.</p>
+      </a>
+      <a class="doc-card" href="template/Vouchfx.Community.Hello/README.html">
+        <span class="doc-card__k">STAGE 1</span><h3>Template scaffold</h3>
+        <p>Copy <code>template/Vouchfx.Community.Hello</code> — the minimal skeleton with the four mandatory interfaces, schema fragment, and passing conformance test.</p>
+      </a>
+      <a class="doc-card" href="docs.html">
+        <span class="doc-card__k">STAGES 2–7</span><h3>Follow the journey</h3>
+        <p>Project setup, contract surfaces, CSX composition, testing, publishing, and community listing with the optional Vouched badge.</p>
       </a>
       <a class="doc-card" href="community/Vouchfx.Community.JsonRpc/README.html">
-        <span class="doc-card__k">2 · PROVIDER</span><h3>rpc.json-rpc · the first community provider</h3>
-        <p>The first Community-tier provider (JSON-RPC 2.0 over HTTP), hosted here as the reference
-        implementation — read it side-by-side with the guide, including its loopback test server and
-        conformance suite.</p>
+        <span class="doc-card__k">REFERENCE</span><h3>rpc.json-rpc · the worked example</h3>
+        <p>The first Community-tier provider (JSON-RPC 2.0 over HTTP), hosted here as the reference implementation — read it alongside the journey.</p>
       </a>
-      <a class="doc-card" href="https://github.com/tomas-rampas/vouchfx-providers/tree/main/template/Vouchfx.Community.Hello" target="_blank" rel="noopener noreferrer">
-        <span class="doc-card__k">3 · TEMPLATE</span><h3>Copy the template</h3>
-        <p><code>template/Vouchfx.Community.Hello</code> is the minimal copyable skeleton: the four mandatory
-        interfaces, a schema fragment, and a passing conformance test.</p>
+    </div>
+  </section>
+
+  <section class="portal__group">
+    <h2>Use a provider</h2>
+    <p>How to add published community providers to your test application.</p>
+    <div class="doc-cards">
+      <a class="doc-card" href="docs/consuming-a-provider.html">
+        <span class="doc-card__k">GUIDE</span><h3>Consuming providers</h3>
+        <p>NuGet path and source-build path, pre-release pinning, version management, and how providers are discovered at suite startup.</p>
       </a>
-      <a class="doc-card" href="CONTRIBUTING.html">
-        <span class="doc-card__k">4 · SUBMIT</span><h3>Contribute it</h3>
-        <p>List it in the Community registry. Request the Vouched badge for maintainer review — the published
-        rubric, not judgement, is the gate.</p>
+      <a class="doc-card" href="registry/README.html">
+        <span class="doc-card__k">INDEX</span><h3>Community registry</h3>
+        <p>Browse published providers, check their Vouched status, and understand the two governance tiers.</p>
+      </a>
+      <a class="doc-card" href="https://github.com/tomas-rampas/vouchfx-samples/tree/main/samples/ledger-jsonrpc" target="_blank" rel="noopener noreferrer">
+        <span class="doc-card__k">SAMPLE</span><h3>ledger-jsonrpc sample</h3>
+        <p>Canonical worked example consuming <code>Vouchfx.Community.JsonRpc</code> — see the custom runner pattern in the samples <a href="https://github.com/tomas-rampas/vouchfx-samples/blob/main/docs/custom-runner.md" target="_blank" rel="noopener noreferrer">custom-runner walkthrough</a>.</p>
       </a>
     </div>
   </section>
