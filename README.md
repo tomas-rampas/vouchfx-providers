@@ -2,7 +2,7 @@
 
 The community provider hub for [vouchfx](https://github.com/tomas-rampas/vouchfx) — the curated **community provider index** and the PR-gated hub hosting for Apache-2.0 licensed providers.
 
-> **Documentation site:** [tomas-rampas.github.io/vouchfx-providers](https://tomas-rampas.github.io/vouchfx-providers/) — rendered from this repository on every push, with the comprehensive [implementing-a-provider guide](https://tomas-rampas.github.io/vouchfx-providers/docs/implementing-a-provider.html) as its centrepiece.
+> **Documentation site:** [tomas-rampas.github.io/vouchfx-providers](https://tomas-rampas.github.io/vouchfx-providers/) — rendered from this repository on every push, with the seven-stage [provider authoring journey](https://tomas-rampas.github.io/vouchfx-providers/docs/implementing-a-provider.html) as its centrepiece.
 
 A vouchfx *provider* is a `<family>.<provider>` step type (e.g. `db-assert.postgres`, `mq-publish.kafka`) that the vouchfx engine discovers and executes. This repository serves two purposes:
 
@@ -18,7 +18,7 @@ A provider is a compile-time, source-level plugin to the vouchfx engine. It expo
 - **`IStepValidator<TModel>`** — validate the model with author-friendly diagnostics
 - **`IStepCompiler<TModel>`** — emit the C# code (a `CsxFragment`) that runs inside the compiled delegate
 
-For the comprehensive, code-grounded guide to writing a provider — the contract surfaces, the CSX composition rules, verdicts, secrets, capture, testing and the submission checklist — see [`docs/implementing-a-provider.md`](docs/implementing-a-provider.md) (also [rendered on the documentation site](https://tomas-rampas.github.io/vouchfx-providers/docs/implementing-a-provider.html)). The engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) remains the authoritative statement of the frozen v1 SDK contract itself.
+For the seven-stage provider authoring journey — from template scaffolding through project setup, the contract surfaces, CSX composition, testing, and publishing — see [`docs/implementing-a-provider.md`](docs/implementing-a-provider.md) (also [rendered on the documentation site](https://tomas-rampas.github.io/vouchfx-providers/docs/implementing-a-provider.html)). The engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) remains the authoritative statement of the frozen v1 SDK contract itself.
 
 ## The Two Governance Tiers
 
@@ -36,7 +36,7 @@ All community-authored providers with no platform-team endorsement. Community pr
 - Must be Apache-2.0 licensed and follow the reflective-discovery contract
 - Can be hosted **externally** (your own repository, published on NuGet) or **hub-hosted** (contributed as source into this repository's `community/` directory — no NuGet account needed; CI runs each provider's tests in isolation and you keep ownership of your folder)
 
-Hosting here is **not** endorsement. The hub's first entry, [`rpc.json-rpc`](community/Vouchfx.Community.JsonRpc/README.md) (`community/Vouchfx.Community.JsonRpc`), is hub-hosted and doubles as the canonical, CI-tested reference implementation the [implementing-a-provider guide](docs/implementing-a-provider.md) walks through.
+Hosting here is **not** endorsement. The hub's first entry, [`rpc.json-rpc`](community/Vouchfx.Community.JsonRpc/README.md) (`community/Vouchfx.Community.JsonRpc`), is hub-hosted and doubles as the canonical, CI-tested reference implementation used throughout the [provider authoring journey](docs/implementing-a-provider.md).
 
 ### The Vouched Badge
 After a Community provider is listed in the registry, a maintainer can award the optional **Vouched badge** — registry metadata (`"vouched": true`) signifying platform-team review and endorsement. To earn it, a provider must meet the published rubric in [`VOUCHED_CHECKLIST.md`](VOUCHED_CHECKLIST.md) and undergo security review. The badge does not move the provider to a new tier; it remains Community-hosted and community-owned; it is a post-listing endorsement only. Badge revocation is reversible by a maintainer PR; the provider source stays where it is.
@@ -46,6 +46,8 @@ After a Community provider is listed in the registry, a maintainer can award the
 Community providers are distributed as **NuGet packages** — hub-hosted providers publish from this hub's CI, externally hosted providers publish from their own repositories. For example, [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) is live on NuGet.org — the canonical worked example of consuming a community provider is the [`ledger-jsonrpc`](https://github.com/tomas-rampas/vouchfx-samples/tree/main/samples/ledger-jsonrpc) sample application in vouchfx-samples.
 
 For unpublished or hub-hosted providers without a NuGet package yet, consume via **source-level build**: clone the provider repository (or reference `community/<Provider>` in this hub), add the project to your build, and rebuild your application host to integrate the provider at compile time.
+
+**See [`docs/consuming-a-provider.md`](docs/consuming-a-provider.md)** for the complete guide to both consumption paths, pre-release pinning, and the worked example.
 
 ## How to Get Your Provider Listed
 
@@ -135,9 +137,12 @@ The vouchfx maintainers allocate **one half-day per week** (4 hours) for provide
 
 ## Key Documents
 
+- **[`docs/implementing-a-provider.md`](docs/implementing-a-provider.md)** — the provider authoring journey overview and links to each stage (project setup, contract, CSX composition, testing, publishing)
+- **[`docs/consuming-a-provider.md`](docs/consuming-a-provider.md)** — how to add published community providers to your test application (NuGet path, source builds, pre-release pinning)
 - **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — how to submit a provider to this repository (Community paths and Vouched review)
 - **[`GOVERNANCE.md`](GOVERNANCE.md)** — the tier model, Vouched badge, and who decides each
 - **[`VOUCHED_CHECKLIST.md`](VOUCHED_CHECKLIST.md)** — the published Vouched rubric as an actionable checklist
+- **[`CHANGELOG.md`](CHANGELOG.md)** — hub release history and delivered capabilities
 - **[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)** — our community standards (Contributor Covenant 2.1)
 - **[`registry/community-providers.json`](registry/community-providers.json)** — the curated index of Community-tier providers
 - **Engine [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md)** — complete guide to writing a provider (contract, examples, testing, hard rules)

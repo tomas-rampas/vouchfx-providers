@@ -1,5 +1,7 @@
 # `hello.console` — copyable provider template
 
+**Stage 1 of the provider authoring journey**
+
 > **Replace this whole file.** It ships only so a copy of this template packs and
 > passes the hub's pack gate on day one — `PackageReadmeFile=README.md` in
 > [`Vouchfx.Community.Hello.csproj`](Vouchfx.Community.Hello.csproj) requires a
@@ -59,3 +61,7 @@ your own:
    [`Vouchfx.Community.Hello.csproj`](Vouchfx.Community.Hello.csproj) — the hub's
    pack gate validates all three (plus this readme) once your copy lives under
    `community/`.
+
+---
+
+**Next:** [Project Setup](../../docs/provider-project-setup.md) — the `.csproj` structure, namespace hygiene, and your step model.

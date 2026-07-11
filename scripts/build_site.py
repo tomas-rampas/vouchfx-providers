@@ -32,16 +32,32 @@ SITE = ROOT / "site"
 OUT = Path(sys.argv[1]).resolve() if len(sys.argv) > 1 else ROOT / "_site"
 
 # Markdown files to render, in sidebar order. (source path relative to ROOT, nav group, label)
+# Provider authoring journey: seven stages (1-6 are doc pages, 7 is registry/VOUCHED_CHECKLIST)
 DOCS: list[tuple[str, str, str]] = [
-    ("docs/implementing-a-provider.md", "Provider authoring", "Implementing a provider"),
-    ("community/Vouchfx.Community.JsonRpc/README.md", "Provider authoring", "rpc.json-rpc · the first community provider"),
+    # Stage 1-6: authoring journey (overview + five split guides)
+    ("docs/implementing-a-provider.md", "Provider authoring", "Overview & journey map"),
+    ("template/Vouchfx.Community.Hello/README.md", "Provider authoring", "Stage 1: template scaffold"),
+    ("docs/provider-project-setup.md", "Provider authoring", "Stage 2: project setup"),
+    ("docs/provider-contract.md", "Provider authoring", "Stage 3: the contract surfaces"),
+    ("docs/provider-csx-composition.md", "Provider authoring", "Stage 4: CSX composition"),
+    ("docs/provider-testing.md", "Provider authoring", "Stage 5: testing"),
+    ("docs/provider-publishing.md", "Provider authoring", "Stage 6: publishing"),
+    ("community/Vouchfx.Community.JsonRpc/README.md", "Provider authoring", "rpc.json-rpc · reference implementation"),
+
+    # Consuming providers
+    ("docs/consuming-a-provider.md", "Consuming providers", "Using community providers"),
+
+    # Contributing & governance
     ("CONTRIBUTING.md", "Contributing", "Contributing & the tiers"),
     ("VOUCHED_CHECKLIST.md", "Contributing", "The Vouched checklist"),
     ("registry/README.md", "Contributing", "Community registry"),
+
+    # Project
     ("GOVERNANCE.md", "Project", "Governance"),
     ("SECURITY.md", "Project", "Security policy"),
     ("CODE_OF_CONDUCT.md", "Project", "Code of conduct"),
     ("README.md", "Project", "Repository README"),
+    ("CHANGELOG.md", "Project", "Changelog"),
 ]
 
 # Any additional markdown that is link-reachable but not in the sidebar.
@@ -255,19 +271,55 @@ PORTAL = """<!DOCTYPE html>
   </div>
 
   <section class="portal__group">
-    <h2>Provider authoring</h2>
-    <p>From an empty project to a conformant, submittable step provider.</p>
+    <h2>Provider authoring journey</h2>
+    <p>Six stages from template to published provider, with the reference implementation woven through. Stage 7 (registry, Vouched badge) continues under Contributing.</p>
     <div class="doc-cards">
       <a class="doc-card" href="docs/implementing-a-provider.html">
-        <span class="doc-card__k">GUIDE</span><h3>Implementing a provider</h3>
-        <p>The comprehensive walkthrough: the contract surfaces, the CSX composition rules, verdicts,
-        secrets, capture, testing, and the submission paths — grounded in the real worked example.</p>
+        <span class="doc-card__k">START</span><h3>Overview & journey map</h3>
+        <p>Entry point: what a provider is, the two tiers, what you can build self-contained, and the seven stages.</p>
+      </a>
+      <a class="doc-card" href="template/Vouchfx.Community.Hello/README.html">
+        <span class="doc-card__k">STAGE 1</span><h3>Template scaffold</h3>
+        <p>Copy the hello.console template to bootstrap your provider project.</p>
+      </a>
+      <a class="doc-card" href="docs/provider-project-setup.html">
+        <span class="doc-card__k">STAGE 2</span><h3>Project setup</h3>
+        <p>The .csproj structure, namespace hygiene, and your step model.</p>
+      </a>
+      <a class="doc-card" href="docs/provider-contract.html">
+        <span class="doc-card__k">STAGE 3</span><h3>The contract surfaces</h3>
+        <p>The four mandatory interfaces and three of the optional extension interfaces.</p>
+      </a>
+      <a class="doc-card" href="docs/provider-csx-composition.html">
+        <span class="doc-card__k">STAGE 4</span><h3>CSX composition</h3>
+        <p>Roslyn composition rules, verdicts, secrets and capture.</p>
+      </a>
+      <a class="doc-card" href="docs/provider-testing.html">
+        <span class="doc-card__k">STAGE 5</span><h3>Testing</h3>
+        <p>Conformance tests, the custom harness pattern, and Docker integration.</p>
+      </a>
+      <a class="doc-card" href="docs/provider-publishing.html">
+        <span class="doc-card__k">STAGE 6</span><h3>Publishing</h3>
+        <p>Community submission paths (external and hub-hosted) and the Vouched badge.</p>
       </a>
       <a class="doc-card" href="community/Vouchfx.Community.JsonRpc/README.html">
-        <span class="doc-card__k">PROVIDER</span><h3>rpc.json-rpc · the first community provider</h3>
-        <p>The first Community-tier provider — JSON-RPC 2.0 over HTTP — hosted in this repository as the
-        reference implementation the guide walks through: substitution, capture, negative testing, the
-        four-verdict mapping and a Docker-free conformance suite.</p>
+        <span class="doc-card__k">REFERENCE</span><h3>rpc.json-rpc</h3>
+        <p>The first community provider and canonical worked example: JSON-RPC 2.0 over HTTP with the full contract exercised.</p>
+      </a>
+    </div>
+  </section>
+
+  <section class="portal__group">
+    <h2>Consuming providers</h2>
+    <p>How to add published community providers to your test application.</p>
+    <div class="doc-cards">
+      <a class="doc-card" href="docs/consuming-a-provider.html">
+        <span class="doc-card__k">GUIDE</span><h3>Using community providers</h3>
+        <p>Compile-time discovery, NuGet pinning, and source builds. The ledger-jsonrpc sample demonstrates both paths.</p>
+      </a>
+      <a class="doc-card" href="registry/README.html">
+        <span class="doc-card__k">REGISTRY</span><h3>Community registry</h3>
+        <p>Browse published providers; understand the hub's hosting options; add your own listing.</p>
       </a>
     </div>
   </section>
