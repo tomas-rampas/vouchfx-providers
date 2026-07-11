@@ -34,7 +34,7 @@ Add the provider to your application's `.csproj`:
 
 ### Step 2: Pre-Release Pinning
 
-Community providers are pre-release while the engine SDK is pre-release (before v1.0.0 GA). NuGet enforces the compatibility rule: a package marked `1.0.0-alpha.4` can only depend on other pre-release packages (NU5104 warning). When you pack your application or a custom provider:
+Community providers are pre-release while the engine SDK is pre-release (before v1.0.0 GA). NuGet enforces the compatibility rule the other way round: a **stable** package may not depend on a pre-release one — packing such a graph raises warning NU5104, so anything that depends on a pre-release provider must itself be versioned pre-release. When you pack your application or a custom provider:
 
 ```bash
 dotnet pack MyApp.csproj -c Release
@@ -53,7 +53,7 @@ dotnet pack MyApp.csproj -c Release
 
 Once the engine reaches v1.0.0 GA and community providers do the same, this constraint disappears.
 
-### Step 3: Discovery and Initialization
+### Step 3: Discovery and initialisation
 
 The engine's `StepKindRegistry` reflects over all loaded provider assemblies at suite startup and builds its step-kind map. Your provider is automatically discovered — no manual registration needed.
 
@@ -159,4 +159,4 @@ This would automate the pin-and-rebuild flow. Until then, use the NuGet package 
 
 **Next:** Learn how to write a provider. Start with the [provider authoring journey](implementing-a-provider.md) and the [ledger-jsonrpc walkthrough](https://github.com/tomas-rampas/vouchfx-samples/tree/main/samples/ledger-jsonrpc).
 
-**Community registry:** [registry/community-providers.json](../registry/README.md) — browse the published providers.
+**Community registry:** [the community provider registry](../registry/README.md) — browse the published providers.

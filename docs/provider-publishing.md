@@ -27,7 +27,7 @@ Once your provider is tested and documented, you have two hosting options for li
 
 ### How to Submit
 
-Open one pull request adding `community/<YourProvider>/` + `community/<YourProvider>.Tests/` **and** your registry entry with `"hosting": "hub"` (the `nuget` field is optional). Use the community submission PR template; CI discovers `community/**/*.csproj` by glob and runs your tests in their own step. The full step-by-step lives in `CONTRIBUTING.md`; the `rpc.json-rpc` provider under `community/` is the worked example of this shape.
+Open one pull request adding `community/<YourProvider>/` + `community/<YourProvider>.Tests/` **and** your registry entry with `"hosting": "hub"` (the `nuget` field is optional). Use the community submission PR template; CI discovers `community/**/*.Tests.csproj` by glob and runs your tests in their own step. The full step-by-step lives in `CONTRIBUTING.md`; the `rpc.json-rpc` provider under `community/` is the worked example of this shape.
 
 ## The Vouched Badge — Platform Endorsement
 
