@@ -27,7 +27,7 @@ All vouchfx providers are licensed under Apache-2.0 and are governed in two tier
 ### Core
 The providers shipped by the vouchfx team as part of the engine release — currently twenty-five across eleven families (`http` for REST/SOAP, `db-assert` for Postgres/MySQL/SQL Server/MongoDB/DynamoDB, `mq-publish`/`mq-expect` for Kafka/RabbitMQ/NATS/Azure Service Bus/Redis Streams, `cache-assert` for Redis/Elasticsearch, `storage-assert` for S3, `metrics-assert` for Prometheus expositions, `trace-expect` for OTLP traces, `mail-expect`, `webhook-listen`, `script`). The authoritative, always-current list lives in the [engine repository's README](https://github.com/tomas-rampas/vouchfx#providers).
 
-Core providers are bundled with the engine, versioned together, fully supported by the platform team, and reference implementations of the provider contract. Real-world usage of the Core set is showcased in the [vouchfx-samples](https://github.com/tomas-rampas/vouchfx-samples) repository.
+Core providers are bundled with the engine, versioned together, fully supported by the platform team, and reference implementations of the provider contract. Real-world usage of the Core set is showcased in the [vouchfx-samples](https://tomas-rampas.github.io/vouchfx-samples/) repository.
 
 ### Community
 All community-authored providers with no platform-team endorsement. Community providers:
@@ -43,7 +43,7 @@ After a Community provider is listed in the registry, a maintainer can award the
 
 ## How to Use Community Providers Today
 
-Community providers are distributed as **NuGet packages** — hub-hosted providers publish from this hub's CI, externally hosted providers publish from their own repositories. For example, [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) is live on NuGet.org — the canonical worked example of consuming a community provider is the [`ledger-jsonrpc`](https://github.com/tomas-rampas/vouchfx-samples/tree/main/samples/ledger-jsonrpc) sample application in vouchfx-samples.
+Community providers are distributed as **NuGet packages** — hub-hosted providers publish from this hub's CI, externally hosted providers publish from their own repositories. For example, [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) is live on NuGet.org — the canonical worked example of consuming a community provider is the [`ledger-jsonrpc`](https://tomas-rampas.github.io/vouchfx-samples/samples/ledger-jsonrpc/README.html) sample application in vouchfx-samples.
 
 For unpublished or hub-hosted providers without a NuGet package yet, consume via **source-level build**: clone the provider repository (or reference `community/<Provider>` in this hub), add the project to your build, and rebuild your application host to integrate the provider at compile time.
 

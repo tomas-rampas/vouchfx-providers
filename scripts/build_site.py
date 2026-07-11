@@ -355,10 +355,12 @@ PORTAL = """<!DOCTYPE html>
   </section>
 
   <section class="portal__group">
-    <h2>The engine</h2>
-    <p>The provider contract is defined by the vouchfx engine.</p>
+    <h2>The ecosystem</h2>
+    <p>The engine, samples repository, telemetry backend and this provider hub.</p>
     <div class="doc-cards">
-      <a class="doc-card" href="https://tomas-rampas.github.io/vouchfx/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">ENGINE</span><h3>vouchfx project site</h3><p>The architecture blueprint, the YAML DSL specification, user guides and the language reference.</p></a>
+      <a class="doc-card" href="https://tomas-rampas.github.io/vouchfx/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">ENGINE</span><h3>Engine project site</h3><p>The architecture blueprint, the YAML DSL specification, user guides, language reference, and the Core provider catalogue.</p></a>
+      <a class="doc-card" href="https://tomas-rampas.github.io/vouchfx-samples/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">SAMPLES</span><h3>Samples repository</h3><p>End-to-end test suites for sample applications (C#, Python, Java) demonstrating the engine and community providers. Includes the <code>ledger-jsonrpc</code> worked example.</p></a>
+      <a class="doc-card" href="https://tomas-rampas.github.io/vouchfx-telemetry-backend/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">TELEMETRY</span><h3>Telemetry backend</h3><p>The opt-in telemetry story — why, what is (and is not) collected, how to verify it locally, and how to self-host the backend.</p></a>
       <a class="doc-card" href="https://github.com/tomas-rampas/vouchfx" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">REPO</span><h3>Engine repository</h3><p>The engine, the Provider SDK sources, and the in-repo Example.Steps.Echo / Hello templates.</p></a>
     </div>
   </section>
