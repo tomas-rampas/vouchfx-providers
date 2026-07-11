@@ -18,7 +18,7 @@ The tradeoff is that you cannot install a provider without rebuilding your appli
 
 ### Step 1: Add the NuGet Reference
 
-The canonical worked example is the [`ledger-jsonrpc`](https://github.com/tomas-rampas/vouchfx-samples/tree/main/samples/ledger-jsonrpc) sample application in vouchfx-samples. It consumes [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) (1.0.0-alpha.1), the first published community provider.
+The canonical worked example is the [`ledger-jsonrpc`](https://tomas-rampas.github.io/vouchfx-samples/samples/ledger-jsonrpc/README.html) sample application in vouchfx-samples. It consumes [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) (1.0.0-alpha.1), the first published community provider.
 
 Add the provider to your application's `.csproj`:
 
@@ -57,7 +57,7 @@ Once the engine reaches v1.0.0 GA and community providers do the same, this cons
 
 The engine's `StepKindRegistry` reflects over all loaded provider assemblies at suite startup and builds its step-kind map. Your provider is automatically discovered — no manual registration needed.
 
-In your custom runner (see the [ledger-jsonrpc custom-runner walkthrough](https://github.com/tomas-rampas/vouchfx-samples/blob/main/docs/custom-runner.md)), the engine discovers providers as it loads your application's assembly graph:
+In your custom runner (see the [ledger-jsonrpc custom-runner walkthrough](https://tomas-rampas.github.io/vouchfx-samples/docs/custom-runner.html)), the engine discovers providers as it loads your application's assembly graph:
 
 ```csharp
 // The engine's StepKindRegistry discovers providers reflectively from loaded assemblies.
@@ -130,10 +130,10 @@ Add it the same way:
 
 ### The Canonical Worked Example
 
-The [`ledger-jsonrpc`](https://github.com/tomas-rampas/vouchfx-samples/tree/main/samples/ledger-jsonrpc) sample application demonstrates both paths:
+The [`ledger-jsonrpc`](https://tomas-rampas.github.io/vouchfx-samples/samples/ledger-jsonrpc/README.html) sample application demonstrates both paths:
 
 - **NuGet path:** `runner/LedgerRunner.csproj` references `Vouchfx.Community.JsonRpc` as a NuGet package
-- **Source path:** The samples repository's [`docs/custom-runner.md`](https://github.com/tomas-rampas/vouchfx-samples/blob/main/docs/custom-runner.md) documents the complete end-to-end walkthrough of building a runner, composing the step registry, parsing suites, and handling exit codes
+- **Source path:** The samples site's [custom-runner walkthrough](https://tomas-rampas.github.io/vouchfx-samples/docs/custom-runner.html) documents the complete end-to-end walkthrough of building a runner, composing the step registry, parsing suites, and handling exit codes
 
 The runner shows:
 
@@ -156,6 +156,6 @@ This would automate the pin-and-rebuild flow. Until then, use the NuGet package 
 
 ---
 
-**Next:** Learn how to write a provider. Start with the [provider authoring journey](implementing-a-provider.md) and the [ledger-jsonrpc walkthrough](https://github.com/tomas-rampas/vouchfx-samples/tree/main/samples/ledger-jsonrpc).
+**Next:** Learn how to write a provider. Start with the [provider authoring journey](implementing-a-provider.md) and the [ledger-jsonrpc walkthrough](https://tomas-rampas.github.io/vouchfx-samples/samples/ledger-jsonrpc/README.html).
 
 **Community registry:** [the community provider registry](../registry/README.md) — browse the published providers.
