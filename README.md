@@ -47,6 +47,8 @@ Community providers are distributed as **NuGet packages** — hub-hosted provide
 
 For unpublished or hub-hosted providers without a NuGet package yet, consume via **source-level build**: clone the provider repository (or reference `community/<Provider>` in this hub), add the project to your build, and rebuild your application host to integrate the provider at compile time.
 
+**See [`docs/consuming-a-provider.md`](docs/consuming-a-provider.md)** for the complete guide to both consumption paths, pre-release pinning, and the worked example.
+
 ## How to Get Your Provider Listed
 
 ### Community Tier
@@ -135,9 +137,12 @@ The vouchfx maintainers allocate **one half-day per week** (4 hours) for provide
 
 ## Key Documents
 
+- **[`docs/implementing-a-provider.md`](docs/implementing-a-provider.md)** — the provider authoring journey overview and links to each stage (project setup, contract, CSX composition, testing, publishing)
+- **[`docs/consuming-a-provider.md`](docs/consuming-a-provider.md)** — how to add published community providers to your test application (NuGet path, source builds, pre-release pinning)
 - **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — how to submit a provider to this repository (Community paths and Vouched review)
 - **[`GOVERNANCE.md`](GOVERNANCE.md)** — the tier model, Vouched badge, and who decides each
 - **[`VOUCHED_CHECKLIST.md`](VOUCHED_CHECKLIST.md)** — the published Vouched rubric as an actionable checklist
+- **[`CHANGELOG.md`](CHANGELOG.md)** — hub release history and delivered capabilities
 - **[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)** — our community standards (Contributor Covenant 2.1)
 - **[`registry/community-providers.json`](registry/community-providers.json)** — the curated index of Community-tier providers
 - **Engine [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md)** — complete guide to writing a provider (contract, examples, testing, hard rules)
