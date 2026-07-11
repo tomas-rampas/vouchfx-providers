@@ -154,3 +154,7 @@ All contributions are made under the Apache-2.0 licence and must be compatible w
 ---
 
 Thank you for contributing to vouchfx. The community tier model exists because the platform grows through the efforts of contributors like you.
+
+## Volatile facts on the documentation site
+
+Version numbers and registry counts shown on the rendered site are resolved at build time via `{{fact:...}}` tokens in `scripts/build_site.py` (with a checked-in fallback in `site/facts-fallback.json`). When writing documentation prose, do not hard-code the current engine or package version — reference the mechanism (a pin file, "the current release") or use a fact token, so pages cannot silently rot. Sibling repos rebuild this site automatically when their docs change (see the `notify` job in `.github/workflows/pages.yml`).
