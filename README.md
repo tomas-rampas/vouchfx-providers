@@ -156,7 +156,7 @@ The vouchfx maintainers allocate **one half-day per week** (4 hours) for provide
 |-- CONTRIBUTING.md                     (submission flows and Vouched badge)
 |-- GOVERNANCE.md                       (tier model and Vouched badge)
 |-- VOUCHED_CHECKLIST.md                (Vouched rubric)
-|-- CODE_OF_CONDUCT.md                 (community standards)
+|-- CODE_OF_CONDUCT.md                  (community standards)
 |-- registry/
 |   |-- README.md                       (how to add entries)
 |   |-- community-providers.json        (the index)
