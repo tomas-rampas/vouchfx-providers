@@ -152,25 +152,25 @@ The vouchfx maintainers allocate **one half-day per week** (4 hours) for provide
 
 ```
 .
-├── README.md                           (this file)
-├── CONTRIBUTING.md                     (submission flows and Vouched badge)
-├── GOVERNANCE.md                       (tier model and Vouched badge)
-├── VOUCHED_CHECKLIST.md                (Vouched rubric)
-├── CODE_OF_CONDUCT.md                 (community standards)
-├── registry/
-│   ├── README.md                       (how to add entries)
-│   ├── community-providers.json        (the index)
-│   └── community-providers.schema.json (JSON Schema)
-├── template/                           (starter provider scaffold)
-├── community/                          (hub-hosted Community-tier providers, hub-CI-tested)
-│   └── Vouchfx.Community.JsonRpc/      (rpc.json-rpc — the first community provider; see its README)
-├── packages-local/                     (local SDK feed for optional engine-main builds; used by CI Lane B)
-└── .github/
-    ├── ISSUE_TEMPLATE/
-    │   ├── provider-listing.yml        (Community listing form)
-    │   └── vouched-request.yml         (Vouched badge request form)
-    └── PULL_REQUEST_TEMPLATE/
-        └── community-submission.md     (Community hub-hosted submission checklist)
+|-- README.md                           (this file)
+|-- CONTRIBUTING.md                     (submission flows and Vouched badge)
+|-- GOVERNANCE.md                       (tier model and Vouched badge)
+|-- VOUCHED_CHECKLIST.md                (Vouched rubric)
+|-- CODE_OF_CONDUCT.md                 (community standards)
+|-- registry/
+|   |-- README.md                       (how to add entries)
+|   |-- community-providers.json        (the index)
+|   `-- community-providers.schema.json (JSON Schema)
+|-- template/                           (starter provider scaffold)
+|-- community/                          (hub-hosted Community-tier providers, hub-CI-tested)
+|   `-- Vouchfx.Community.JsonRpc/      (rpc.json-rpc — the first community provider; see its README)
+|-- packages-local/                     (local SDK feed for optional engine-main builds; used by CI Lane B)
+`-- .github/
+    |-- ISSUE_TEMPLATE/
+    |   |-- provider-listing.yml        (Community listing form)
+    |   `-- vouched-request.yml         (Vouched badge request form)
+    `-- PULL_REQUEST_TEMPLATE/
+        `-- community-submission.md     (Community hub-hosted submission checklist)
 ```
 
 ## Licence
