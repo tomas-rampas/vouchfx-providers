@@ -31,7 +31,7 @@
 #   <ProviderDirName>/v<semver>   e.g.  Vouchfx.Community.JsonRpc/v1.0.0
 #
 # NU5104 / pre-release SDK constraint: while the root <VouchfxSdkVersion> pin
-# is itself a PRE-RELEASE (currently 1.0.0-alpha.4), every provider release
+# is itself a PRE-RELEASE (currently 1.0.0-alpha.7), every provider release
 # tag MUST also carry a pre-release version — e.g.
 # Vouchfx.Community.JsonRpc/v1.0.0-alpha.1, never
 # Vouchfx.Community.JsonRpc/v1.0.0. This is NuGet's own compatibility rule
