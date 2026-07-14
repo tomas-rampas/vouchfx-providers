@@ -34,7 +34,7 @@
   <PropertyGroup>
     <TargetFramework Condition="'$(TargetFramework)' == ''">net8.0</TargetFramework>
     <ImplicitUsings Condition="'$(ImplicitUsings)' == ''">enable</ImplicitUsings>
-    <VouchfxSdkVersion Condition="'$(VouchfxSdkVersion)' == ''">1.0.0-alpha.4</VouchfxSdkVersion>
+    <VouchfxSdkVersion Condition="'$(VouchfxSdkVersion)' == ''">1.0.0-alpha.7</VouchfxSdkVersion>
   </PropertyGroup>
 
   <ItemGroup>

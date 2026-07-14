@@ -24,7 +24,7 @@
          pre-GA Platform.*-to-Vouchfx.* namespace rebrand (engine PR #193) — there are no
          earlier Vouchfx.Sdk alpha.1/alpha.2/alpha.3 versions; the old Platform.* IDs
          carried those. -->
-    <VouchfxSdkVersion>1.0.0-alpha.4</VouchfxSdkVersion>
+    <VouchfxSdkVersion>1.0.0-alpha.7</VouchfxSdkVersion>
     <!-- This repo hosts the community provider index + hosted community providers.
          community/ providers ARE packed and published from this repo's CI as their own
          NuGet packages (see community/Directory.Build.props, which overrides IsPackable
