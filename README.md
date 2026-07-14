@@ -1,5 +1,11 @@
 # vouchfx-providers
 
+[![Conformance](https://github.com/tomas-rampas/vouchfx-providers/actions/workflows/conformance.yml/badge.svg?branch=main)](https://github.com/tomas-rampas/vouchfx-providers/actions/workflows/conformance.yml?query=branch%3Amain)
+[![Vouchfx.Community.JsonRpc](https://img.shields.io/nuget/vpre/Vouchfx.Community.JsonRpc?label=Vouchfx.Community.JsonRpc)](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc)
+[![Community providers](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftomas-rampas%2Fvouchfx-providers%2Fmain%2Fregistry%2Fcommunity-providers.json&query=%24.length&label=community%20providers&color=blue)](https://github.com/tomas-rampas/vouchfx-providers/blob/main/registry/community-providers.json)
+[![Docs](https://img.shields.io/badge/docs-GitHub_Pages-blue)](https://tomas-rampas.github.io/vouchfx-providers/)
+[![License](https://img.shields.io/github/license/tomas-rampas/vouchfx-providers)](https://github.com/tomas-rampas/vouchfx-providers/blob/main/LICENSE)
+
 The community provider hub for [vouchfx](https://github.com/tomas-rampas/vouchfx) — the curated **community provider index** and the PR-gated hub hosting for Apache-2.0 licensed providers.
 
 > **Documentation site:** [tomas-rampas.github.io/vouchfx-providers](https://tomas-rampas.github.io/vouchfx-providers/) — rendered from this repository on every push, with the seven-stage [provider authoring journey](https://tomas-rampas.github.io/vouchfx-providers/docs/implementing-a-provider.html) as its centrepiece.
