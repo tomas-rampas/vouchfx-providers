@@ -123,6 +123,15 @@ PAGE = """<!DOCTYPE html>
 <title>{title} · vouchfx providers</title>
 <meta name="description" content="{desc}" />
 <meta name="theme-color" content="#0b0f1a" />
+<link rel="canonical" href="{canonical}" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="vouchfx providers" />
+<meta property="og:title" content="{title}" />
+<meta property="og:description" content="{desc}" />
+<meta property="og:url" content="{canonical}" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="{title}" />
+<meta name="twitter:description" content="{desc}" />
 <link rel="icon" href="{root}favicon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="{root}styles.css" />
 <link rel="stylesheet" href="{root}docs.css" />
@@ -139,7 +148,7 @@ PAGE = """<!DOCTYPE html>
       <a href="{root}index.html">Home</a>
       <a href="{root}docs.html">Docs</a>
       <a href="{root}docs/implementing-a-provider.html">The guide</a>
-      <a href="https://tomas-rampas.github.io/vouchfx/">Engine docs</a>
+      <a href="https://vouchfx.io/">Engine docs</a>
     </nav>
     <a class="btn btn--ghost nav__gh" href="https://github.com/tomas-rampas/vouchfx-providers" target="_blank" rel="noopener noreferrer">GitHub</a>
   </div>
@@ -163,8 +172,17 @@ PORTAL = """<!DOCTYPE html>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>Documentation · vouchfx providers</title>
-<meta name="description" content="vouchfx provider hub documentation — the provider-implementation guide, the worked example, the tier rubric and the community registry." />
+<meta name="description" content="vouchfx community provider hub documentation — step providers (plugins) extending the end-to-end integration testing framework." />
 <meta name="theme-color" content="#0b0f1a" />
+<link rel="canonical" href="https://providers.vouchfx.io/docs.html" />
+<meta property="og:type" content="article" />
+<meta property="og:site_name" content="vouchfx providers" />
+<meta property="og:title" content="Documentation · vouchfx providers" />
+<meta property="og:description" content="vouchfx community provider hub documentation — step providers (plugins) extending the end-to-end integration testing framework." />
+<meta property="og:url" content="https://providers.vouchfx.io/docs.html" />
+<meta name="twitter:card" content="summary" />
+<meta name="twitter:title" content="Documentation · vouchfx providers" />
+<meta name="twitter:description" content="vouchfx community provider hub documentation — step providers (plugins) extending the end-to-end integration testing framework." />
 <link rel="icon" href="favicon.svg" type="image/svg+xml" />
 <link rel="stylesheet" href="styles.css" />
 <link rel="stylesheet" href="docs.css" />
@@ -179,7 +197,7 @@ PORTAL = """<!DOCTYPE html>
     <nav class="nav__links" aria-label="Primary">
       <a href="index.html">Home</a>
       <a href="docs/implementing-a-provider.html">The guide</a>
-      <a href="https://tomas-rampas.github.io/vouchfx/">Engine docs</a>
+      <a href="https://vouchfx.io/">Engine docs</a>
     </nav>
     <a class="btn btn--ghost nav__gh" href="https://github.com/tomas-rampas/vouchfx-providers" target="_blank" rel="noopener noreferrer">GitHub</a>
   </div>
@@ -283,9 +301,9 @@ PORTAL = """<!DOCTYPE html>
       registry lists {{fact:community_provider_count}} community provider(s), latest <code>Vouchfx.Community.JsonRpc</code>
       {{fact:community_jsonrpc_version}}.</p>
     <div class="doc-cards">
-      <a class="doc-card" href="https://tomas-rampas.github.io/vouchfx/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">ENGINE</span><h3>Engine project site</h3><p>The architecture blueprint, the YAML DSL specification, user guides, language reference, and the Core provider catalogue.</p></a>
-      <a class="doc-card" href="https://tomas-rampas.github.io/vouchfx-samples/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">SAMPLES</span><h3>Samples site</h3><p>End-to-end test suites for sample applications (C#, Python, Java) demonstrating the engine and community providers. Includes the <code>ledger-jsonrpc</code> worked example.</p></a>
-      <a class="doc-card" href="https://tomas-rampas.github.io/vouchfx-telemetry-backend/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">TELEMETRY</span><h3>Telemetry backend</h3><p>The opt-in telemetry story — why, what is (and is not) collected, how to verify it locally, and how to self-host the backend.</p></a>
+      <a class="doc-card" href="https://vouchfx.io/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">ENGINE</span><h3>Engine project site</h3><p>The architecture blueprint, the YAML DSL specification, user guides, language reference, and the Core provider catalogue.</p></a>
+      <a class="doc-card" href="https://samples.vouchfx.io/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">SAMPLES</span><h3>Samples site</h3><p>End-to-end test suites for sample applications (C#, Python, Java) demonstrating the engine and community providers. Includes the <code>ledger-jsonrpc</code> worked example.</p></a>
+      <a class="doc-card" href="https://telemetry.vouchfx.io/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">TELEMETRY</span><h3>Telemetry backend</h3><p>The opt-in telemetry story — why, what is (and is not) collected, how to verify it locally, and how to self-host the backend.</p></a>
       <a class="doc-card" href="https://github.com/tomas-rampas/vouchfx" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">REPO</span><h3>Engine repository</h3><p>The engine, the Provider SDK sources, and the in-repo Example.Steps.Echo / Hello templates.</p></a>
     </div>
   </section>
@@ -300,7 +318,7 @@ PORTAL = """<!DOCTYPE html>
     <div class="footer__links">
       <a href="index.html">Home</a>
       <a href="https://github.com/tomas-rampas/vouchfx-providers" target="_blank" rel="noopener noreferrer">Repository</a>
-      <a href="https://tomas-rampas.github.io/vouchfx/" target="_blank" rel="noopener noreferrer">Engine docs</a>
+      <a href="https://vouchfx.io/" target="_blank" rel="noopener noreferrer">Engine docs</a>
       <a href="https://github.com/tomas-rampas/vouchfx-providers/blob/main/LICENSE" target="_blank" rel="noopener noreferrer">Licence (Apache-2.0)</a>
     </div>
   </div>
@@ -327,10 +345,11 @@ CONFIG = SiteConfig(
     docs=DOCS,
     page_template=PAGE,
     portal_html=PORTAL,
-    meta_description_prefix="vouchfx provider hub documentation",
+    meta_description_prefix="vouchfx community provider hub — step providers (plugins) for the end-to-end integration testing framework",
     extra=EXTRA,
     skip=SKIP,
     skip_prefixes=SKIP_PREFIXES,
+    site_url="https://providers.vouchfx.io/",
     fact_overrides={"community_provider_count": _local_community_provider_count},
 )
 

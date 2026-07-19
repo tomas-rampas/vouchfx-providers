@@ -88,7 +88,7 @@ for that provider.
 ### Added
 
 - **GitHub Pages site (#5)** — the rendered hub site at
-  [tomas-rampas.github.io/vouchfx-providers](https://tomas-rampas.github.io/vouchfx-providers/),
+  [providers.vouchfx.io](https://providers.vouchfx.io/),
   including the implementing-a-provider guide. The `rpc.json-rpc` provider itself first arrived as
   a sample the day before (#4).
 

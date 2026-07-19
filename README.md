@@ -3,12 +3,12 @@
 [![Conformance](https://github.com/tomas-rampas/vouchfx-providers/actions/workflows/conformance.yml/badge.svg?branch=main)](https://github.com/tomas-rampas/vouchfx-providers/actions/workflows/conformance.yml?query=branch%3Amain)
 [![Vouchfx.Community.JsonRpc](https://img.shields.io/nuget/vpre/Vouchfx.Community.JsonRpc?label=Vouchfx.Community.JsonRpc)](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc)
 [![Community providers](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fraw.githubusercontent.com%2Ftomas-rampas%2Fvouchfx-providers%2Fmain%2Fregistry%2Fcommunity-providers.json&query=%24.length&label=community%20providers&color=blue)](https://github.com/tomas-rampas/vouchfx-providers/blob/main/registry/community-providers.json)
-[![Docs](https://img.shields.io/badge/docs-GitHub_Pages-blue)](https://tomas-rampas.github.io/vouchfx-providers/)
+[![Docs](https://img.shields.io/badge/docs-GitHub_Pages-blue)](https://providers.vouchfx.io/)
 [![License](https://img.shields.io/github/license/tomas-rampas/vouchfx-providers)](https://github.com/tomas-rampas/vouchfx-providers/blob/main/LICENSE)
 
 The community provider hub for [vouchfx](https://github.com/tomas-rampas/vouchfx) — the curated **community provider index** and the PR-gated hub hosting for Apache-2.0 licensed providers.
 
-> **Documentation site:** [tomas-rampas.github.io/vouchfx-providers](https://tomas-rampas.github.io/vouchfx-providers/) — rendered from this repository on every push, with the seven-stage [provider authoring journey](https://tomas-rampas.github.io/vouchfx-providers/docs/implementing-a-provider.html) as its centrepiece.
+> **Documentation site:** [providers.vouchfx.io](https://providers.vouchfx.io/) — rendered from this repository on every push, with the seven-stage [provider authoring journey](https://providers.vouchfx.io/docs/implementing-a-provider.html) as its centrepiece.
 
 A vouchfx *provider* is a `<family>.<provider>` step type (e.g. `db-assert.postgres`, `mq-publish.kafka`) that the vouchfx engine discovers and executes. This repository serves two purposes:
 
@@ -24,7 +24,7 @@ A provider is a compile-time, source-level plugin to the vouchfx engine. It expo
 - **`IStepValidator<TModel>`** — validate the model with author-friendly diagnostics
 - **`IStepCompiler<TModel>`** — emit the C# code (a `CsxFragment`) that runs inside the compiled delegate
 
-For the seven-stage provider authoring journey — from template scaffolding through project setup, the contract surfaces, CSX composition, testing, and publishing — see [`docs/implementing-a-provider.md`](docs/implementing-a-provider.md) (also [rendered on the documentation site](https://tomas-rampas.github.io/vouchfx-providers/docs/implementing-a-provider.html)). The engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) remains the authoritative statement of the frozen v1 SDK contract itself.
+For the seven-stage provider authoring journey — from template scaffolding through project setup, the contract surfaces, CSX composition, testing, and publishing — see [`docs/implementing-a-provider.md`](docs/implementing-a-provider.md) (also [rendered on the documentation site](https://providers.vouchfx.io/docs/implementing-a-provider.html)). The engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) remains the authoritative statement of the frozen v1 SDK contract itself.
 
 ## The Two Governance Tiers
 
@@ -33,7 +33,7 @@ All vouchfx providers are licensed under Apache-2.0 and are governed in two tier
 ### Core
 The providers shipped by the vouchfx team as part of the engine release — currently twenty-five across eleven families (`http` for REST/SOAP, `db-assert` for Postgres/MySQL/SQL Server/MongoDB/DynamoDB, `mq-publish`/`mq-expect` for Kafka/RabbitMQ/NATS/Azure Service Bus/Redis Streams, `cache-assert` for Redis/Elasticsearch, `storage-assert` for S3, `metrics-assert` for Prometheus expositions, `trace-expect` for OTLP traces, `mail-expect`, `webhook-listen`, `script`). The authoritative, always-current list lives in the [engine repository's README](https://github.com/tomas-rampas/vouchfx#providers).
 
-Core providers are bundled with the engine, versioned together, fully supported by the platform team, and reference implementations of the provider contract. Real-world usage of the Core set is showcased on the [vouchfx-samples site](https://tomas-rampas.github.io/vouchfx-samples/).
+Core providers are bundled with the engine, versioned together, fully supported by the platform team, and reference implementations of the provider contract. Real-world usage of the Core set is showcased on the [vouchfx-samples site](https://samples.vouchfx.io/).
 
 ### Community
 All community-authored providers with no platform-team endorsement. Community providers:
@@ -49,7 +49,7 @@ After a Community provider is listed in the registry, a maintainer can award the
 
 ## How to Use Community Providers Today
 
-Community providers are distributed as **NuGet packages** — hub-hosted providers publish from this hub's CI, externally hosted providers publish from their own repositories. For example, [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) is live on NuGet.org — the canonical worked example of consuming a community provider is the [`ledger-jsonrpc`](https://tomas-rampas.github.io/vouchfx-samples/samples/ledger-jsonrpc/README.html) sample application in vouchfx-samples.
+Community providers are distributed as **NuGet packages** — hub-hosted providers publish from this hub's CI, externally hosted providers publish from their own repositories. For example, [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) is live on NuGet.org — the canonical worked example of consuming a community provider is the [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) sample application in vouchfx-samples.
 
 For unpublished or hub-hosted providers without a NuGet package yet, consume via **source-level build**: clone the provider repository (or reference `community/<Provider>` in this hub), add the project to your build, and rebuild your application host to integrate the provider at compile time.
 

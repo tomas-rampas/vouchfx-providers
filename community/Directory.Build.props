@@ -61,7 +61,7 @@
     <PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/tomas-rampas/vouchfx-providers</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
-    <PackageProjectUrl>https://tomas-rampas.github.io/vouchfx-providers/</PackageProjectUrl>
+    <PackageProjectUrl>https://providers.vouchfx.io/</PackageProjectUrl>
     <!-- SourceLink + symbols: let a provider consumer step into the package's source
          straight from GitHub, mirroring Vouchfx.Sdk's own packaging exactly. -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
