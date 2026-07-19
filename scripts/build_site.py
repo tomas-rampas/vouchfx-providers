@@ -175,7 +175,7 @@ PORTAL = """<!DOCTYPE html>
 <meta name="description" content="vouchfx community provider hub documentation — step providers (plugins) extending the end-to-end integration testing framework." />
 <meta name="theme-color" content="#0b0f1a" />
 <link rel="canonical" href="https://providers.vouchfx.io/docs.html" />
-<meta property="og:type" content="article" />
+<meta property="og:type" content="website" />
 <meta property="og:site_name" content="vouchfx providers" />
 <meta property="og:title" content="Documentation · vouchfx providers" />
 <meta property="og:description" content="vouchfx community provider hub documentation — step providers (plugins) extending the end-to-end integration testing framework." />
