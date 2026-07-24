@@ -143,7 +143,8 @@ internal static class JsonRpcHarness
         var assembled = CsxAssembler.Assemble(new[] { plan });
         var compiled = RoslynScriptCompiler.CompileOnce(
             assembled.CsxSource,
-            additionalReferencePaths: AdditionalReferencePaths);
+            additionalReferencePaths: AdditionalReferencePaths,
+            cancellationToken: cancellationToken);
 
         var vars = new Dictionary<string, object?>(StringComparer.Ordinal);
         if (preSeedVars is not null)
