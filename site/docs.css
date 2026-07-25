@@ -6,6 +6,11 @@
 /* ---- Portal index ---- */
 .portal { padding: 64px 0 96px; }
 .portal__head { max-width: 760px; }
+/* 404 page: .hero__cta is normally centre-flex (it also styles the centred
+   homepage hero); nested inside .portal__head (left-aligned, 760px), it must
+   left-align instead so the buttons sit under the heading, not floating
+   centred across the full container width. */
+.portal__head .hero__cta { justify-content: flex-start; }
 .portal__group { margin-top: 56px; }
 .portal__group > h2 {
   font-size: 1.35rem; letter-spacing: -.01em; margin: 0 0 4px;
