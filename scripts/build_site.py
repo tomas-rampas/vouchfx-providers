@@ -110,7 +110,7 @@ DOCS: list[tuple[str, str, str, str]] = [
     ("CONTRIBUTING.md", "Contributing", "Contributing & the tiers",
      "The Community submission path, the conformance harness, and the repository conventions."),
     ("VOUCHED_CHECKLIST.md", "Contributing", "The Vouched checklist",
-     "The published rubric for the maintainer-awarded Vouched badge — recognition recorded in the registry against this criteria."),
+     "The published rubric for the maintainer-awarded Vouched badge — recognition recorded in the registry against these criteria."),
     ("registry/README.md", "Contributing", "Community registry",
      "The schema-validated index of community providers and how to add a listing."),
 
@@ -295,7 +295,7 @@ PORTAL = """<!DOCTYPE html>
       </a>
       <a class="doc-card" href="VOUCHED_CHECKLIST.html">
         <span class="doc-card__k">BADGE</span><h3>The Vouched checklist</h3>
-        <p>The published rubric for the maintainer-awarded Vouched badge — recognition recorded in the registry against this criteria.</p>
+        <p>The published rubric for the maintainer-awarded Vouched badge — recognition recorded in the registry against these criteria.</p>
       </a>
       <a class="doc-card" href="registry/README.html">
         <span class="doc-card__k">INDEX</span><h3>Community registry</h3>
