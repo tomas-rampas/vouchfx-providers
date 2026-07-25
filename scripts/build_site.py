@@ -77,33 +77,54 @@ _bootstrap_site_tools()
 
 from vouchfx_site_tools import SiteConfig, build  # noqa: E402
 
-# Markdown files to render, in sidebar order. (source path relative to ROOT, nav group, label)
+# Markdown files to render, in sidebar order. (source path relative to ROOT, nav group, label,
+# OPTIONAL 4th "description" element — used only by llms.txt generation; see vouchfx-site-tools'
+# SiteConfig.docs docstring). Every description below is drawn verbatim from copy that already
+# exists elsewhere on this site (the matching docs.html portal card, or, for CHANGELOG.md which
+# has no portal card, the file's own opening sentence) rather than newly written for llms.txt.
 # Provider authoring journey: seven stages (1-6 are doc pages, 7 is registry/VOUCHED_CHECKLIST)
-DOCS: list[tuple[str, str, str]] = [
+DOCS: list[tuple[str, str, str, str]] = [
     # Stage 1-6: authoring journey (overview + five split guides)
-    ("docs/implementing-a-provider.md", "Provider authoring", "Overview & journey map"),
-    ("template/Vouchfx.Community.Hello/README.md", "Provider authoring", "Stage 1: template scaffold"),
-    ("docs/provider-project-setup.md", "Provider authoring", "Stage 2: project setup"),
-    ("docs/provider-contract.md", "Provider authoring", "Stage 3: the contract surfaces"),
-    ("docs/provider-csx-composition.md", "Provider authoring", "Stage 4: CSX composition"),
-    ("docs/provider-testing.md", "Provider authoring", "Stage 5: testing"),
-    ("docs/provider-publishing.md", "Provider authoring", "Stage 6: publishing"),
-    ("community/Vouchfx.Community.JsonRpc/README.md", "Provider authoring", "rpc.json-rpc · reference implementation"),
+    ("docs/implementing-a-provider.md", "Provider authoring", "Overview & journey map",
+     "Entry point: what a provider is, the two tiers, what you can build self-contained, and the seven stages."),
+    ("template/Vouchfx.Community.Hello/README.md", "Provider authoring", "Stage 1: template scaffold",
+     "Copy the hello.console template to bootstrap your provider project."),
+    ("docs/provider-project-setup.md", "Provider authoring", "Stage 2: project setup",
+     "The .csproj structure, namespace hygiene, and your step model."),
+    ("docs/provider-contract.md", "Provider authoring", "Stage 3: the contract surfaces",
+     "The four mandatory interfaces and three of the optional extension interfaces."),
+    ("docs/provider-csx-composition.md", "Provider authoring", "Stage 4: CSX composition",
+     "Roslyn composition rules, verdicts, secrets and capture."),
+    ("docs/provider-testing.md", "Provider authoring", "Stage 5: testing",
+     "Conformance tests, the custom harness pattern, and Docker integration."),
+    ("docs/provider-publishing.md", "Provider authoring", "Stage 6: publishing",
+     "Community submission paths (external and hub-hosted) and the Vouched badge."),
+    ("community/Vouchfx.Community.JsonRpc/README.md", "Provider authoring", "rpc.json-rpc · reference implementation",
+     "The first community provider and canonical worked example: JSON-RPC 2.0 over HTTP with the full contract exercised."),
 
     # Consuming providers
-    ("docs/consuming-a-provider.md", "Consuming providers", "Using community providers"),
+    ("docs/consuming-a-provider.md", "Consuming providers", "Using community providers",
+     "Compile-time discovery, NuGet pinning, and source builds. The ledger-jsonrpc sample demonstrates both paths."),
 
     # Contributing & governance
-    ("CONTRIBUTING.md", "Contributing", "Contributing & the tiers"),
-    ("VOUCHED_CHECKLIST.md", "Contributing", "The Vouched checklist"),
-    ("registry/README.md", "Contributing", "Community registry"),
+    ("CONTRIBUTING.md", "Contributing", "Contributing & the tiers",
+     "The Community submission path, the conformance harness, and the repository conventions."),
+    ("VOUCHED_CHECKLIST.md", "Contributing", "The Vouched checklist",
+     "The published rubric for the maintainer-awarded Vouched badge — recognition recorded in the registry against this criteria."),
+    ("registry/README.md", "Contributing", "Community registry",
+     "The schema-validated index of community providers and how to add a listing."),
 
     # Project
-    ("GOVERNANCE.md", "Project", "Governance"),
-    ("SECURITY.md", "Project", "Security policy"),
-    ("CODE_OF_CONDUCT.md", "Project", "Code of conduct"),
-    ("README.md", "Project", "Repository README"),
-    ("CHANGELOG.md", "Project", "Changelog"),
+    ("GOVERNANCE.md", "Project", "Governance",
+     "How the Vouched badge is awarded and revoked, and how disputes are resolved."),
+    ("SECURITY.md", "Project", "Security policy",
+     "How to report a vulnerability in a hosted provider, the registry or the template."),
+    ("CODE_OF_CONDUCT.md", "Project", "Code of conduct",
+     "The standards this community holds itself to."),
+    ("README.md", "Project", "Repository README",
+     "What the hub is, the repository layout, and the local build."),
+    ("CHANGELOG.md", "Project", "Changelog",
+     "All notable changes to the vouchfx provider hub are documented in this file."),
 ]
 
 # Any additional markdown that is link-reachable but not in the sidebar.
@@ -351,6 +372,13 @@ CONFIG = SiteConfig(
     skip_prefixes=SKIP_PREFIXES,
     site_url="https://providers.vouchfx.io/",
     fact_overrides={"community_provider_count": _local_community_provider_count},
+    semantic_headings=True,
+    # Verbatim from site/index.html's existing <meta name="description"> — one paragraph,
+    # British English, no newly written copy (specs/seo-fleet-audit.md, B3/REQ-005).
+    llms_summary=(
+        "The vouchfx community provider hub — step providers (plugins) extending the "
+        "end-to-end integration testing framework. Vouched badge for verified quality."
+    ),
 )
 
 
