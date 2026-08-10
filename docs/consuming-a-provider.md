@@ -25,7 +25,7 @@ Add the provider to your application's `.csproj`:
 ```xml
 <ItemGroup>
   <!-- Your vouchfx engine host + SDK closure -->
-  <PackageReference Include="Vouchfx.Sdk" Version="1.0.0-alpha.9" />
+  <PackageReference Include="Vouchfx.Sdk" Version="1.0.0-rc.4" />
   
   <!-- The community provider you want to use -->
   <PackageReference Include="Vouchfx.Community.JsonRpc" Version="1.0.0-alpha.1" />

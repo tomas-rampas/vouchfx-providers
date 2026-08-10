@@ -12,6 +12,17 @@ for that provider.
 
 ### Changed
 
+- **Published SDK pin advanced to `1.0.0-rc.4`.** `$(VouchfxSdkVersion)` in
+  `Directory.Build.props` moves from `1.0.0-rc.1` to `1.0.0-rc.4`, so hub-hosted providers now
+  build and publish against the engine release that added TLS and mutual TLS for the
+  infrastructure a suite talks to. The v1 provider-implemented SDK interfaces are unchanged —
+  the additions in this release (`IProjectContext.DeclaredServices`,
+  `ICompileContext.DeclaredServices`) are engine-supplied and provider-consumed, so no provider
+  needs a code change. The out-of-repo literals that cannot inherit the property move with it:
+  the conditioned fallbacks in the two `template/Vouchfx.Community.Hello*` csprojs and the
+  `Vouchfx.Sdk` samples in `docs/provider-project-setup.md` and `docs/consuming-a-provider.md`
+  (the latter two had drifted to `1.0.0-alpha.9`). The SDK remains a pre-release, so NuGet's
+  NU5104 rule is unchanged: provider release tags must still carry pre-release versions.
 - **Provider authoring guide restructured into a seven-stage journey.** The monolithic
   1,155-line `implementing-a-provider.md` is now an overview and journey map, with the substance in
   focused stage pages: `provider-project-setup.md`, `provider-contract.md`,

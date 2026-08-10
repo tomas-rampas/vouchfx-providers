@@ -58,11 +58,12 @@
 # the PRECONDITION above), bump the root <VouchfxSdkVersion> MSBuild property
 # to the new version (Lane A picks it up automatically — no workflow edit
 # needed), update the hardcoded Vouchfx.Sdk version literals that exist
-# for OUT-OF-REPO consumers who cannot inherit the property — the sample in
-# docs/implementing-a-provider.md and the conditioned fallback in the two
-# template/Vouchfx.Community.Hello* csprojs — and separately re-pin Lane B's
-# engine checkout `ref:` below to the engine's new main SHA, so Lane B
-# keeps tracking "what's coming next" rather than what was just released.
+# for OUT-OF-REPO consumers who cannot inherit the property — the samples in
+# docs/provider-project-setup.md and docs/consuming-a-provider.md, and the
+# conditioned fallback in the two template/Vouchfx.Community.Hello* csprojs —
+# and separately re-pin Lane B's engine checkout `ref:` below to the engine's
+# new main SHA, so Lane B keeps tracking "what's coming next" rather than what
+# was just released.
 #
 # NOTE ON VERSION MATRIX
 # ----------------------
@@ -519,14 +520,14 @@ jobs:
       # silently alter what gets packed and built against here. Full 40-char
       # SHA required: actions/checkout treats a short SHA as a branch/tag glob
       # (refs/heads/<ref>*) and fails the cross-repo fetch.
-      # Engine main = 645021bc (v1.0.0-rc.1) (repin procedure: see conformance.yml's
+      # Engine main = be12ebd1 (v1.0.0-rc.4) (repin procedure: see conformance.yml's
       # header comment — bump this SHA at engine release cadence, independently of
       # Lane A's <VouchfxSdkVersion> pin).
       - name: Checkout engine (tomas-rampas/vouchfx → engine/)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: tomas-rampas/vouchfx
-          ref: 645021bc9cb66b23d2762d051faba86f3a815cfe
+          ref: be12ebd126fdf03dcea9eade7bcec3afbcba001b
           path: engine
 
       # ── Step 3: Set up .NET SDK (version from global.json: 8.0.400) ──────────
