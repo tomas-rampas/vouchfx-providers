@@ -43,20 +43,20 @@ REPO_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && p
 
 VOUCHFX_TOOL="${DOTNET_CLI_HOME:-$HOME}/.dotnet/tools/vouchfx"
 
-# Installs the vouchfx global tool at exactly $1 (a NuGet version, no leading "v").
-# nuget.org is ADDED as a source, never replacing configured ones, as the CI install
-# step does. A different installed version is uninstalled first, because
-# `dotnet tool update` refuses to move to a lower version.
+# Installs the vouchfx global tool at exactly $1 (a NuGet version, no leading "v"), but
+# only into an EMPTY slot. When any vouchfx is already registered it is left untouched,
+# whatever its version and even when its shim cannot answer --version: that slot belongs
+# to whichever repo installed it (see the header), and removing it here could take away
+# the exact version another repo's tests gate on. nuget.org is ADDED as a source, never
+# replacing configured ones.
 install_cli() {
   local want="$1" have
   have="$(dotnet tool list -g 2>/dev/null | awk 'tolower($1)=="vouchfx" {print $2}')"
-  [ "$have" = "$want" ] && return 0
   if [ -n "$have" ]; then
-    log "Replacing vouchfx ${have} with ${want}."
-    dotnet tool uninstall -g vouchfx >/dev/null
-  else
-    log "Installing vouchfx ${want}."
+    log "vouchfx ${have} is already registered; left as is (this hook never replaces it)."
+    return 0
   fi
+  log "Installing vouchfx ${want}."
   dotnet tool install -g vouchfx --version "$want" --add-source https://api.nuget.org/v3/index.json >/dev/null
 }
 
@@ -115,14 +115,16 @@ write_profile() {
   want='# Written by .claude/hooks/session-start.sh (Claude Code on the web).
 export DOTNET_ROOT=/usr/share/dotnet
 case ":$PATH:" in *":/usr/share/dotnet:"*) ;; *) PATH="/usr/share/dotnet:$PATH" ;; esac
-case ":$PATH:" in *":$HOME/.dotnet/tools:"*) ;; *) PATH="$PATH:$HOME/.dotnet/tools" ;; esac
+case ":$PATH:" in *":${DOTNET_CLI_HOME:-$HOME}/.dotnet/tools:"*) ;; *) PATH="$PATH:${DOTNET_CLI_HOME:-$HOME}/.dotnet/tools" ;; esac
 export PATH
 export DOTNET_CLI_TELEMETRY_OPTOUT=1
 export DOTNET_NOLOGO=1'
   if [ "$(cat "$profile" 2>/dev/null)" != "$want" ]; then
     printf '%s\n' "$want" | as_root tee "$profile" >/dev/null
   fi
-  if [ -n "${CLAUDE_ENV_FILE:-}" ]; then
+  # Once per file: a session can fire SessionStart more than once (resume, clear, compact),
+  # and the block's first line is the marker that says it is already there.
+  if [ -n "${CLAUDE_ENV_FILE:-}" ] && ! grep -qxF "# Written by .claude/hooks/session-start.sh (Claude Code on the web)." "$CLAUDE_ENV_FILE" 2>/dev/null; then
     printf '%s\n' "$want" >>"$CLAUDE_ENV_FILE"
   fi
 }
@@ -136,7 +138,7 @@ write_profile
 
 export DOTNET_ROOT="$DOTNET_DIR" DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
 # ---- the engine CLI, at the SDK pin ----
-summary_cli="vouchfx not installed (see stderr)"
+summary_cli="no usable vouchfx (see stderr)"
 pin_ver="$(sed -n 's:.*<VouchfxSdkVersion>\([^<]*\)</VouchfxSdkVersion>.*:\1:p' "$REPO_DIR/Directory.Build.props" | head -n1)"
 if [[ "$pin_ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
   actual="$(cli_version)"
