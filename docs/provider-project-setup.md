@@ -42,8 +42,8 @@ Here is the minimal structure:
 
   <ItemGroup>
     <!-- Frozen v1 SDK contract — no engine dependencies needed.
-         Substitute the newest published version (e.g. 1.0.0-rc.4). -->
-    <PackageReference Include="Vouchfx.Sdk" Version="1.0.0-rc.4" />
+         Substitute the newest published version (e.g. 1.0.0-rc.5). -->
+    <PackageReference Include="Vouchfx.Sdk" Version="1.0.0-rc.5" />
   </ItemGroup>
 
 </Project>

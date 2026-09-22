@@ -12,6 +12,26 @@ for that provider.
 
 ### Changed
 
+- **Published SDK pin advanced to `1.0.0-rc.5`.** `$(VouchfxSdkVersion)` in
+  `Directory.Build.props` moves from `1.0.0-rc.4` to `1.0.0-rc.5`
+  (`cc5e8efa9c84f59e1135568456f7c156261f6263`), so hub-hosted providers now build and publish
+  against the engine release that finished encrypted-client-key mutual TLS support for Kafka
+  (`security.clientKeyPassword`, engine #406). The frozen v1 provider-implemented SDK contract is
+  unchanged between the two tags — `StepContract.cs` and both the `Vouchfx.Sdk`/
+  `Vouchfx.Sdk.Testing` public-API goldens are byte-identical, so no interface, default-implemented
+  context member, or signature moved, and no hub provider needs a code change. The one real change
+  in the SDK closure is a body-only edit to `KafkaSecurityHelper`'s CSX `Source` (it now also reads
+  `ClientKeyPassword` and sets `SslKeyPassword` on the `mtls` branch); the per-body-hash golden that
+  would gate such a change (`vouchfx-sdk-helper-sources.v1.txt`) lands after rc.5, and no
+  hub-hosted provider references `KafkaSecurityHelper` today (`Vouchfx.Community.JsonRpc` splices
+  only `SecretHelper`, which is untouched), so this is inert here. The out-of-repo literals that
+  cannot inherit the property move with it: the conditioned fallbacks in the two
+  `template/Vouchfx.Community.Hello*` csprojs, the `Vouchfx.Sdk` samples in
+  `docs/provider-project-setup.md` and `docs/consuming-a-provider.md`,
+  `site/facts-fallback.json`'s `engine_release`/`sdk_version`, the engine-main lane's checkout
+  `ref:` in `.github/workflows/conformance.yml`, and the pin note in
+  `.github/workflows/publish-provider.yml`. The SDK remains a pre-release, so NuGet's NU5104 rule
+  is unchanged: provider release tags must still carry pre-release versions.
 - **Published SDK pin advanced to `1.0.0-rc.4`.** `$(VouchfxSdkVersion)` in
   `Directory.Build.props` moves from `1.0.0-rc.1` to `1.0.0-rc.4`, so hub-hosted providers now
   build and publish against the engine release that added TLS and mutual TLS for the
