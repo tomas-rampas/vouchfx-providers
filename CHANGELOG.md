@@ -12,6 +12,28 @@ for that provider.
 
 ### Changed
 
+- **Published SDK pin advanced to `1.0.0-rc.6`.** `$(VouchfxSdkVersion)` in
+  `Directory.Build.props` moves from `1.0.0-rc.5` to `1.0.0-rc.6`
+  (`93287ffbb0623ba253816ed4d909f50e1b26da93`), so hub-hosted providers now build and publish
+  against this engine release. Both hub-hosted provider projects — the `Vouchfx.Community.Hello`
+  template and the published `Vouchfx.Community.JsonRpc` — restore, build and test unchanged
+  against the new pin, with no source edit needed in either: 29/29 tests passed, 0 build
+  warnings, the format gate stayed clean, and the pack gate that validates every hub provider's
+  `.nupkg` metadata also stayed green. Because both providers directly implement the frozen v1
+  `IStepProvider`/`IStepBinder<T>`/`IStepValidator<T>`/`IStepCompiler<T>`/`IResourceContributor<T>`
+  surface, that unmodified green build is itself evidence the contract held across the bump — no
+  interface member moved in a way that would break an existing implementor. Per the engine's own
+  release notes for this tag, the one provider-relevant item is PR #465, landing the CSX helper
+  `Source`-body freeze golden (`vouchfx-sdk-helper-sources.v1.txt`) that the entry below noted
+  would land "after rc.5"; it is inert here, since the hub's only published provider splices
+  `SecretHelper` alone and never `KafkaSecurityHelper`. The out-of-repo literals that cannot
+  inherit the property move with it: the conditioned fallbacks in the two
+  `template/Vouchfx.Community.Hello*` csprojs, the `Vouchfx.Sdk` samples in
+  `docs/provider-project-setup.md` and `docs/consuming-a-provider.md`,
+  `site/facts-fallback.json`'s `engine_release`/`sdk_version`, the engine-main lane's checkout
+  `ref:` in `.github/workflows/conformance.yml`, and the pin note in
+  `.github/workflows/publish-provider.yml`. The SDK remains a pre-release, so NuGet's NU5104 rule
+  is unchanged: provider release tags must still carry pre-release versions.
 - **Published SDK pin advanced to `1.0.0-rc.5`.** `$(VouchfxSdkVersion)` in
   `Directory.Build.props` moves from `1.0.0-rc.4` to `1.0.0-rc.5`
   (`cc5e8efa9c84f59e1135568456f7c156261f6263`), so hub-hosted providers now build and publish

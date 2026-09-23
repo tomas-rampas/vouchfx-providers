@@ -520,14 +520,14 @@ jobs:
       # silently alter what gets packed and built against here. Full 40-char
       # SHA required: actions/checkout treats a short SHA as a branch/tag glob
       # (refs/heads/<ref>*) and fails the cross-repo fetch.
-      # Engine main = cc5e8efa (v1.0.0-rc.5) (repin procedure: see conformance.yml's
+      # Engine main = 93287ffb (v1.0.0-rc.6) (repin procedure: see conformance.yml's
       # header comment — bump this SHA at engine release cadence, independently of
       # Lane A's <VouchfxSdkVersion> pin).
       - name: Checkout engine (tomas-rampas/vouchfx → engine/)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: tomas-rampas/vouchfx
-          ref: cc5e8efa9c84f59e1135568456f7c156261f6263
+          ref: 93287ffbb0623ba253816ed4d909f50e1b26da93
           path: engine
 
       # ── Step 3: Set up .NET SDK (version from global.json: 8.0.400) ──────────
