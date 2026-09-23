@@ -28,3 +28,10 @@
 
 # Governance and CI/CD changes — workflows, templates, CODEOWNERS, labels.
 /.github/            @tomas-rampas
+
+# Claude Code on the web bootstrap. .claude/settings.json registers
+# .claude/hooks/session-start.sh as a SessionStart hook, so a web session runs the
+# checked-out branch's copy of it, as root, before anyone has read the diff: the
+# same supply-chain class as the workflows. Web sessions should be opened only on
+# branches you trust.
+/.claude/            @tomas-rampas

@@ -466,12 +466,12 @@ jobs:
           echo "Preflight passed: every Vouchfx.*/vouchfx* dependency of $PROVIDER $VERSION is resolvable from nuget.org."
 
       # ── Step 7: SLSA build provenance attestation ─────────────────────────────
-      # NOTE: the engine's own release.yml references this action as
-      # actions/attest-build-provenance@v4 WITHOUT a pinned SHA (verified by
-      # inspection — it is the one action in that workflow left unpinned), so
-      # there is no engine SHA to copy here. Resolved independently to the
-      # commit the v4 tag currently points at (v4.1.1) to keep this repo's own
-      # full-SHA-pinning convention (see conformance.yml) intact regardless.
+      # Pinned to a full commit SHA, like every action in this repo (see
+      # conformance.yml). The engine's own release.yml SHA-pins this action too,
+      # so both repos can sit on the same reviewed commit; Dependabot's
+      # github-actions updater moves the pin and its trailing version comment
+      # together. (An earlier note here said the engine left it unpinned, which
+      # has not been true since the engine pinned it.)
       - name: Attest provenance (SLSA build provenance)
         if: github.event_name == 'push'
         uses: actions/attest-build-provenance@0f67c3f4856b2e3261c31976d6725780e5e4c373 # v4.1.1
