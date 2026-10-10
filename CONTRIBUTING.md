@@ -80,7 +80,7 @@ For advanced work testing against the engine's unreleased `main` branch, pack th
 ```bash
 # From the vouchfx-providers repo root; adjust the engine checkout path:
 engine_dir="../vouchfx"
-sdk_version="1.0.0-enginemain.$(git -C "$engine_dir" rev-parse --short=12 HEAD)"
+sdk_version="1.0.0-enginemain.sha$(git -C "$engine_dir" rev-parse --short=12 HEAD)"
 for p in \
   src/Engine/Vouchfx.Engine.Abstractions/Vouchfx.Engine.Abstractions.csproj \
   src/Engine/Vouchfx.Engine.Authoring/Vouchfx.Engine.Authoring.csproj \

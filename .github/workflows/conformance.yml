@@ -38,7 +38,7 @@
 # engine's CURRENT main SHA (not a tagged release), so providers are proven
 # to build/test against upcoming engine changes ahead of the next tagged SDK
 # release. It packs the five SDK-closure projects at a distinct version,
-# 1.0.0-enginemain.<sha>, so that LOCAL pack can never COLLIDE WITH the
+# 1.0.0-enginemain.sha<sha>, so that LOCAL pack can never COLLIDE WITH the
 # legitimately published 1.0.0-alpha.N (or later) version this branch's
 # $(VouchfxSdkVersion) pin resolves, in the same dual-mapped feed
 # (packages-local/ + nuget.org). That is a collision guard only, not a
@@ -529,8 +529,9 @@ jobs:
             exit 1
           fi
           printf 'sha=%s\n' "$sha" >> "$GITHUB_OUTPUT"
-          printf 'ENGINE_MAIN_SDK_VERSION=1.0.0-enginemain.%s\n' "${sha:0:12}" >> "$GITHUB_ENV"
-          printf 'Engine compatibility input: %s (SDK 1.0.0-enginemain.%s)\n' "$sha" "${sha:0:12}"
+          # Prefix the SHA so an all-numeric, leading-zero abbreviation is valid SemVer.
+          printf 'ENGINE_MAIN_SDK_VERSION=1.0.0-enginemain.sha%s\n' "${sha:0:12}" >> "$GITHUB_ENV"
+          printf 'Engine compatibility input: %s (SDK 1.0.0-enginemain.sha%s)\n' "$sha" "${sha:0:12}"
 
       - name: Checkout engine (tomas-rampas/vouchfx → engine/)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -546,7 +547,7 @@ jobs:
           global-json-file: global.json
 
       # ── Step 4: Pack SDK-closure projects into packages-local/ ───────────────
-      # at the distinct version 1.0.0-enginemain.<sha> — this is a COLLISION guard,
+      # at the distinct version 1.0.0-enginemain.sha<sha> — this is a COLLISION guard,
       # not a publication guard: it keeps this local pack from colliding with
       # the legitimately published Vouchfx.Sdk version this branch's
       # $(VouchfxSdkVersion) pin resolves in the same dual-mapped feed

@@ -19,7 +19,7 @@
          frozen (unlike the v1 Vouchfx.Sdk contract itself), so test projects must move
          in lock-step with the exact SDK version they were validated against.
          CI's engine-main early-warning lane overrides this at build time via
-         -p:VouchfxSdkVersion=1.0.0-enginemain.<sha> to catch breaking changes before release.
+         -p:VouchfxSdkVersion=1.0.0-enginemain.sha<sha> to catch breaking changes before release.
          v1.0.0-alpha.4 is the FIRST publish of the Vouchfx.* package IDs after the
          pre-GA Platform.*-to-Vouchfx.* namespace rebrand (engine PR #193) — there are no
          earlier Vouchfx.Sdk alpha.1/alpha.2/alpha.3 versions; the old Platform.* IDs
