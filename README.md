@@ -99,14 +99,14 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 **For hub-hosted source submissions (Option 3)**, CI automatically runs:
 
-1. **Compile** — your provider and its test assembly against the `Vouchfx.Sdk`
-2. **Unit Tests** — your test suite (unit and integration-capable tests)
-3. **Integration Tests** — your integration-test fixture against the engine `main` branch
-4. **Schema Validation** — your provider's JSON Schema fragment against the engine's validator
+1. **Build and format** — the template and solution projects against the published SDK pin.
+2. **Conformance and community tests** — template tests and each community test project, including its own restore/build.
+3. **Package validation** — every hub provider packs with the required licence, README and metadata.
+4. **Registry validation** — entries conform to the registry schema; badge changes require maintainer review.
 
 **For external listing submissions (Option 1 or 2)**, CI validates:
 
-- **Schema Validation only** — your registry entry's JSON Schema fragment
+- **Registry schema validation** — the entry must match `registry/community-providers.schema.json`. This does not run an externally hosted provider's test suite.
 
 **Note:** For hub-hosted submissions, the required CI lane runs your conformance tests against the published pinned SDK (`$(VouchfxSdkVersion)`) — exactly what consumers restore; a separate non-blocking lane also builds them against the engine's `main` branch as an early warning. The Vouched rubric additionally requires your integration-test fixture to pass on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers during the Vouched review, not an automated CI check.
 
@@ -126,22 +126,24 @@ That's it. The `nuget.config` in this repository is already configured to restor
 For advanced contributors who want to test against the engine's unreleased `main` branch, you can build locally against an unpublished SDK by packing the five SDK-closure projects from the engine and overriding the pinned version:
 
 ```bash
-# From the vouchfx-providers repo root, with the engine checked out at <engine>:
+# From the vouchfx-providers repo root; adjust the engine checkout path:
+engine_dir="../vouchfx"
+sdk_version="1.0.0-enginemain.$(git -C "$engine_dir" rev-parse --short=12 HEAD)"
 for p in \
   src/Engine/Vouchfx.Engine.Abstractions/Vouchfx.Engine.Abstractions.csproj \
   src/Engine/Vouchfx.Engine.Authoring/Vouchfx.Engine.Authoring.csproj \
   src/Engine/Vouchfx.Engine.Compilation/Vouchfx.Engine.Compilation.csproj \
   src/Sdk/Vouchfx.Sdk/Vouchfx.Sdk.csproj \
   src/Sdk/Vouchfx.Sdk.Testing/Vouchfx.Sdk.Testing.csproj ; do
-  dotnet pack "<engine>/$p" -c Release -o packages-local
+  dotnet pack "$engine_dir/$p" -c Release -o packages-local -p:Version="$sdk_version"
 done
 
 # Override the pinned version to use the locally packed pre-release
-dotnet restore -p:VouchfxSdkVersion=1.0.0-enginemain
-dotnet build
+dotnet restore -p:VouchfxSdkVersion="$sdk_version"
+dotnet build --no-restore -p:VouchfxSdkVersion="$sdk_version"
 ```
 
-This is the pattern CI's early-warning lane (Lane B) uses to detect compatibility issues with engine `main` before the next engine release is cut.
+CI's early-warning lane (Lane B) resolves engine `main` once per run, logs its full SHA and checks out that immutable commit. Its SDK packages use a SHA-specific version, keeping compatibility evidence distinct from the published SDK pin and other source builds.
 
 ## Triage and Support
 

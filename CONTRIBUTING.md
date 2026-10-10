@@ -78,22 +78,24 @@ Restoring the SDK requires no special setup — it downloads automatically from 
 For advanced work testing against the engine's unreleased `main` branch, pack the five SDK-closure projects locally and override the version pin:
 
 ```bash
-# From the vouchfx-providers repo root, with the engine checked out at <engine>:
+# From the vouchfx-providers repo root; adjust the engine checkout path:
+engine_dir="../vouchfx"
+sdk_version="1.0.0-enginemain.$(git -C "$engine_dir" rev-parse --short=12 HEAD)"
 for p in \
   src/Engine/Vouchfx.Engine.Abstractions/Vouchfx.Engine.Abstractions.csproj \
   src/Engine/Vouchfx.Engine.Authoring/Vouchfx.Engine.Authoring.csproj \
   src/Engine/Vouchfx.Engine.Compilation/Vouchfx.Engine.Compilation.csproj \
   src/Sdk/Vouchfx.Sdk/Vouchfx.Sdk.csproj \
   src/Sdk/Vouchfx.Sdk.Testing/Vouchfx.Sdk.Testing.csproj ; do
-  dotnet pack "<engine>/$p" -c Release -o packages-local
+  dotnet pack "$engine_dir/$p" -c Release -o packages-local -p:Version="$sdk_version"
 done
 
 # Restore and build against the engine-main pre-release
-dotnet restore -p:VouchfxSdkVersion=1.0.0-enginemain
-dotnet build
+dotnet restore -p:VouchfxSdkVersion="$sdk_version"
+dotnet build --no-restore -p:VouchfxSdkVersion="$sdk_version"
 ```
 
-This is the pattern used by CI's early-warning lane to test compatibility with unreleased engine changes.
+CI's early-warning lane resolves engine `main` once per run and logs the full SHA before checking out that immutable commit. The locally packed SDK version includes its SHA, so the lane tests current source without confusing it with the published pin or a previous source build.
 
 ## Earning the Vouched Badge
 

@@ -38,15 +38,15 @@
 # engine's CURRENT main SHA (not a tagged release), so providers are proven
 # to build/test against upcoming engine changes ahead of the next tagged SDK
 # release. It packs the five SDK-closure projects at a distinct version,
-# 1.0.0-enginemain, so that LOCAL pack can never COLLIDE WITH the
+# 1.0.0-enginemain.<sha>, so that LOCAL pack can never COLLIDE WITH the
 # legitimately published 1.0.0-alpha.N (or later) version this branch's
 # $(VouchfxSdkVersion) pin resolves, in the same dual-mapped feed
 # (packages-local/ + nuget.org). That is a collision guard only, not a
 # publication guard: the distinct version string does not, by itself, stop
-# a third party from ALSO publishing a package called "1.0.0-enginemain"
+# a third party from ALSO publishing a package with that version
 # under a vouchfx* id — no version string can prevent that. What prevents
 # it is package-ID OWNERSHIP on nuget.org (see the PRECONDITION above), not
-# this workflow. Lane B threads -p:VouchfxSdkVersion=1.0.0-enginemain
+# this workflow. Lane B threads the resolved SHA-specific SDK version
 # through every dotnet invocation so the template/community projects
 # resolve that local pack instead of the nuget.org-published pin. It is
 # non-blocking (`continue-on-error: true`) on pull_request — unreleased
@@ -60,10 +60,10 @@
 # needed), update the hardcoded Vouchfx.Sdk version literals that exist
 # for OUT-OF-REPO consumers who cannot inherit the property — the samples in
 # docs/provider-project-setup.md and docs/consuming-a-provider.md, and the
-# conditioned fallback in the two template/Vouchfx.Community.Hello* csprojs —
-# and separately re-pin Lane B's engine checkout `ref:` below to the engine's
-# new main SHA, so Lane B keeps tracking "what's coming next" rather than what
-# was just released.
+# conditioned fallback in the two template/Vouchfx.Community.Hello* csprojs.
+# Lane B resolves engine main once per run and checks out that immutable SHA;
+# no manual source repin is needed. Its logged SHA and SDK version identify
+# the exact compatibility input rather than a historical snapshot.
 #
 # NOTE ON VERSION MATRIX
 # ----------------------
@@ -514,20 +514,29 @@ jobs:
       - name: Checkout vouchfx-providers
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # ── Step 2: Checkout the engine at its CURRENT main SHA ──────────────────
-      # Pinned to a specific commit SHA rather than the moving `main` ref so
-      # that a force-push or compromised commit on the engine repo cannot
-      # silently alter what gets packed and built against here. Full 40-char
-      # SHA required: actions/checkout treats a short SHA as a branch/tag glob
-      # (refs/heads/<ref>*) and fails the cross-repo fetch.
-      # Engine main = 1c94af80, four commits past v1.0.0-rc.6 (repin procedure:
-      # see conformance.yml's header comment — bump this SHA at engine release
-      # cadence, independently of Lane A's <VouchfxSdkVersion> pin).
+      # Resolve once, then use an immutable checkout and SHA-specific packages.
+      # Resolution failure must fail this lane, never fall back to an old SHA.
+      - name: Resolve current engine main
+        id: engine-ref
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          sha="$(gh api repos/tomas-rampas/vouchfx/commits/main --jq .sha)"
+          if [[ ! "$sha" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::Engine main did not resolve to a full commit SHA."
+            exit 1
+          fi
+          printf 'sha=%s\n' "$sha" >> "$GITHUB_OUTPUT"
+          printf 'ENGINE_MAIN_SDK_VERSION=1.0.0-enginemain.%s\n' "${sha:0:12}" >> "$GITHUB_ENV"
+          printf 'Engine compatibility input: %s (SDK 1.0.0-enginemain.%s)\n' "$sha" "${sha:0:12}"
+
       - name: Checkout engine (tomas-rampas/vouchfx → engine/)
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           repository: tomas-rampas/vouchfx
-          ref: 1c94af80c7510c0ed1889cba6ecb792d1612a60b
+          ref: ${{ steps.engine-ref.outputs.sha }}
           path: engine
 
       # ── Step 3: Set up .NET SDK (version from global.json: 8.0.400) ──────────
@@ -537,7 +546,7 @@ jobs:
           global-json-file: global.json
 
       # ── Step 4: Pack SDK-closure projects into packages-local/ ───────────────
-      # at the distinct version 1.0.0-enginemain — this is a COLLISION guard,
+      # at the distinct version 1.0.0-enginemain.<sha> — this is a COLLISION guard,
       # not a publication guard: it keeps this local pack from colliding with
       # the legitimately published Vouchfx.Sdk version this branch's
       # $(VouchfxSdkVersion) pin resolves in the same dual-mapped feed
@@ -562,19 +571,19 @@ jobs:
             engine/src/Sdk/Vouchfx.Sdk/Vouchfx.Sdk.csproj \
             engine/src/Sdk/Vouchfx.Sdk.Testing/Vouchfx.Sdk.Testing.csproj ; do
             echo "::group::pack $csproj"
-            dotnet pack "$csproj" -c Release -o packages-local/ --nologo -p:Version=1.0.0-enginemain
+            dotnet pack "$csproj" -c Release -o packages-local/ --nologo -p:Version="$ENGINE_MAIN_SDK_VERSION"
             echo "::endgroup::"
           done
           echo "Packages staged in packages-local/:"
           ls packages-local/*.nupkg
 
       # ── Step 5: Restore (providers solution) against the engine-main pack ────
-      # -p:VouchfxSdkVersion=1.0.0-enginemain overrides the root
+      # -p:VouchfxSdkVersion="$ENGINE_MAIN_SDK_VERSION" overrides the root
       # <VouchfxSdkVersion> MSBuild property so every SDK-closure
       # PackageReference resolves the just-packed local build instead of the
       # nuget.org-published pin Lane A uses.
       - name: Restore dependencies (engine main)
-        run: dotnet restore vouchfx-providers.sln -p:VouchfxSdkVersion=1.0.0-enginemain
+        run: dotnet restore vouchfx-providers.sln -p:VouchfxSdkVersion="$ENGINE_MAIN_SDK_VERSION"
 
       # ── Step 6: Build (0-warning gate) ───────────────────────────────────────
       - name: Build (Release, 0-warning gate, engine main)
@@ -583,7 +592,7 @@ jobs:
           -c Release
           --no-restore
           -warnaserror
-          -p:VouchfxSdkVersion=1.0.0-enginemain
+          -p:VouchfxSdkVersion="$ENGINE_MAIN_SDK_VERSION"
 
       # ── Step 7a: Template provider conformance test (engine main) ────────────
       - name: Test — template provider conformance (engine main)
@@ -591,7 +600,7 @@ jobs:
           dotnet test template/Vouchfx.Community.Hello.Tests
           -c Release
           --no-build
-          -p:VouchfxSdkVersion=1.0.0-enginemain
+          -p:VouchfxSdkVersion="$ENGINE_MAIN_SDK_VERSION"
           --logger "console;verbosity=normal"
 
       # ── Step 7b: Community provider tests (engine main, glob over community/) ─
@@ -606,7 +615,7 @@ jobs:
           found=0
           for csproj in community/**/*.Tests.csproj; do
             echo "::group::Running community test project: $csproj"
-            dotnet test "$csproj" -c Release -p:VouchfxSdkVersion=1.0.0-enginemain --logger "console;verbosity=normal"
+            dotnet test "$csproj" -c Release -p:VouchfxSdkVersion="$ENGINE_MAIN_SDK_VERSION" --logger "console;verbosity=normal"
             echo "::endgroup::"
             found=1
           done
