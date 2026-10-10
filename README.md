@@ -18,10 +18,12 @@ A vouchfx *provider* is a `<family>.<provider>` step type (e.g. `db-assert.postg
 ## What is a Provider?
 
 Providers implement test steps; they are distinct from the mechanism that starts an environment.
-The current engine provisions inline service images/projects and managed dependencies. Planned
-Docker Compose support belongs to the engine's environment layer, so using an existing Compose
-service must not require adding a provisioning provider. Protocol assertions still need a compatible
-Core or custom step provider. Compose input is not supported by the current engine.
+Published `1.0.0-rc.6` provisions inline service images/projects and managed dependencies; it does not
+accept Compose input. Current engine source adds owned, fresh HTTP/PostgreSQL Compose environments
+through its environment-driver layer. Using that source capability requires a compatible source CLI
+or an explicitly selected Compose-capable candidate, and does not require a provisioning step provider.
+Protocol assertions still need a compatible Core or custom step provider. This source capability does
+not establish a new published engine or SDK release.
 
 A provider is a compile-time, source-level plugin to the vouchfx engine. It exposes a new **step type** (a capability, like asserting a database state or publishing a message) by implementing four required interfaces from the `Vouchfx.Sdk`:
 
