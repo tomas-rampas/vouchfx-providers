@@ -60,7 +60,7 @@ Your provider observes a dependency type the engine **already manages** via Aspi
 - Document databases: `mongodb`, `dynamodb` (via `amazon/dynamodb-local`)
 - Key-value & search: `redis`, `elasticsearch`
 - Message brokers: `kafka`, `rabbitmq`, `nats`, `azureservicebus`
-- Object storage: `minio` (S3-compatible)
+- Object storage: `minio` (legacy MinIO), `s3` (S3-compatible; RustFS is the current source default)
 - Mail sink: `mailpit` (SMTP test server)
 
 **Examples:**
@@ -69,11 +69,11 @@ Your provider observes a dependency type the engine **already manages** via Aspi
 
 ### Providers Requiring New Infrastructure
 
-Your provider needs Aspire to manage a **new container type** not in the list above (for example, a custom gRPC server, a proprietary database, a third-party cloud emulator). **This requires engine-side support.**
+Adding a **new inline dependency kind** to the Aspire-managed list above (for example, a proprietary database or third-party cloud emulator) requires engine-side support.
 
 The orchestration layer's dependency registry is a fixed table; supporting a new dependency type means adding an entry there plus the matching validator/schema surface — it is not something a provider package can extend from outside the engine. That change therefore arrives via a contribution to, and release of, the [engine](https://github.com/tomas-rampas/vouchfx), not from your provider repository.
 
-This is not a blocker — it is a deliberate separation of concerns. In the meantime, a protocol provider that talks to an already-running instance by URL needs no orchestration change at all.
+A protocol provider can instead target an already-running instance by URL, or containers in an owned, user-supplied Docker Compose project. With a compatible source CLI or selected candidate, current Compose bindings expose HTTP/TCP services and PostgreSQL dependencies to existing or custom protocol providers without adding an inline dependency kind. The environment-driver contract permits other registered formats; Compose is the external format supplied today. See [Owned Docker Compose environments](https://github.com/tomas-rampas/vouchfx/blob/main/docs/compose-environments.md) for configuration, readiness and ownership limits. Published `1.0.0-rc.6` does not support this source form.
 
 ## The Seven-Stage Journey
 

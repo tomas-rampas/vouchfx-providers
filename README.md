@@ -19,7 +19,7 @@ A vouchfx *provider* is a `<family>.<provider>` step type (e.g. `db-assert.postg
 
 Providers implement test steps; they are distinct from the mechanism that starts an environment.
 Published `1.0.0-rc.6` provisions inline service images/projects and managed dependencies; it does not
-accept Compose input. Current engine source adds owned, fresh HTTP/PostgreSQL Compose environments
+accept Compose input. Current engine source adds owned, fresh HTTP/TCP/PostgreSQL Compose environments
 through its environment-driver layer. Using that source capability requires a compatible source CLI
 or an explicitly selected Compose-capable candidate, and does not require a provisioning step provider.
 Protocol assertions still need a compatible Core or custom step provider. This source capability does
