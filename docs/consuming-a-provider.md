@@ -42,29 +42,34 @@ dotnet pack MyApp.csproj -c Release
 # prerelease, but the package MyApp does not mark itself as prerelease.
 ```
 
-**Fix:** Pin both your application and all community-provider dependencies to the same pre-release designation. Add a `<Version>` to your project:
+**Fix:** Mark the package you are packing as pre-release to avoid NU5104. Pin compatible SDK and provider versions independently; their pre-release labels do not need to match. Add a `<Version>` to your project:
 
 ```xml
 <PropertyGroup>
   <TargetFramework>net8.0</TargetFramework>
-  <Version>1.0.0-alpha.1</Version>  <!-- Mark as pre-release, matching the SDK pin -->
+  <Version>1.0.0-alpha.1</Version>  <!-- Mark this package as pre-release -->
 </PropertyGroup>
 ```
 
-Once the engine reaches v1.0.0 GA and community providers do the same, this constraint disappears.
+A stable package can use this dependency graph once all of its dependencies are stable releases.
 
 ### Step 3: Discovery and initialisation
 
-The engine's `StepKindRegistry` reflects over all loaded provider assemblies at suite startup and builds its step-kind map. Your provider is automatically discovered — no manual registration needed.
+The engine's `StepKindRegistry` reflects over the provider assemblies explicitly supplied by your custom runner, then freezes the step-kind map. Adding a package or project reference alone does not register its provider.
 
-In your custom runner (see the [ledger-jsonrpc custom-runner walkthrough](https://samples.vouchfx.io/docs/custom-runner.html)), the engine discovers providers as it loads your application's assembly graph:
+For a suite containing only JSON-RPC steps, supply the community assembly:
 
 ```csharp
-// The engine's StepKindRegistry discovers providers reflectively from loaded assemblies.
-// As long as Vouchfx.Community.JsonRpc is in your dependencies and loaded,
-// the rpc.json-rpc step kind is available at suite startup.
-// The ScenarioRunner then accepts pre-parsed scenario ASTs and executes them.
+using Vouchfx.Community.JsonRpc;
+using Vouchfx.Sdk;
+
+var registry = StepKindRegistry.BuildAndFreeze(new[]
+{
+    typeof(JsonRpcProvider).Assembly,
+});
 ```
+
+For mixed suites, include the required Core provider assemblies in the same list. The [ledger-jsonrpc custom-runner walkthrough](https://samples.vouchfx.io/docs/custom-runner.html) shows `ProviderAssemblies()` containing its four Core assemblies and `typeof(JsonRpcProvider).Assembly`. Pass that list to `StepKindRegistry.BuildAndFreeze` before executing parsed scenarios.
 
 For a real implementation, see the samples walkthrough (Path B) which shows the complete runner pattern with AST parsing and discovery.
 
@@ -109,7 +114,7 @@ Add the provider project to your solution:
 </ItemGroup>
 ```
 
-Build your application. The provider is compiled into your assembly graph and discovered at suite startup.
+Build your application, then include `typeof(JsonRpcProvider).Assembly` in the assembly list supplied to `StepKindRegistry.BuildAndFreeze`, alongside any required Core providers.
 
 ### External Repositories
 
@@ -137,7 +142,7 @@ The [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.
 
 The runner shows:
 
-- `StepKindRegistry.BuildAndFreeze()` — compile-time step kind discovery and validation
+- `StepKindRegistry.BuildAndFreeze(ProviderAssemblies())` — runtime reflection and validation over the explicitly supplied provider assemblies
 - `ScenarioRunner.RunSuiteAsync()` — parse, orchestrate, execute, collect verdicts
 - `Inconclusive` capture-verdict handling — how to detect when a prior step's capture was unmet
 - Verdict folding and exit-code mapping — translating engine verdicts to CI exit codes
