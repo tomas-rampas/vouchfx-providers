@@ -71,7 +71,11 @@ dotnet restore
 dotnet build
 ```
 
-Restoring the SDK requires no special setup — it downloads automatically from [NuGet.org](https://www.nuget.org) at the pinned version. The `nuget.config` in this repository already handles routing the SDK packages to NuGet.org.
+Public restore downloads the pinned SDK closure automatically from [NuGet.org](https://www.nuget.org)
+once that closure is published there. The repository’s `nuget.config` routes these package IDs
+to NuGet.org. Before public availability, private release-candidate validation requires the
+supplied SDK package feed and its restore configuration. The version pin alone does not establish
+public availability; use the engine-main override below for unreleased source work.
 
 ### Building against engine main (optional)
 

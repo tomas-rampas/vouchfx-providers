@@ -20,12 +20,16 @@ The tradeoff is that you cannot install a provider without rebuilding your appli
 
 The canonical worked example is the [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) sample application in vouchfx-samples. It consumes [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) (1.0.0-alpha.1), the first published community provider.
 
+The SDK reference below targets the frozen v1 release; public restore requires its SDK
+closure to be available on NuGet.org. The Community provider keeps its independent
+`1.0.0-alpha.1` version. An SDK repin does not publish or promote a provider package.
+
 Add the provider to your application's `.csproj`:
 
 ```xml
 <ItemGroup>
   <!-- Your vouchfx engine host + SDK closure -->
-  <PackageReference Include="Vouchfx.Sdk" Version="1.0.0-rc.6" />
+  <PackageReference Include="Vouchfx.Sdk" Version="1.0.0" />
   
   <!-- The community provider you want to use -->
   <PackageReference Include="Vouchfx.Community.JsonRpc" Version="1.0.0-alpha.1" />
@@ -34,7 +38,7 @@ Add the provider to your application's `.csproj`:
 
 ### Step 2: Pre-Release Pinning
 
-Community providers are pre-release while the engine SDK is pre-release (before v1.0.0 GA). NuGet enforces the compatibility rule the other way round: a **stable** package may not depend on a pre-release one — packing such a graph raises warning NU5104, so anything that depends on a pre-release provider must itself be versioned pre-release. When you pack your application or a custom provider:
+Community providers are versioned independently of the SDK. The SDK release target is stable, while this example still consumes the pre-release JsonRpc provider. NuGet enforces the dependency rule: a **stable** package may not depend on a pre-release one — packing such a graph raises warning NU5104, so anything that depends on a pre-release provider must itself be versioned pre-release. When you pack your application or a custom provider:
 
 ```bash
 dotnet pack MyApp.csproj -c Release
@@ -75,11 +79,11 @@ For a real implementation, see the samples walkthrough (Path B) which shows the 
 
 ### Step 4: Publishing Cadence and Registry
 
-The hub publishes community providers independently on the regular engine release schedule:
-
-- Engine v1.0.0 released → pinned SDK version published
-- Community provider v1.0.0 released → compatible with SDK v1.0.0 (or later minors)
-- Check `registry/community-providers.json` in the hub for the current registry of published providers
+Hub-hosted Community providers have their own release cadence. Adopting a stable SDK
+pin does not require a stable Community provider release. Before cutting a provider
+release tag, its SDK dependency pin must be publicly restorable from NuGet.org; the
+publish workflow checks this dependency boundary. Check `registry/community-providers.json`
+in the hub for the current registry of published providers.
 
 The tag scheme for hub-hosted providers is `<Provider>/vX.Y.Z` — for example, `Vouchfx.Community.JsonRpc/v1.0.0-alpha.1`.
 

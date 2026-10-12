@@ -8,13 +8,13 @@
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <AnalysisLevel>latest-recommended</AnalysisLevel>
     <Deterministic>true</Deterministic>
-    <!-- Single source of truth for the published SDK pin. Six PackageReference elements
+    <!-- Single source of truth for the SDK release target. Six PackageReference elements
          across the four consuming csprojs use $(VouchfxSdkVersion) rather than a literal
          version — Vouchfx.Sdk in all four (community/Vouchfx.Community.JsonRpc,
          community/Vouchfx.Community.JsonRpc.Tests, template/Vouchfx.Community.Hello,
          template/Vouchfx.Community.Hello.Tests), plus Vouchfx.Sdk.Testing in the two
          *.Tests projects only — so bumping the SDK is a one-line change here. The pin is
-         deliberately an EXACT pre-release version (no floating, no ranges):
+         deliberately an EXACT version (no floating, no ranges):
          reproducibility requires it, and Vouchfx.Sdk.Testing is versioned but NOT
          frozen (unlike the v1 Vouchfx.Sdk contract itself), so test projects must move
          in lock-step with the exact SDK version they were validated against.
@@ -24,7 +24,7 @@
          pre-GA Platform.*-to-Vouchfx.* namespace rebrand (engine PR #193) — there are no
          earlier Vouchfx.Sdk alpha.1/alpha.2/alpha.3 versions; the old Platform.* IDs
          carried those. -->
-    <VouchfxSdkVersion>1.0.0-rc.6</VouchfxSdkVersion>
+    <VouchfxSdkVersion>1.0.0</VouchfxSdkVersion>
     <!-- This repo hosts the community provider index + hosted community providers.
          community/ providers ARE packed and published from this repo's CI as their own
          NuGet packages (see community/Directory.Build.props, which overrides IsPackable

@@ -52,8 +52,8 @@
            (e.g. System.Collections.Generic for IReadOnlyList<T>) — without it, restore
            succeeds but the build fails with CS0246.
          - VouchfxSdkVersion, left undefined, would restore Vouchfx.Sdk with an empty
-           Version and fail confusingly. The literal below pins the latest published
-           pre-release SDK — substitute it for whatever is current when you copy this
+           Version and fail confusingly. The literal below pins the SDK release
+           target — verify public package availability before restoring a copied
            template. This literal is on the REPIN PROCEDURE checklist in
            conformance.yml's header: it is bumped there whenever the hub's own
            $(VouchfxSdkVersion) moves.
@@ -66,7 +66,7 @@
   <PropertyGroup>
     <TargetFramework Condition="'$(TargetFramework)' == ''">net8.0</TargetFramework>
     <ImplicitUsings Condition="'$(ImplicitUsings)' == ''">enable</ImplicitUsings>
-    <VouchfxSdkVersion Condition="'$(VouchfxSdkVersion)' == ''">1.0.0-rc.6</VouchfxSdkVersion>
+    <VouchfxSdkVersion Condition="'$(VouchfxSdkVersion)' == ''">1.0.0</VouchfxSdkVersion>
   </PropertyGroup>
 
   <ItemGroup>

@@ -25,9 +25,13 @@ cd src/YourOrg.Steps.YourKind
 ### The `.csproj` File
 
 Your provider project must:
-- Reference **only** `Vouchfx.Sdk` (pinned to the latest published version on NuGet.org)
+- Reference **only** `Vouchfx.Sdk` (use the SDK release target in `Directory.Build.props`)
 - Use a **non-reserved namespace** (never `Vouchfx.Engine.*` or `Vouchfx.Steps.*`)
 - Target `.NET 8.0`
+
+The example below targets the frozen v1 SDK release. Its SDK closure must be published
+to NuGet.org before a public restore succeeds; the version pin alone does not establish
+package availability.
 
 Here is the minimal structure:
 
@@ -42,14 +46,14 @@ Here is the minimal structure:
 
   <ItemGroup>
     <!-- Frozen v1 SDK contract — no engine dependencies needed.
-         Substitute the newest published version (e.g. 1.0.0-rc.6). -->
-    <PackageReference Include="Vouchfx.Sdk" Version="1.0.0-rc.6" />
+         SDK release target; verify public package availability before restoring. -->
+    <PackageReference Include="Vouchfx.Sdk" Version="1.0.0" />
   </ItemGroup>
 
 </Project>
 ```
 
-Restore the SDK from NuGet.org at the pinned version (see `CONTRIBUTING.md` "Building against the SDK"). For advanced use cases testing against the engine's unreleased `main` branch, see the "Building against engine main (optional)" subsection in `CONTRIBUTING.md`.
+Restore the SDK from NuGet.org at the pinned version once its dependency closure is publicly available (see `CONTRIBUTING.md` "Building against the SDK"). For advanced use cases testing against the engine's unreleased `main` branch, see the "Building against engine main (optional)" subsection in `CONTRIBUTING.md`.
 
 ### Assembly-Graph Hygiene
 
