@@ -63,7 +63,8 @@
     <RepositoryType>git</RepositoryType>
     <PackageProjectUrl>https://providers.vouchfx.io/</PackageProjectUrl>
     <!-- SourceLink + symbols: let a provider consumer step into the package's source
-         straight from GitHub, mirroring Vouchfx.Sdk's own packaging exactly. -->
+         straight from GitHub, mirroring Vouchfx.Sdk's own packaging exactly.
+         SourceLink is supplied by the .NET SDK selected in global.json. -->
     <PublishRepositoryUrl>true</PublishRepositoryUrl>
     <EmbedUntrackedSources>true</EmbedUntrackedSources>
     <IncludeSymbols>true</IncludeSymbols>
@@ -72,11 +73,5 @@
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
   </PropertyGroup>
 
-  <ItemGroup Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">
-    <!-- Build-only: emits SourceLink metadata into the PDB; not a runtime/lib dependency.
-         This repo has no central package management (no Directory.Packages.props), unlike
-         the engine repo, so the version is pinned explicitly here rather than inherited —
-         8.0.0 matches the engine's own Directory.Packages.props pin and targets net8.0. -->
-    <PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0" PrivateAssets="all" />
-  </ItemGroup>
+
 </Project>
