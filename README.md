@@ -101,7 +101,7 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 **For hub-hosted source submissions (Option 3)**, CI automatically runs:
 
-1. **Build and format** — the template and solution projects against the published SDK pin.
+1. **Build and format** — the template and solution projects against the repository's SDK release-target pin, once its dependency closure is publicly restorable.
 2. **Conformance and community tests** — template tests and each community test project, including its own restore/build.
 3. **Package validation** — every hub provider packs with the required licence, README and metadata.
 4. **Registry validation** — entries conform to the registry schema; badge changes require maintainer review.
@@ -110,18 +110,25 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 - **Registry schema validation** — the entry must match `registry/community-providers.schema.json`. This does not run an externally hosted provider's test suite.
 
-**Note:** For hub-hosted submissions, the required CI lane runs your conformance tests against the published pinned SDK (`$(VouchfxSdkVersion)`) — exactly what consumers restore; a separate non-blocking lane also builds them against the engine's `main` branch as an early warning. The Vouched rubric additionally requires your integration-test fixture to pass on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers during the Vouched review, not an automated CI check.
+**Note:** For hub-hosted submissions, the required CI lane runs your conformance tests against the pinned SDK (`$(VouchfxSdkVersion)`); public consumers and that lane require the SDK closure to be available on NuGet.org. Private candidate-feed validation does not establish public restore availability. A separate non-blocking lane also builds against the engine's `main` branch as an early warning. The Vouched rubric additionally requires your integration-test fixture to pass on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers during the Vouched review, not an automated CI check.
 
 ## Building against the SDK
 
-The vouchfx SDK (`Vouchfx.Sdk` and `Vouchfx.Sdk.Testing`) is published to [NuGet.org](https://www.nuget.org) and pinned in `Directory.Build.props` via the `$(VouchfxSdkVersion)` property; it restores from NuGet.org at that version. To build providers locally:
+The SDK release target (`Vouchfx.Sdk` and `Vouchfx.Sdk.Testing`) is pinned in
+`Directory.Build.props` through `$(VouchfxSdkVersion)`. Public restore requires that
+exact SDK dependency closure to be published on NuGet.org. Stable `1.0.0` is not
+yet published; the version pin alone does not establish availability.
+
+Once that closure is publicly available, build providers from the repository root:
 
 ```bash
 dotnet restore
 dotnet build
 ```
 
-That's it. The `nuget.config` in this repository is already configured to restore from NuGet.org; `dotnet restore` will pull the SDK at the pinned version. Bumping the SDK (when the engine releases a new version) requires a single property change in `Directory.Build.props` — maintainers do this at engine release cadence.
+Before publication, candidate validation requires the supplied SDK package feed and
+its restore configuration. Follow [Building against the SDK](CONTRIBUTING.md#building-against-the-sdk)
+for those prerequisites, or use the engine-main override below for unreleased source work.
 
 ### Building against engine main (optional)
 
