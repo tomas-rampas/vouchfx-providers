@@ -32,7 +32,7 @@ The registry is human-readable and machine-consumable. It powers:
 - Planned tooling for provider discovery and installation, and a generated provider-listing page on the
   project website (both part of the engine roadmap)
 
-The first entry is [`rpc.json-rpc`](../community/Vouchfx.Community.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) (version 1.0.0-alpha.1) is published from this repository's CI pipeline and ready to consume.
+The first entry is [`rpc.json-rpc`](../community/Vouchfx.Community.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) (version 1.0.0) is published from this repository's CI pipeline and ready to consume. Its earlier `1.0.0-alpha.1` release remains historical.
 
 ## How to Add an Entry
 
