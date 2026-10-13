@@ -18,44 +18,53 @@ The tradeoff is that you cannot install a provider without rebuilding your appli
 
 ### Step 1: Add the NuGet Reference
 
-The canonical worked example is the [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) sample application in vouchfx-samples. It consumes [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) (1.0.0-alpha.1), the first published community provider.
+The canonical worked example is the [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) sample application in vouchfx-samples. It consumes the published [`Vouchfx.Community.JsonRpc` 1.0.0](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc/1.0.0) package.
 
-The SDK reference below targets the frozen v1 release; public restore requires its SDK
-closure to be available on NuGet.org. The Community provider keeps its independent
-`1.0.0-alpha.1` version. An SDK repin does not publish or promote a provider package.
+`Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` `1.0.0` are also published on NuGet.org.
+SDK and Community provider versions remain independent; an SDK repin does not
+publish or promote a provider package. The sample runner builds its engine and SDK
+from the source revision in `ENGINE_PIN`, while restoring JsonRpc from NuGet.
+For your own SDK consumer, use the package references below.
 
 Add the provider to your application's `.csproj`:
 
 ```xml
 <ItemGroup>
-  <!-- Your vouchfx engine host + SDK closure -->
-  <PackageReference Include="Vouchfx.Sdk" Version="1.0.0" />
-  
+  <!-- SDK contract for your custom runner -->
+  <PackageReference Include="Vouchfx.Sdk" Version="[1.0.0]" />
+
   <!-- The community provider you want to use -->
-  <PackageReference Include="Vouchfx.Community.JsonRpc" Version="1.0.0-alpha.1" />
+  <PackageReference Include="Vouchfx.Community.JsonRpc" Version="[1.0.0]" />
 </ItemGroup>
 ```
 
-### Step 2: Pre-Release Pinning
+### Step 2: Pin Versions and Record the Resolved Graph
 
-Community providers are versioned independently of the SDK. The SDK release target is stable, while this example still consumes the pre-release JsonRpc provider. NuGet enforces the dependency rule: a **stable** package may not depend on a pre-release one — packing such a graph raises warning NU5104, so anything that depends on a pre-release provider must itself be versioned pre-release. When you pack your application or a custom provider:
+Use exact NuGet ranges such as `[1.0.0]`; a bare `Version="1.0.0"` is a minimum
+version requirement. Record the resolved dependency graph in `packages.lock.json`
+and regenerate it when you intentionally change a pin. A lock file records versions
+and integrity hashes; enforcing it requires locked-mode restore with a lock generated
+for the target platform. The ledger runner records its graph without enforcing locked
+mode because its Aspire runtime assets differ across operating systems.
 
-```bash
-dotnet pack MyApp.csproj -c Release
-# Warning NU5104: The dependency Vouchfx.Community.JsonRpc 1.0.0-alpha.1 uses
-# prerelease, but the package MyApp does not mark itself as prerelease.
-```
+The SDK and JsonRpc references above are stable releases. They do not require your
+own package to have a pre-release version.
 
-**Fix:** Mark the package you are packing as pre-release to avoid NU5104. Pin compatible SDK and provider versions independently; their pre-release labels do not need to match. Add a `<Version>` to your project:
+#### If You Choose a Pre-Release Dependency
+
+NuGet warning NU5104 applies when a stable package depends on a pre-release package.
+For example, if you choose an independently versioned `Org.Steps.YourKind` preview
+dependency, the package you pack must also be marked pre-release:
 
 ```xml
 <PropertyGroup>
   <TargetFramework>net8.0</TargetFramework>
-  <Version>1.0.0-alpha.1</Version>  <!-- Mark this package as pre-release -->
+  <Version>2.0.0-preview.1</Version>
 </PropertyGroup>
 ```
 
-A stable package can use this dependency graph once all of its dependencies are stable releases.
+Choose compatible SDK and provider versions independently; their pre-release labels
+do not need to match. This rule applies only when a dependency is pre-release.
 
 ### Step 3: Discovery and initialisation
 
@@ -75,7 +84,7 @@ var registry = StepKindRegistry.BuildAndFreeze(new[]
 
 For mixed suites, include the required Core provider assemblies in the same list. The [ledger-jsonrpc custom-runner walkthrough](https://samples.vouchfx.io/docs/custom-runner.html) shows `ProviderAssemblies()` containing its four Core assemblies and `typeof(JsonRpcProvider).Assembly`. Pass that list to `StepKindRegistry.BuildAndFreeze` before executing parsed scenarios.
 
-For a real implementation, see the samples walkthrough (Path B) which shows the complete runner pattern with AST parsing and discovery.
+For a complete runner implementation with AST parsing and discovery, follow the samples custom-runner walkthrough linked above.
 
 ### Step 4: Publishing Cadence and Registry
 
@@ -85,7 +94,9 @@ release tag, its SDK dependency pin must be publicly restorable from NuGet.org; 
 publish workflow checks this dependency boundary. Check `registry/community-providers.json`
 in the hub for the current registry of published providers.
 
-The tag scheme for hub-hosted providers is `<Provider>/vX.Y.Z` — for example, `Vouchfx.Community.JsonRpc/v1.0.0-alpha.1`.
+The tag scheme for hub-hosted providers is `<Provider>/vX.Y.Z` — for example,
+`Vouchfx.Community.JsonRpc/v1.0.0`. The earlier `1.0.0-alpha.1` release is historical;
+it remains a separately versioned package, not the dependency used by the stable example above.
 
 ### Updating a Provider
 
@@ -95,7 +106,8 @@ To update to a newer version:
 2. Check the provider's `MinEngineVersion` metadata — it declares the earliest engine version it supports
 3. If the provider's `MinEngineVersion` is newer than your pinned engine SDK, you must also bump the SDK
 
-Example: if you are on SDK v1.0.0-alpha.3 and want to use `Vouchfx.Community.JsonRpc v1.0.0-alpha.2`, and that provider declares `MinEngineVersion: 1.0.0-alpha.4`, then you must also bump to `Vouchfx.Sdk v1.0.0-alpha.4` or later.
+Regenerate the lock file after changing references, and validate your suites against
+the selected engine and provider versions before adopting the update.
 
 ## Path B: Building from Source
 
@@ -139,10 +151,10 @@ Add it the same way:
 
 ### The Canonical Worked Example
 
-The [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) sample application demonstrates both paths:
+The [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) sample shows how to combine a published Community provider with a source-built engine:
 
-- **NuGet path:** `runner/LedgerRunner.csproj` references `Vouchfx.Community.JsonRpc` as a NuGet package
-- **Source path:** The samples site's [custom-runner walkthrough](https://samples.vouchfx.io/docs/custom-runner.html) documents the complete end-to-end walkthrough of building a runner, composing the step registry, parsing suites, and handling exit codes
+- **NuGet dependency:** `runner/LedgerRunner.csproj` pins `Vouchfx.Community.JsonRpc` to `[1.0.0]`.
+- **Engine source build:** The runner uses project references into the checkout selected by `ENGINE_PIN` for its engine, SDK and Core providers. Its SDK therefore has a local source-build identity. Follow the [custom-runner walkthrough](https://samples.vouchfx.io/docs/custom-runner.html) to build that runner, compose its step registry, parse suites and handle exit codes.
 
 The runner shows:
 

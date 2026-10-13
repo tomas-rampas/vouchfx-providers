@@ -57,25 +57,24 @@ All Community-tier providers follow one contribution flow with two hosting choic
 1. Start from [`template/`](template/) (`Vouchfx.Community.Hello` + its tests) or model on [`community/Vouchfx.Community.JsonRpc`](community/Vouchfx.Community.JsonRpc/), the hub's worked reference.
 2. Name your projects `community/<YourProvider>/` + `community/<YourProvider>.Tests/`; use a non-reserved namespace (the `Vouchfx.Community.<Name>` convention is recommended — never `Vouchfx.Engine.*`/`Vouchfx.Steps.*`).
 3. Build standalone against the pinned SDK (see "Building against the SDK" below). Your projects do **not** need to join the `.sln` — CI discovers `community/**/*.Tests.csproj` by glob and runs each submission in its own step. Every public member of your provider must have an XML-doc comment (CS1591 enforced by the repo's TreatWarningsAsErrors setting); the reference provider [`Vouchfx.Community.JsonRpc`](community/Vouchfx.Community.JsonRpc) demonstrates this quality bar. When you publish to NuGet, the pack gate validates per-provider metadata: `Description` (not the MSBuild default), `PackageTags`, `PackageReadmeFile` + a packaged `README.md` file; `PackageId`, repository URL, and Apache-2.0 licence expression are set automatically from `community/Directory.Build.props`.
-4. Add your registry entry with `"hosting": "hub"`. If your provider will be published to NuGet (recommended for discoverability), set `nuget` to the provider directory name (e.g. `nuget: "Vouchfx.Community.JsonRpc"` for `community/Vouchfx.Community.JsonRpc`); the publish workflow requires this field to cut a release tag (`<Provider>/vX.Y.Z`). **Release timing:** no `<Provider>/vX.Y.Z` tag may be cut until your provider's `Vouchfx.Sdk` dependency pin is publicly restorable from NuGet.org. The publish workflow enforces this with a dependency-resolvability preflight check — publishing an unrestorable package would burn an immutable version number. Whilst `Vouchfx.Sdk` is a pre-release, release tags must also carry pre-release versions (e.g. `Vouchfx.Community.JsonRpc/v1.0.0-alpha.1`): NuGet's NU5104 rule prevents a stable version from carrying a pre-release dependency, so a stable tag fails the publish pack by design, with stable provider releases possible once `Vouchfx.Sdk` 1.0.0 ships at GA.
+4. Add your registry entry with `"hosting": "hub"`. If your provider will be published to NuGet (recommended for discoverability), set `nuget` to the provider directory name (e.g. `nuget: "Vouchfx.Community.JsonRpc"` for `community/Vouchfx.Community.JsonRpc`); the publish workflow requires this field to cut a release tag (`<Provider>/vX.Y.Z`). **Release timing:** no `<Provider>/vX.Y.Z` tag may be cut until your provider's `Vouchfx.Sdk` dependency pin is publicly restorable from NuGet.org. The publish workflow enforces this with a dependency-resolvability preflight check — publishing an unrestorable package would burn an immutable version number. If your SDK dependency is a pre-release, use a pre-release provider version: NuGet's NU5104 rule prevents a stable package from carrying a pre-release dependency. The published `Vouchfx.Sdk` 1.0.0 dependency supports stable provider releases; `Vouchfx.Community.JsonRpc/v1.0.0` is the hub's stable release example. Its earlier `1.0.0-alpha.1` release remains historical.
 5. Open the PR using the [community submission template](.github/PULL_REQUEST_TEMPLATE/community-submission.md), with every commit DCO-signed (`git commit -s`).
 
 The merge bar for Option B is **hygiene, not review**: Apache-2.0 licence, DCO, namespace rules, no step-kind collision, and a green conformance lane. **Hosting in this repository is not endorsement** — your provider's README must open with the Community-tier notice, and you remain the owner of your folder (a CODEOWNERS line is added at merge). The published Vouched rubric is the feedback for what is needed to work towards the Vouched badge.
 
 ## Building against the SDK
 
-The `Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` packages are published to [NuGet.org](https://www.nuget.org) and pinned in `Directory.Build.props` via the `$(VouchfxSdkVersion)` property. To build:
+The `Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` `1.0.0` packages and their dependency closure are published to [NuGet.org](https://www.nuget.org). `Directory.Build.props` selects that version via the `$(VouchfxSdkVersion)` property. To build:
 
 ```bash
 dotnet restore
 dotnet build
 ```
 
-Public restore downloads the pinned SDK closure automatically from [NuGet.org](https://www.nuget.org)
-once that closure is published there. The repository’s `nuget.config` routes these package IDs
-to NuGet.org. Before public availability, private release-candidate validation requires the
-supplied SDK package feed and its restore configuration. The version pin alone does not establish
-public availability; use the engine-main override below for unreleased source work.
+Public restore downloads this pinned SDK closure automatically from [NuGet.org](https://www.nuget.org).
+The repository’s `nuget.config` routes these package IDs to NuGet.org. To validate an unpublished
+SDK candidate, use its supplied package feed and restore configuration. Use the engine-main
+override below for unreleased source work.
 
 ### Building against engine main (optional)
 

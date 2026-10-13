@@ -18,12 +18,13 @@ A vouchfx *provider* is a `<family>.<provider>` step type (e.g. `db-assert.postg
 ## What is a Provider?
 
 Providers implement test steps; they are distinct from the mechanism that starts an environment.
-Published `1.0.0-rc.6` provisions inline service images/projects and managed dependencies; it does not
-accept Compose input. Current engine source adds owned, fresh HTTP/TCP/PostgreSQL Compose environments
-through its environment-driver layer. Using that source capability requires a compatible source CLI
-or an explicitly selected Compose-capable candidate, and does not require a provisioning step provider.
-Protocol assertions still need a compatible Core or custom step provider. This source capability does
-not establish a new published engine or SDK release.
+Published vouchfx `1.0.0` supports inline service images/projects and managed dependencies, plus
+owned, fresh Docker Compose environments with HTTP/TCP services and PostgreSQL dependencies.
+The format-neutral environment-driver contract permits other registered drivers; those formats
+require their own driver implementation. Starting an environment does not require a step provider.
+Protocol assertions use compatible Core or custom step providers. See
+[Owned Docker Compose environments](https://vouchfx.io/compose-environments/) for configuration,
+readiness and ownership limits.
 
 A provider is a compile-time, source-level plugin to the vouchfx engine. It exposes a new **step type** (a capability, like asserting a database state or publishing a message) by implementing four required interfaces from the `Vouchfx.Sdk`:
 
@@ -57,11 +58,11 @@ After a Community provider is listed in the registry, a maintainer can award the
 
 ## How to Use Community Providers Today
 
-Community providers are distributed as **NuGet packages** — hub-hosted providers publish from this hub's CI, externally hosted providers publish from their own repositories. For example, [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) is live on NuGet.org — the canonical worked example of consuming a community provider is the [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) sample application in vouchfx-samples.
+Community providers are distributed as **NuGet packages** — hub-hosted providers publish from this hub's CI, externally hosted providers publish from their own repositories. For example, [`Vouchfx.Community.JsonRpc` 1.0.0](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc/1.0.0) is published on NuGet.org — the canonical worked example of consuming a community provider is the [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) sample application in vouchfx-samples.
 
 For unpublished or hub-hosted providers without a NuGet package yet, consume via **source-level build**: clone the provider repository (or reference `community/<Provider>` in this hub), add the project to your build, and rebuild your application host to integrate the provider at compile time.
 
-**See [`docs/consuming-a-provider.md`](docs/consuming-a-provider.md)** for the complete guide to both consumption paths, pre-release pinning, and the worked example.
+**See [`docs/consuming-a-provider.md`](docs/consuming-a-provider.md)** for the complete guide to both consumption paths, exact version pinning, optional pre-release dependencies, and the worked example.
 
 ## How to Get Your Provider Listed
 
@@ -101,7 +102,7 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 **For hub-hosted source submissions (Option 3)**, CI automatically runs:
 
-1. **Build and format** — the template and solution projects against the repository's SDK release-target pin, once its dependency closure is publicly restorable.
+1. **Build and format** — the template and solution projects against the SDK pinned in `Directory.Build.props`.
 2. **Conformance and community tests** — template tests and each community test project, including its own restore/build.
 3. **Package validation** — every hub provider packs with the required licence, README and metadata.
 4. **Registry validation** — entries conform to the registry schema; badge changes require maintainer review.
@@ -114,21 +115,19 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 ## Building against the SDK
 
-The SDK release target (`Vouchfx.Sdk` and `Vouchfx.Sdk.Testing`) is pinned in
-`Directory.Build.props` through `$(VouchfxSdkVersion)`. Public restore requires that
-exact SDK dependency closure to be published on NuGet.org. Stable `1.0.0` is not
-yet published; the version pin alone does not establish availability.
-
-Once that closure is publicly available, build providers from the repository root:
+The published `Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` `1.0.0` packages and their
+dependency closure are available on NuGet.org. `Directory.Build.props` selects
+this SDK version through `$(VouchfxSdkVersion)`; `nuget.config` routes its package
+IDs to NuGet.org. Build providers from the repository root:
 
 ```bash
 dotnet restore
 dotnet build
 ```
 
-Before publication, candidate validation requires the supplied SDK package feed and
-its restore configuration. Follow [Building against the SDK](CONTRIBUTING.md#building-against-the-sdk)
-for those prerequisites, or use the engine-main override below for unreleased source work.
+For an unpublished SDK candidate, validation requires its supplied package feed and
+restore configuration. Follow [Building against the SDK](CONTRIBUTING.md#building-against-the-sdk),
+or use the engine-main override below for unreleased source work.
 
 ### Building against engine main (optional)
 
@@ -161,7 +160,7 @@ The vouchfx maintainers allocate **one half-day per week** (4 hours) for provide
 ## Key Documents
 
 - **[`docs/implementing-a-provider.md`](docs/implementing-a-provider.md)** — the provider authoring journey overview and links to each stage (project setup, contract, CSX composition, testing, publishing)
-- **[`docs/consuming-a-provider.md`](docs/consuming-a-provider.md)** — how to add published community providers to your test application (NuGet path, source builds, pre-release pinning)
+- **[`docs/consuming-a-provider.md`](docs/consuming-a-provider.md)** — how to add published community providers to your test application (NuGet path, source builds, exact pinning and optional pre-release dependencies)
 - **[`CONTRIBUTING.md`](CONTRIBUTING.md)** — how to submit a provider to this repository (Community paths and Vouched review)
 - **[`GOVERNANCE.md`](GOVERNANCE.md)** — the tier model, Vouched badge, and who decides each
 - **[`VOUCHED_CHECKLIST.md`](VOUCHED_CHECKLIST.md)** — the published Vouched rubric as an actionable checklist
