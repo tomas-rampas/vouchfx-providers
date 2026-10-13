@@ -1,5 +1,5 @@
-# Normalise text files to LF in the repository; check out native on each platform.
-* text=auto
+# Normalise text files to LF in the repository and working tree.
+* text=auto eol=lf
 
 # Keep these explicitly LF even in the working tree.
 *.sh    text eol=lf
