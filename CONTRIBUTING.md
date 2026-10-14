@@ -22,7 +22,7 @@ All providers in this repository must meet these baseline requirements:
 - Your provider must implement the four required interfaces from `Vouchfx.Sdk`: `IStepProvider`, `IStepBinder<TModel>`, `IStepValidator<TModel>`, and `IStepCompiler<TModel>`.
 - Your model must be a strongly-typed record (never `Dictionary<string,object>`).
 - You must NOT use the reserved namespace prefixes: `Vouchfx.Engine.*` or `Vouchfx.Steps.*`. Use your own namespace (e.g. `MyOrg.Steps.Kafka`, `Vouchfx.Community.Snowflake`).
-- Your provider must be discoverable at suite startup via the reflective `StepKindRegistry`. Add the `[StepProvider]` attribute to your provider class; no manual registration is required.
+- Decorate your provider class with `[StepProvider]` and supply its assembly to `StepKindRegistry.BuildAndFreeze` in your custom runner. The registry discovers providers reflectively from those assemblies; a package reference alone does not register them.
 
 ### CsxFragment Composition
 When your `IStepCompiler<TModel>` emits a `CsxFragment`, you must follow the strict rules in the engine's architecture blueprint (§13.3.1):
