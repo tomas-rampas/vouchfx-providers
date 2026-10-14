@@ -16,7 +16,7 @@ Your provider is a C# class decorated with `[StepProvider]` that:
 - **Binds YAML** from a `.e2e.yaml` file into a strongly-typed C# model (record)
 - **Validates** the model against provider-specific and project-level rules
 - **Compiles** the model into a `CsxFragment` — a reusable C# code snippet
-- **Is discovered reflectively** by the engine at startup — no manual registration is needed
+- **Is discovered reflectively** at startup from the provider assemblies explicitly supplied by the custom runner; a package reference alone does not register it
 
 The engine calls your provider at compile time (once per suite), assembles all providers' CSX fragments into a single Roslyn script, compiles it once, then executes it in an isolated, collectible `AssemblyLoadContext`. Your provider never touches the execution path — it only emits code.
 
