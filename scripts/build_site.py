@@ -379,6 +379,7 @@ CONFIG = SiteConfig(
         "The vouchfx community provider hub — step providers (plugins) extending the "
         "end-to-end integration testing framework. Vouched badge for verified quality."
     ),
+    llms_curated=True,
 )
 
 
