@@ -133,7 +133,7 @@ public sealed class JsonRpcProvider
     /// <inheritdoc />
     public ProviderMetadata Metadata { get; } = new ProviderMetadata(
         Version: "1.0.0",
-        MinEngineVersion: "1.0.0",
+        MinEngineVersion: "1.0.5",
         License: "Apache-2.0",
         Authors: new[] { "vouchfx-community" });
 
@@ -974,13 +974,13 @@ public sealed class JsonRpcProvider
     /// each element so embedded quotes/backslashes/control characters cannot corrupt
     /// the emitted source (mirrors the Core <c>http.rest</c> provider's own helper).
     /// </summary>
-    private static string BuildStringArrayLiteral(IReadOnlyList<string> values)
+    private static string BuildStringArrayLiteral(string[] values)
     {
-        if (values.Count == 0)
+        if (values.Length == 0)
             return "new string[] { }";
 
         var sb = new System.Text.StringBuilder("new string[] { ");
-        for (var i = 0; i < values.Count; i++)
+        for (var i = 0; i < values.Length; i++)
         {
             if (i > 0)
                 sb.Append(", ");

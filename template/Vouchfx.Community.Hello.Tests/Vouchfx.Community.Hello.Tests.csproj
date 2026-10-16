@@ -22,10 +22,8 @@
            written: they have no explicit `using` statements and rely on the SDK's
            implicit global usings — without it, restore succeeds but the build fails.
          - VouchfxSdkVersion, left undefined, would restore Vouchfx.Sdk /
-           Vouchfx.Sdk.Testing with an empty Version and fail confusingly. The literal
-           below pins the SDK release target — verify public package availability
-           before restoring a copied template. This literal is on the REPIN
-           PROCEDURE checklist in conformance.yml's header: it is bumped there whenever
+           Vouchfx.Sdk.Testing with an empty Version and fail confusingly. The literal below pins the published SDK 1.0.5 package for a copied template.
+           This literal is on the REPIN PROCEDURE checklist in conformance.yml's header: it is bumped there whenever
            the hub's own $(VouchfxSdkVersion) moves.
        Other root-only properties (LangVersion, Nullable, TreatWarningsAsErrors, ...)
        fall back to the .NET SDK's own defaults once copied out of the repo — different
@@ -34,7 +32,7 @@
   <PropertyGroup>
     <TargetFramework Condition="'$(TargetFramework)' == ''">net8.0</TargetFramework>
     <ImplicitUsings Condition="'$(ImplicitUsings)' == ''">enable</ImplicitUsings>
-    <VouchfxSdkVersion Condition="'$(VouchfxSdkVersion)' == ''">1.0.0</VouchfxSdkVersion>
+    <VouchfxSdkVersion Condition="'$(VouchfxSdkVersion)' == ''">1.0.5</VouchfxSdkVersion>
   </PropertyGroup>
 
   <ItemGroup>

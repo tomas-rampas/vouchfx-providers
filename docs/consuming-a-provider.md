@@ -20,7 +20,16 @@ The tradeoff is that you cannot install a provider without rebuilding your appli
 
 The canonical worked example is the [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) sample application in vouchfx-samples. It consumes the published [`Vouchfx.Community.JsonRpc` 1.0.0](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc/1.0.0) package.
 
-`Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` `1.0.0` are also published on NuGet.org.
+`Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` `1.0.5` and their dependency closure are
+published on NuGet.org. The provider Release build, Hello tests (5/5), JsonRpc tests
+(24/24), and formatting check passed against this SDK version.
+The current Hello and JsonRpc source providers also passed a two-step suite against
+Core 1.0.5. A copied Hello template restored outside the repository and passed 5/5
+consumer tests against the published SDK 1.0.5 packages.
+The already-published JsonRpc 1.0.0 package keeps its original package and registry
+metadata. The current hub source has been updated for SDK 1.0.5 and declares a 1.0.5
+engine floor; that source change does not alter the immutable 1.0.0 package. Do not
+assume the earlier package metadata describes binaries rebuilt from this source.
 SDK and Community provider versions remain independent; an SDK repin does not
 publish or promote a provider package. The sample runner builds its engine and SDK
 from the source revision in `ENGINE_PIN`, while restoring JsonRpc from NuGet.
@@ -31,7 +40,7 @@ Add the provider to your application's `.csproj`:
 ```xml
 <ItemGroup>
   <!-- SDK contract for your custom runner -->
-  <PackageReference Include="Vouchfx.Sdk" Version="[1.0.0]" />
+  <PackageReference Include="Vouchfx.Sdk" Version="[1.0.5]" />
 
   <!-- The community provider you want to use -->
   <PackageReference Include="Vouchfx.Community.JsonRpc" Version="[1.0.0]" />
@@ -104,7 +113,7 @@ To update to a newer version:
 
 1. Bump the version pin in your `.csproj`
 2. Check the provider's `MinEngineVersion` metadata — it declares the earliest engine version it supports
-3. If the provider's `MinEngineVersion` is newer than your pinned engine SDK, you must also bump the SDK
+3. If the provider source was compiled against SDK 1.0.5, use Core 1.0.5 or newer: the 1.0.5 SDK assembly identity cannot load in Core 1.0.0. Keep the runner's Core and SDK references on compatible versions.
 
 Regenerate the lock file after changing references, and validate your suites against
 the selected engine and provider versions before adopting the update.
