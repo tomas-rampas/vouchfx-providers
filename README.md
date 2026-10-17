@@ -131,6 +131,10 @@ dotnet test community/Vouchfx.Community.JsonRpc.Tests/Vouchfx.Community.JsonRpc.
 dotnet format vouchfx-providers.sln --verify-no-changes --no-restore
 ```
 
+The [dated Core 1.0.7 custom-host ABI record](docs/validation/core-1.0.7-sdk-1.0.5-compatibility-2026-10-17.md)
+documents unchanged SDK 1.0.5 provider assemblies running in a custom host against Core 1.0.7.
+It does not validate stock-CLI loading of external providers.
+
 For an unpublished SDK candidate, validation requires its supplied package feed and
 restore configuration. Follow [Building against the SDK](CONTRIBUTING.md#building-against-the-sdk),
 or use the engine-main override below for unreleased source work.
