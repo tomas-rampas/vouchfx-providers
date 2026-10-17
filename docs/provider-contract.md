@@ -27,6 +27,14 @@ public sealed class MyKindProvider
 - **`MinEngineVersion`** — the earliest engine version your provider supports. Use semantic versioning; the engine enforces compatibility at suite startup. A provider compiled against SDK 1.0.5 requires Core 1.0.5 or newer: its SDK assembly identity is 1.0.5.0, so Core 1.0.0 cannot load it even when the provider uses no newer API.
 - **`Metadata`** — used in reporting and documentation. `License` should always be Apache-2.0 for compatibility.
 
+### Minimum engine version
+
+Starting with Core 1.0.7, the CLI and shared runtime hosts validate a provider’s `MinEngineVersion` before evaluating its schema. Use a strict semantic version such as `1.0.7` and declare the oldest engine version that actually supports the APIs your provider uses. An invalid declaration or a requirement newer than the running engine rejects the provider before schema admission. This host check does not require a new provider interface.
+
+For the contract and compatibility details, see [Core provider architecture (§13.3)](https://github.com/tomas-rampas/vouchfx/blob/main/docs/01_Technical_Architecture_and_Engineering_Blueprint.md#133-the-provider-contract) and [versioning and minimum-engine rules (§13.8)](https://github.com/tomas-rampas/vouchfx/blob/main/docs/01_Technical_Architecture_and_Engineering_Blueprint.md#138-versioning-capability-declaration-and-deprecation).
+
+Security-confirmation records are emitted by the engine’s existing transport probes; community providers do not need to add an event producer for this feature.
+
 ## Mandatory Interface 2: `IStepBinder<TModel>`
 
 Converts YAML into your model and supplies the JSON Schema fragment for IDE validation:
