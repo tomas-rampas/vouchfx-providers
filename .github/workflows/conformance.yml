@@ -61,6 +61,12 @@
 # for OUT-OF-REPO consumers who cannot inherit the property — the samples in
 # docs/provider-project-setup.md and docs/consuming-a-provider.md, and the
 # conditioned fallback in the two template/Vouchfx.Community.Hello* csprojs.
+# Move the other literals that name the pin with them: site/facts-fallback.json
+# (engine_release, sdk_version), the pin note in publish-provider.yml's header,
+# the SDK statements and measured results in README.md and CONTRIBUTING.md, and
+# the MinEngineVersion declared by the template and community provider sources
+# (docs/provider-contract.md explains why it follows the SDK's assembly identity).
+# The first two had silently drifted before they were listed here.
 # Lane B resolves engine main once per run and checks out that immutable SHA;
 # no manual source repin is needed. Its logged SHA and SDK version identify
 # the exact compatibility input rather than a historical snapshot.

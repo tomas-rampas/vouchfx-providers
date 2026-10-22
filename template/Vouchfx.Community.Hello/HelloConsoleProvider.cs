@@ -97,7 +97,7 @@ public sealed class HelloConsoleProvider
     /// <inheritdoc />
     public ProviderMetadata Metadata { get; } = new ProviderMetadata(
         Version: "1.0.0",
-        MinEngineVersion: "1.0.5",
+        MinEngineVersion: "1.2.0",
         License: "Apache-2.0",
         Authors: new[] { "vouchfx-community" });
 

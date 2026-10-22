@@ -115,13 +115,14 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 ## Building against the SDK
 
-The published `Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` `1.0.5` packages and their
+The published `Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` `1.2.0` packages and their
 dependency closure are available on NuGet.org. `Directory.Build.props` selects
 this SDK version through `$(VouchfxSdkVersion)`; `nuget.config` routes its package
 IDs to NuGet.org. The Release build, template tests (5/5), JsonRpc tests (24/24),
-and formatting check passed against SDK 1.0.5. A runner built from Core 1.0.5
-also executed the current Hello and JsonRpc source providers successfully (2/2
-steps); a copied Hello template consumer passed 5/5 tests. From the repository root:
+and formatting check passed against SDK 1.2.0. The stock Core 1.2.0 CLI also loaded
+the current Hello and JsonRpc source providers from a `--providers` directory and ran
+them successfully (2/2 steps); a copied Hello template consumer passed 5/5 tests.
+From the repository root:
 
 ```bash
 dotnet restore vouchfx-providers.sln
