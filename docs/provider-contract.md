@@ -17,14 +17,14 @@ public sealed class MyKindProvider
 
     public ProviderMetadata Metadata { get; } = new ProviderMetadata(
         Version: "1.0.0",
-        MinEngineVersion: "1.0.5",
+        MinEngineVersion: "1.2.0",
         License: "Apache-2.0",
         Authors: new[] { "you" });
 }
 ```
 
 - **`Kind`** — must be unique across all loaded providers. Use kebab-case for both parts (lowercase, hyphens for word breaks).
-- **`MinEngineVersion`** — the earliest engine version your provider supports. Use semantic versioning; the engine enforces compatibility at suite startup. A provider compiled against SDK 1.0.5 requires Core 1.0.5 or newer: its SDK assembly identity is 1.0.5.0, so Core 1.0.0 cannot load it even when the provider uses no newer API.
+- **`MinEngineVersion`** — the earliest engine version your provider supports. Use semantic versioning; the engine enforces compatibility at suite startup. A provider compiled against SDK 1.2.0 requires Core 1.2.0 or newer: its SDK assembly identity is 1.2.0.0, so Core 1.0.0 cannot load it even when the provider uses no newer API.
 - **`Metadata`** — used in reporting and documentation. `License` should always be Apache-2.0 for compatibility.
 
 ### Minimum engine version

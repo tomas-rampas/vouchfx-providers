@@ -12,6 +12,49 @@ for that provider.
 
 ### Changed
 
+- **Published SDK pin advanced to `1.2.0`.** `$(VouchfxSdkVersion)` in
+  `Directory.Build.props` moves from `1.0.5` to `1.2.0`
+  (`0af21de5bd0a4e91ca002e03e6c256bc4e8ca4e8`). `Vouchfx.Sdk`, `Vouchfx.Sdk.Testing` and the
+  three `Vouchfx.Engine.*` packages in the test harness's closure are listed on NuGet.org at
+  `1.2.0`. Each package page shows the reserved-prefix notice and a single owner, `Tomas.R`,
+  the account the publish workflow's trusted-publishing policy names, as the conformance
+  workflow's ownership precondition requires. The frozen v1 provider-implemented SDK contract is unchanged:
+  the `Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` public-API goldens and the CSX helper
+  `Source`-hash golden are byte-identical at the two tags, and the SDK's code changes are
+  internal registry-admission overloads and doc-comment wording. The only third-party
+  dependency change across the five packages is `JsonSchema.Net` `9.2.1` to `9.3.0`. The
+  literals that cannot inherit the property move with it: the conditioned fallbacks in the two
+  `template/Vouchfx.Community.Hello*` csprojs, the `Vouchfx.Sdk` samples in
+  `docs/provider-project-setup.md` and `docs/consuming-a-provider.md`,
+  `site/facts-fallback.json` (which had drifted to `1.0.6`) and the pin note in
+  `.github/workflows/publish-provider.yml` (which still named `1.0.0`). As the `1.0.5`
+  adoption did, the `MinEngineVersion` declared by the `Vouchfx.Community.Hello` template and
+  the `Vouchfx.Community.JsonRpc` source rises with the pin, to `1.2.0`, because a provider
+  compiled against SDK `1.2.0` carries the `1.2.0.0` SDK assembly identity. The
+  already-published `Vouchfx.Community.JsonRpc` `1.0.0` package and its registry entry are
+  immutable and unchanged. Measured against SDK `1.2.0`: restore, the Release build with
+  warnings as errors (0 warnings, 0 errors), the format gate, Hello tests (5/5) and JsonRpc
+  tests (24/24) all passed, and a copied Hello template restored outside the repository from
+  NuGet.org passed 5/5. The stock Core `1.2.0` CLI loaded both source providers from a
+  `--providers` directory, listed them as Community tier, and ran a two-step suite against a
+  local JSON-RPC endpoint: both steps passed, with exit 0 and one JUnit scenario with no
+  failures, errors or skips.
+- **Consumer guide, registry page and site describe the engine CLI's managed install.** Engine
+  `1.2.0` added `vouchfx providers install/list/uninstall` and trusted provider directory
+  loading. `docs/consuming-a-provider.md` replaces its "Future" section and its "no runtime
+  loader" claim with a Path C for the CLI route (step-kind and package-ID installs, pinning
+  `--version` to the version a Vouched badge attests, feed and trust notes), and
+  `docs/implementing-a-provider.md` and `registry/README.md` drop the same stale claims.
+  Measured with the official `1.2.0` CLI: `vouchfx providers install rpc.json-rpc` resolved the
+  alias through this repository's live `registry/community-providers.json` to
+  `Vouchfx.Community.JsonRpc` `1.0.0`, installed it with its NuGet dependency graph, kept only
+  the provider assembly after pruning the host-supplied ones, and `vouchfx list` then reported
+  `rpc.json-rpc` as Community tier. `registry/README.md` gains an "Engine compatibility"
+  section recording what the CLI reads from that file (its path on `main`, the top-level array,
+  and the `stepKindId`, `nuget` and `description` fields), so a registry change cannot silently
+  break installs on released CLIs. The released CLI's unknown-step-type diagnostic points at
+  `https://providers.vouchfx.io/registry/`, which the site did not serve; a new
+  `site/registry/index.html` forwards it to the rendered registry page.
 - **Published SDK pin advanced to `1.0.0-rc.6`.** `$(VouchfxSdkVersion)` in
   `Directory.Build.props` moves from `1.0.0-rc.5` to `1.0.0-rc.6`
   (`93287ffbb0623ba253816ed4d909f50e1b26da93`), so hub-hosted providers now build and publish

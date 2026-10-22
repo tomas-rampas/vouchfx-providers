@@ -104,7 +104,7 @@ DOCS: list[tuple[str, str, str, str]] = [
 
     # Consuming providers
     ("docs/consuming-a-provider.md", "Consuming providers", "Using community providers",
-     "Compile-time discovery, NuGet pinning, and source builds. The ledger-jsonrpc sample demonstrates both paths."),
+     "Installing with the engine CLI, NuGet pinning, and source builds. The ledger-jsonrpc sample demonstrates the two custom-runner paths."),
 
     # Contributing & governance
     ("CONTRIBUTING.md", "Contributing", "Contributing & the tiers",
@@ -276,7 +276,7 @@ PORTAL = """<!DOCTYPE html>
     <div class="doc-cards">
       <a class="doc-card" href="docs/consuming-a-provider.html">
         <span class="doc-card__k">GUIDE</span><h3>Using community providers</h3>
-        <p>Compile-time discovery, NuGet pinning, and source builds. The ledger-jsonrpc sample demonstrates both paths.</p>
+        <p>Installing with the engine CLI, NuGet pinning, and source builds. The ledger-jsonrpc sample demonstrates the two custom-runner paths.</p>
       </a>
       <a class="doc-card" href="registry/README.html">
         <span class="doc-card__k">REGISTRY</span><h3>Community registry</h3>

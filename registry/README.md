@@ -6,7 +6,7 @@ This directory contains the **community provider index** — a curated registry 
 
 A common first-read confusion, resolved up front: a community provider consists of **two entirely different artifacts**, and only one of them is JSON.
 
-1. **The provider itself is C# source, shipped as a NuGet package.** It is a small project implementing the frozen `Vouchfx.Sdk` contract (`IStepProvider`, `IStepBinder<T>`, `IStepValidator<T>`, `IStepCompiler<T>`), compiled and published under Apache-2.0. Providers are compile-time, source-level plugins: the package is the distribution artifact — you add it as a NuGet `PackageReference` in a custom runner and rebuild the host (for published providers), or build from source for unpublished ones; either way the provider is compiled into the host, never loaded at runtime. When the planned provider directory loader ships, packages will become runtime-loadable. The [implementing-a-provider guide](../docs/implementing-a-provider.md) covers writing one end to end.
+1. **The provider itself is C# source, shipped as a NuGet package.** It is a small project implementing the frozen `Vouchfx.Sdk` contract (`IStepProvider`, `IStepBinder<T>`, `IStepValidator<T>`, `IStepCompiler<T>`), compiled and published under Apache-2.0. Providers are compile-time, source-level plugins: the package is the distribution artifact. For a published provider, the stock `vouchfx` CLI (engine 1.2.0 and later) can install it and load it at startup, or you add it as a NuGet `PackageReference` in a custom runner and rebuild the host; for an unpublished one, you build from source. The [implementing-a-provider guide](../docs/implementing-a-provider.md) covers writing one end to end.
 2. **The registry entry is one JSON object** in the shared `community-providers.json` file below — pure *discovery metadata*: the provider's name, its step kind, where its source lives, which NuGet package to install, the minimum engine version, and whether it holds the Vouched badge. Nobody publishes "a JSON file" as their provider; an author adds a single entry to this shared catalogue so users can find the package.
 
 A Community-tier provider can live in **either of two first-class places** — every provider gets a registry entry here regardless:
@@ -16,7 +16,7 @@ A Community-tier provider can live in **either of two first-class places** — e
 
 The first entry — [`rpc.json-rpc`](../community/Vouchfx.Community.JsonRpc/README.md) — is hub-hosted and doubles as the worked reference for both the guide and the submission shape.
 
-Today, a published community provider is consumed as a NuGet package referenced from a small custom runner ([`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) is the worked example); a provider without a published package is consumed via a source-level build — clone the provider's repository (or this one, for hub-hosted providers), reference its project in your build, and rebuild your host. A one-command install experience (`vouchfx providers install <package>`) is planned and tracked on the [engine's public roadmap](https://vouchfx.io/roadmap/).
+A published community provider can be installed with the engine CLI — `vouchfx providers install <step-kind>` resolves the step kind through this registry (engine 1.2.0 and later; see [Consuming a Provider](../docs/consuming-a-provider.md#path-c-installing-with-the-engine-cli)) — or consumed as a NuGet package referenced from a small custom runner ([`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) is the worked example). A provider without a published package is consumed via a source-level build — clone the provider's repository (or this one, for hub-hosted providers), reference its project in your build, and rebuild your host.
 
 One neighbouring thing this registry is *not*: the [vouchfx-samples](https://samples.vouchfx.io/) project hosts sample *applications* (systems under test in C#, Python and Java) with complete `.e2e.yaml` suites demonstrating how the engine tests them. It also includes the canonical worked example of consuming a community provider from this registry: [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html), which depends on `Vouchfx.Community.JsonRpc` from NuGet.
 
@@ -29,10 +29,20 @@ The registry is stored in two files:
 
 The registry is human-readable and machine-consumable. It powers:
 - Community discoverability — this rendered page and the JSON file itself are the browsable index
-- Planned tooling for provider discovery and installation, and a generated provider-listing page on the
-  project website (both part of the engine roadmap)
+- `vouchfx providers install` and `vouchfx providers list` in engine 1.2.0 and later, which read this file directly (see [Engine compatibility](#engine-compatibility) below)
+- Planned tooling for a generated provider-listing page on the project website (part of the engine roadmap)
 
 The first entry is [`rpc.json-rpc`](../community/Vouchfx.Community.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) (version 1.0.0) is published from this repository's CI pipeline and ready to consume. Its earlier `1.0.0-alpha.1` release remains historical.
+
+## Engine compatibility
+
+Engine 1.2.0 and later read this file directly. `vouchfx providers install <step-kind>` and `vouchfx providers list` fetch `registry/community-providers.json` from this repository's `main` branch over HTTPS, and redirects are refused. That makes parts of the file a compatibility contract with every installed CLI, not only house style:
+
+- **Location and shape.** The file path, the `main` branch and the top-level JSON array. Moving or renaming the file, renaming the default branch, or wrapping the array in an object would break the lookup for every released CLI.
+- **Fields.** The CLI reads `stepKindId`, `nuget` and `description` and ignores every other field, including `minEngineVersion`, `vouched` and `vouchedVersion`. New optional fields are safe to add; renaming or removing those three is not.
+- **Uniqueness.** A step kind resolves only when exactly one entry has that `stepKindId` and that entry has a `nuget` value. Keep every `stepKindId` unique across the file: two entries with the same step kind make the lookup ambiguous, and the CLI refuses it. Several step kinds can share one `nuget` package as separate entries.
+- **Package identifiers.** The CLI accepts a `nuget` value of at most 100 ASCII letters, digits, `.`, `_` or `-`, starting with a letter or digit, not ending in a dot, and whose first dot-separated segment is not a reserved Windows device name such as `CON` or `NUL`. The schema below is more permissive, so keep to this narrower rule for any package that should be installable by step kind.
+- **Feed.** An entry names a package, not a feed. The CLI fetches it from NuGet.org unless the user passes `--source`.
 
 ## How to Add an Entry
 
@@ -195,7 +205,7 @@ A provider promoted to Core leaves the community registry entirely — Core prov
 
 - **Can I list multiple step types for one provider?** Create separate entries for each step type (e.g. `db-assert.snowflake` and `db-seed.snowflake`).
 - **Can I remove my provider from the registry?** Yes, open an issue or a PR requesting removal. Once removed, the entry is archived in git history but no longer listed.
-- **What if my NuGet package is not on NuGet.org?** List it in Community tier only if it is publicly resolvable (self-hosted feed, GitHub Packages, etc.). Update the `nuget` field with the full package identifier and any special installation instructions in your repository's README.
+- **What if my NuGet package is not on NuGet.org?** List it in Community tier only if it is publicly resolvable (self-hosted feed, GitHub Packages, etc.). Update the `nuget` field with the full package identifier and any special installation instructions in your repository's README. `vouchfx providers install <step-kind>` fetches from NuGet.org unless the user passes `--source`, so say in that README which feed to use.
 
 ---
 

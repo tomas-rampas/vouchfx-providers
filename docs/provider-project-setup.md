@@ -29,11 +29,11 @@ Your provider project must:
 - Use a **non-reserved namespace** (never `Vouchfx.Engine.*` or `Vouchfx.Steps.*`)
 - Target `.NET 8.0`
 
-The example targets the published Vouchfx.Sdk 1.0.5 package. Its supporting SDK
+The example targets the published Vouchfx.Sdk 1.2.0 package. Its supporting SDK
 closure packages are also published on NuGet.org, so public consumers can restore this
 exact version. The repository Release build and both provider test suites passed against
-SDK 1.0.5. Both current source providers passed a two-step runtime suite against Core
-1.0.5, and the copied Hello template passed 5/5 consumer tests.
+SDK 1.2.0. Both current source providers passed a two-step runtime suite on the stock
+Core 1.2.0 CLI, and the copied Hello template passed 5/5 consumer tests.
 
 Here is the minimal structure:
 
@@ -48,8 +48,8 @@ Here is the minimal structure:
 
   <ItemGroup>
     <!-- Frozen v1 SDK contract — no engine dependencies needed.
-         Published SDK release 1.0.5; see the project guide above. -->
-    <PackageReference Include="Vouchfx.Sdk" Version="1.0.5" />
+         Published SDK release 1.2.0; see the project guide above. -->
+    <PackageReference Include="Vouchfx.Sdk" Version="1.2.0" />
   </ItemGroup>
 
 </Project>
