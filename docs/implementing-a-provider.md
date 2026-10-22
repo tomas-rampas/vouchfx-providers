@@ -6,7 +6,7 @@ The full authoring journey is a **restructured** set of focused documentation pa
 
 ## What a Provider Is
 
-A provider is a compile-time C# plugin that converts a YAML step into an executable C# code fragment. It is **not** dynamic runtime loading; it is **not** sandboxing; it is discovered reflectively at suite startup and integrated into the engine's standard compilation and execution pipeline.
+A provider is a compile-time C# plugin that converts a YAML step into an executable C# code fragment. It is **not** sandboxed; it is discovered reflectively at suite startup, from the assemblies a custom runner supplies or, since engine 1.2.0, from the trusted provider directories the stock CLI loads, and integrated into the engine's standard compilation and execution pipeline.
 
 A step in vouchfx has a **type** of the form `<family>.<provider>` — for example, `http.rest`, `db-assert.postgres`, `mq-publish.kafka`. The family names the *intent* (what you are testing: a database, a message queue, an HTTP endpoint); the provider names the *technology* (PostgreSQL, Kafka, REST).
 
@@ -16,11 +16,11 @@ Your provider is a C# class decorated with `[StepProvider]` that:
 - **Binds YAML** from a `.e2e.yaml` file into a strongly-typed C# model (record)
 - **Validates** the model against provider-specific and project-level rules
 - **Compiles** the model into a `CsxFragment` — a reusable C# code snippet
-- **Is discovered reflectively** at startup from the provider assemblies explicitly supplied by the custom runner; a package reference alone does not register it
+- **Is discovered reflectively** at startup from the provider assemblies explicitly supplied by the host (a custom runner's list, or the stock CLI's provider directories); a package reference alone does not register it
 
 The engine calls your provider at compile time (once per suite), assembles all providers' CSX fragments into a single Roslyn script, compiles it once, then executes it in an isolated, collectible `AssemblyLoadContext`. Your provider never touches the execution path — it only emits code.
 
-Providers are **compile-time, source-level plugins**. There is no dynamic assembly loading, no sandbox, no inheritance hierarchy you must fit into. Your provider is one of many implementations of a frozen v1 contract; evolution is additive only, via new optional interfaces.
+Providers are **compile-time, source-level plugins**. There is no sandbox and no inheritance hierarchy you must fit into. Your provider is one of many implementations of a frozen v1 contract; evolution is additive only, via new optional interfaces.
 
 ## Governance Tiers
 
@@ -92,7 +92,7 @@ A protocol provider can instead target an already-running instance by URL, or co
 If you are new to provider authoring:
 
 1. **See what a provider looks like:** The [`rpc.json-rpc`](../community/Vouchfx.Community.JsonRpc/README.md) provider is the hub-hosted reference implementation, and it doubles as the worked example the guide walks through.
-2. **Understand how to consume providers:** See [Consuming a Provider](consuming-a-provider.md) to understand the compilation model and why there is no runtime loader.
+2. **Understand how to consume providers:** See [Consuming a Provider](consuming-a-provider.md) to understand the compilation model and the three ways a provider reaches a run: installed with the engine CLI, referenced by a custom runner, or built from source.
 3. **Read the engine's contract:** The engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) and [`docs/01`](https://github.com/tomas-rampas/vouchfx/blob/main/docs/01_Technical_Architecture_and_Engineering_Blueprint.md) § 13 are the authoritative statements of the frozen v1 SDK contract.
 
 ## Navigation

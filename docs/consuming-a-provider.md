@@ -2,17 +2,17 @@
 
 **Using Community and Core providers in your test application**
 
-This page explains how to add a published provider to your vouchfx test application. It covers both the NuGet package path and building a provider from source.
+This page explains how to add a published provider to your vouchfx test application. It covers three routes: installing it with the engine CLI (Path C), referencing the NuGet package from a custom runner (Path A), and building a provider from source (Path B). If you run your suites with the stock `vouchfx` CLI, start with [Path C](#path-c-installing-with-the-engine-cli).
 
-## Why No Runtime Loader?
+## How Providers Are Loaded
 
-vouchfx providers are **compile-time, source-level plugins** — not dynamically loaded at runtime. This is a deliberate design choice:
+vouchfx providers are **compile-time, source-level plugins** — the engine discovers them from the provider assemblies a host supplies, then freezes the step-kind map at startup. This is a deliberate design choice:
 
 - **Type safety:** The engine reflects over your loaded provider assemblies to discover step kinds at startup. Strong typing and compile-time binding mean fewer surprises.
-- **Simplicity:** No plugin registry, no sandbox, no version-negotiation complexity. A provider is just a C# class.
-- **Predictability:** Your application's set of available step types is fixed at compile time. There is no loading uncertainty.
+- **Simplicity:** No sandbox and no version-negotiation complexity beyond a declared minimum engine version. A provider is just a C# class, and it runs as trusted code in the host process.
+- **Predictability:** The set of available step types is fixed before the first step runs: at compile time for a custom runner, at startup for the CLI. There is no loading uncertainty.
 
-The tradeoff is that you cannot install a provider without rebuilding your application. This is acceptable because providers ship as NuGet packages, and your CI/CD already rebuilds on dependency changes.
+What changed in engine 1.2.0 is who supplies the assemblies. The stock `vouchfx` CLI now loads trusted provider assemblies from directories at startup, and `vouchfx providers install` can fetch a published provider into one (Path C), so you can add a provider without rebuilding anything. A custom runner still references the provider as a NuGet package or project and passes its assembly to the registry explicitly (Paths A and B); that remains the route when you own the host application.
 
 ## Path A: Consuming from NuGet
 
@@ -119,6 +119,10 @@ To update to a newer version:
 Regenerate the lock file after changing references, and validate your suites against
 the selected engine and provider versions before adopting the update.
 
+If you installed the provider with the CLI instead (Path C), re-run
+`vouchfx providers install` with the new `--version`: the install replaces the previous
+package directory in one transaction, and a failure before promotion restores the old version.
+
 ## Path B: Building from Source
 
 For unpublished or hub-hosted providers without a published NuGet package, consume via source-level build.
@@ -175,15 +179,28 @@ The runner shows:
 
 **This is the reference implementation.** Refer to it when building your own runner.
 
-## Future: `vouchfx providers install`
+## Path C: Installing with the engine CLI
 
-A planned feature on the engine roadmap is a CLI command for automatic provider installation:
+Since engine 1.2.0, the stock `vouchfx` CLI can fetch a published provider and load it at startup, so a project that only runs `.e2e.yaml` suites needs neither a custom runner nor a rebuild. The engine's [external providers guide](https://vouchfx.io/external-providers/) is the authority for the commands and their flags; this section covers what is specific to hub providers.
 
 ```bash
-vouchfx providers install Vouchfx.Community.JsonRpc
+# By Community registry step kind
+vouchfx providers install rpc.json-rpc
+
+# By exact NuGet package ID, pinning the version
+vouchfx providers install Vouchfx.Community.JsonRpc --version 1.0.0
+
+vouchfx providers list
+vouchfx providers uninstall Vouchfx.Community.JsonRpc
 ```
 
-This would automate the pin-and-rebuild flow. Until then, use the NuGet package or source reference paths above.
+- **Step kind or package ID.** An argument shaped like a step kind (`family.provider`, lowercase) is looked up in this hub's [registry](../registry/README.md) first, and the matching entry's `nuget` field names the package to install. Any other argument is treated as an exact NuGet package ID. A registry entry without a `nuget` field, such as hub-hosted source that has not been published, cannot be installed by step kind; build it from source instead (Path B).
+- **Version.** Without `--version`, the CLI installs the package's latest listed stable version. The Vouched badge attests one specific version of a provider (`vouchedVersion` in the registry) and the installer does not consult it, so pin `--version` when you want the reviewed version.
+- **Location and use.** Packages install to `~/.vouchfx/providers/<lowercase-package-id>/` by default, and `--directory` overrides that root. `vouchfx list` shows the step kinds the CLI has registered, and `watch` sessions must be restarted after an install, update or removal. For repeatable CI runs, install into a directory you control and pass it to `vouchfx run` with `--providers` and `--no-default-providers`, with `VOUCHFX_PROVIDERS` unset.
+- **Feed.** NuGet.org by default. `--source` selects another HTTPS NuGet v3 feed or a local feed directory, and only that source is consulted for the package and its dependencies, so it must carry both. The registry carries no feed information, so a provider hosted elsewhere needs `--source` and its exact package ID.
+- **Trust.** A provider runs as trusted code inside the CLI process, with no sandbox. The installer records SHA-256 hashes of what it downloads but does not verify package signatures, and a registry listing is not an endorsement: only the Vouched badge is. Read a provider's source and README before installing it.
+
+The installed provider must still satisfy its `MinEngineVersion`; the CLI checks this at startup, before the provider contributes anything.
 
 ---
 
