@@ -41,7 +41,7 @@ Engine 1.2.0 and later read this file directly. `vouchfx providers install <step
 - **Location and shape.** The file path, the `main` branch and the top-level JSON array. Moving or renaming the file, renaming the default branch, or wrapping the array in an object would break the lookup for every released CLI.
 - **Fields.** The CLI reads `stepKindId`, `nuget` and `description` and ignores every other field, including `minEngineVersion`, `vouched` and `vouchedVersion`. New optional fields are safe to add; renaming or removing those three is not.
 - **Uniqueness.** A step kind resolves only when exactly one entry has that `stepKindId` and that entry has a `nuget` value. Keep every `stepKindId` unique across the file: two entries with the same step kind make the lookup ambiguous, and the CLI refuses it. Several step kinds can share one `nuget` package as separate entries.
-- **Package identifiers.** The CLI accepts a `nuget` value of at most 100 ASCII letters, digits, `.`, `_` or `-`, starting with a letter or digit, not ending in a dot, and whose first dot-separated segment is not a reserved Windows device name such as `CON` or `NUL`. The schema below is more permissive, so keep to this narrower rule for any package that should be installable by step kind.
+- **Package identifiers.** The CLI accepts a `nuget` value of at most 100 ASCII letters, digits, `.`, `_` or `-`, starting with a letter or digit, not ending in a dot, and whose first dot-separated segment is not a reserved Windows device name such as `CON` or `NUL`. The schema below is more permissive; the separate CI contract check enforces the CLI's narrower rule for every `nuget` value present.
 - **Feed.** An entry names a package, not a feed. The CLI fetches it from NuGet.org unless the user passes `--source`.
 
 ## How to Add an Entry
@@ -126,6 +126,18 @@ For a live example, see the first entry in [`community-providers.json`](communit
 ## Validation
 
 Before submitting an entry, validate it against the schema:
+
+Also run the released-CLI contract check and its regression tests (Python standard library only):
+
+```sh
+python3 scripts/check_registry.py
+python3 -m unittest discover -s scripts -p 'test_check_registry.py'
+```
+
+CI runs both checks alongside schema validation. The contract check rejects duplicate
+`stepKindId` values even when other fields differ, and validates package IDs against
+`ProviderStore.ValidateId` from engine v1.2.0. Source-only hub entries may still omit
+`nuget`, and several distinct step kinds may share one package.
 
 ### Using `ajv` (CLI)
 

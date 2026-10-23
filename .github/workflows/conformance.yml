@@ -394,6 +394,13 @@ jobs:
           -s registry/community-providers.schema.json
           -d registry/community-providers.json
 
+      # Released CLIs fetch this file from main. Schema uniqueness compares
+      # entire objects and its NuGet ID rule is broader than the CLI's rule.
+      - name: Validate — released CLI registry contract
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_check_registry.py'
+          python3 scripts/check_registry.py
+
       # ── Step 6c: Tripwire — vouched badge changes are maintainer-only ───────
       # This is a TRIPWIRE, not a hard gate: `gh pr merge --admin` bypasses
       # required status checks (this one included), so the real control is
