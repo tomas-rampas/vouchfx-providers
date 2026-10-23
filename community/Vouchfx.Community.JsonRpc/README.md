@@ -27,21 +27,27 @@ exercises a plain REST one.
 
 ## Worked examples
 
+These examples call already-running JSON-RPC services at runner-reachable URLs.
+Replace the illustrative `variables` values with your endpoints and order identifier.
+Variable names use letters, digits and underscores, beginning with a letter or
+underscore. The engine does not create host/port aliases for these examples.
+For an engine-managed service, an earlier `script.csharp` step can explicitly map
+its staged base URL and RPC path, for example
+`Vars["calc_url"] = Vars["svc::calc"] + "/rpc";`, before the RPC step uses `{calc_url}`.
+
 ### 1. Happy path, with a capture
 
 ```yaml
 metadata:
   name: jsonrpc-sum-happy-path
 
-environment:
-  services:
-    calc:
-      image: my-org/jsonrpc-calculator:latest
+variables:
+  calc_url: "http://localhost:8080/rpc"
 
 steps:
   - id: call-sum
     type: rpc.json-rpc
-    url: "http://{calc-host}:{calc-port}/rpc"
+    url: "{calc_url}"
     method: sum
     params:
       a: 2
@@ -71,10 +77,13 @@ never corrupt the surrounding JSON structure.
 ### 2. Negative test — asserting a specific JSON-RPC error
 
 ```yaml
+variables:
+  calc_url: "http://localhost:8080/rpc"
+
 steps:
   - id: call-unknown-method
     type: rpc.json-rpc
-    url: "http://{calc-host}:{calc-port}/rpc"
+    url: "{calc_url}"
     method: subtractWithCarry   # deliberately unsupported by the target service
     expect:
       error:
@@ -89,10 +98,14 @@ any request is sent.
 ### 3. RETRY — polling an eventually-consistent read
 
 ```yaml
+variables:
+  projector_url: "http://localhost:8081/rpc"
+  orderId: "order-123"
+
 steps:
   - id: wait-for-projection
     type: rpc.json-rpc
-    url: "http://{projector-host}:{projector-port}/rpc"
+    url: "{projector_url}"
     method: getOrderStatus
     params:
       orderId: "{orderId}"
@@ -113,16 +126,20 @@ honours is: write exactly one `StepOutcome` on every invocation, and use `Fail` 
 `Fail` into `Inconclusive` once the window elapses; see the table below.
 
 The `{orderId}` inside `params.orderId` above is a genuine substitution, not a
-literal: it is resolved from `Vars` on every poll, exactly like `{projector-host}`
+literal: it is resolved from `Vars` on every poll, exactly like `{projector_url}`
 in `url`.
 
 ### 4. Fire-and-forget notification
 
 ```yaml
+variables:
+  audit_url: "http://localhost:8082/rpc"
+  orderId: "order-123"
+
 steps:
   - id: notify-audit-log
     type: rpc.json-rpc
-    url: "http://{audit-host}:{audit-port}/rpc"
+    url: "{audit_url}"
     method: recordEvent
     params: ["order.shipped", "{orderId}"]
     notification: true

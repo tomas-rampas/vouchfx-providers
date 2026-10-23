@@ -189,8 +189,9 @@ jobs:
       # NU5104 note: with no -p:Version override, this gate packs at
       # community/Directory.Build.props's prerelease DEFAULT version
       # (1.0.0-0.local) — which keeps NuGet's NU5104 rule (a stable package
-      # must not carry a prerelease dependency) silent here even while the
-      # root $(VouchfxSdkVersion) pin is itself a pre-release. That silence
+      # must not carry a prerelease dependency) silent here when
+      # $(VouchfxSdkVersion) is overridden with a pre-release candidate. The
+      # default published SDK pin is stable. That silence
       # is specific to this default-version gate/local pack path — it does
       # NOT apply to publish-provider.yml's real pack step, which packs at
       # the tag's own version and so DOES enforce NU5104 for a stable tag

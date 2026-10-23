@@ -51,7 +51,7 @@ Open one pull request adding `community/<YourProvider>/` + `community/<YourProvi
 3. **Maintainer review:**
    - **Security review** — credentials, CVEs, TLS, telemetry, package signature
    - **CSX review** — read the generated C# code; confirm it follows the composition rules
-   - **Conformance validation** — verify your fixture passes on engine main plus two preceding minors (human validation; CI runs only main)
+   - **Conformance validation** — verify your fixture passes on engine main plus two preceding minors (human validation for the preceding minors; CI tests the published SDK pin and has a separate engine-main early-warning lane)
 
 4. **Badge award** — upon approval, a maintainer opens a one-line registry PR adding `"vouched": true` to your entry. Once merged, the badge is live on your listing. Your provider remains where it is — hub-hosted or externally hosted — with the platform team's endorsement now visible in the registry.
 
