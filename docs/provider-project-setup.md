@@ -55,7 +55,7 @@ Here is the minimal structure:
 </Project>
 ```
 
-Restore the SDK from NuGet.org at the pinned version once its dependency closure is publicly available (see `CONTRIBUTING.md` "Building against the SDK"). For advanced use cases testing against the engine's unreleased `main` branch, see the "Building against engine main (optional)" subsection in `CONTRIBUTING.md`.
+Restore the SDK from NuGet.org at the pinned version, whose dependency closure is publicly available (see `CONTRIBUTING.md` "Building against the SDK"). For advanced use cases testing against the engine's unreleased `main` branch, see the "Building against engine main (optional)" subsection in `CONTRIBUTING.md`.
 
 ### Assembly-Graph Hygiene
 

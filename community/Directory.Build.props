@@ -5,9 +5,9 @@
        for non-test projects only (see composition note there). -->
   <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
 
-  <!-- Community provider packaging (feat/provider-packaging).
+  <!-- Community provider packaging.
        Every provider hosted under community/ ships as its own NuGet package, published
-       from this repo's CI (a publish workflow lands separately) — unlike the rest of the
+       from this repo's publish-provider workflow — unlike the rest of the
        repo, where IsPackable stays false (provider authors who host externally pack and
        publish their OWN packages; template/ is a copyable skeleton, never packed).
 
@@ -15,12 +15,12 @@
        opt in: a forgotten opt-in on a new community/ submission must not silently ship a
        provider with no package. The metadata below is deliberately the same shape as the
        engine's own frozen-SDK package (src/Sdk/Vouchfx.Sdk/Vouchfx.Sdk.csproj in the
-       engine repo) — repository/license/SourceLink/symbols — so a future CI pack step has
+       engine repo) — repository/license/SourceLink/symbols — so the conformance pack gate has
        real metadata to validate for every hub-hosted provider, not just the first one.
 
        VersionPrefix/VersionSuffix ARE set below (1.0.0-0.local), but only as the fallback
        for an unversioned pack — see the comment on those properties for why (NU5104 vs.
-       the pre-release $(VouchfxSdkVersion) SDK pin). A hub-hosted provider's real,
+       a pre-release $(VouchfxSdkVersion) override). A hub-hosted provider's real,
        published version still comes from -p:Version at publish time (per-package,
        independent of every other provider in this repo), which overrides that fallback —
        never from a shared default.
@@ -39,9 +39,9 @@
          (1) a bare/gate `dotnet pack` (no -p:Version — this is how the conformance pack
          gate packs every submission) yields 1.0.0-0.local, a prerelease. That matters
          because every provider here takes a Vouchfx.Sdk PackageReference pinned to
-         $(VouchfxSdkVersion) (root Directory.Build.props), which is itself a pre-release
-         while the SDK is pre-v1.0 — a STABLE provider version depending on a pre-release
-         SDK trips NU5104 ("a stable release should not have a prerelease dependency"),
+         $(VouchfxSdkVersion) (root Directory.Build.props). The published pin is stable,
+         but engine-main testing uses a pre-release override. A STABLE provider version
+         depending on a pre-release SDK trips NU5104 ("a stable release should not have a prerelease dependency"),
          promoted to a build error by TreatWarningsAsErrors. Forcing the default to a
          prerelease keeps the gate green without suppressing the check. The numeric-leading
          suffix ("0.local") also sorts below every published pre-release (alpha, beta, rc),
