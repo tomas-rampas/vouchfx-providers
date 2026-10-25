@@ -19,7 +19,7 @@ A vouchfx *provider* is a `<family>.<provider>` step type (e.g. `db-assert.postg
 
 Current source supports .NET 8, 9 and 10 SDKs. Provider packages retain their
 `net8.0` asset baseline so applications on all three versions can reference them.
-The [compatibility matrix](.github/workflows/dotnet-compatibility.yml) builds and
+The [compatibility matrix](https://github.com/tomas-rampas/vouchfx-providers/blob/main/.github/workflows/dotnet-compatibility.yml) builds and
 runs template and community conformance tests with each SDK/runtime installed in
 isolation. This runtime matrix is separate from the Vouched engine-version rubric.
 
