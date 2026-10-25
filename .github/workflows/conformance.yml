@@ -189,8 +189,9 @@ jobs:
       # NU5104 note: with no -p:Version override, this gate packs at
       # community/Directory.Build.props's prerelease DEFAULT version
       # (1.0.0-0.local) — which keeps NuGet's NU5104 rule (a stable package
-      # must not carry a prerelease dependency) silent here even while the
-      # root $(VouchfxSdkVersion) pin is itself a pre-release. That silence
+      # must not carry a prerelease dependency) silent here when
+      # $(VouchfxSdkVersion) is overridden with a pre-release candidate. The
+      # default published SDK pin is stable. That silence
       # is specific to this default-version gate/local pack path — it does
       # NOT apply to publish-provider.yml's real pack step, which packs at
       # the tag's own version and so DOES enforce NU5104 for a stable tag
@@ -393,6 +394,13 @@ jobs:
           -c ajv-formats --spec=draft2020
           -s registry/community-providers.schema.json
           -d registry/community-providers.json
+
+      # Released CLIs fetch this file from main. Schema uniqueness compares
+      # entire objects and its NuGet ID rule is broader than the CLI's rule.
+      - name: Validate — released CLI registry contract
+        run: |
+          python3 -m unittest discover -s scripts -p 'test_check_registry.py'
+          python3 scripts/check_registry.py
 
       # ── Step 6c: Tripwire — vouched badge changes are maintainer-only ───────
       # This is a TRIPWIRE, not a hard gate: `gh pr merge --admin` bypasses
