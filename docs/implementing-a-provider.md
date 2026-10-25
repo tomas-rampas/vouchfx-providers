@@ -75,6 +75,15 @@ The orchestration layer's dependency registry is a fixed table; supporting a new
 
 A protocol provider can instead target an already-running instance by URL, or containers in an owned, user-supplied Docker Compose project. Published vouchfx `1.0.0` exposes HTTP/TCP services and PostgreSQL dependencies through Compose bindings to existing or custom protocol providers without adding an inline dependency kind. The environment-driver contract is format-neutral; other external formats require a registered driver implementation. See [Owned Docker Compose environments](https://vouchfx.io/compose-environments/) for configuration, readiness and ownership limits.
 
+If the backend has a custom Dockerfile, use native Compose `build.context` and optional
+`build.dockerfile` to build it during environment startup. Keep that build configuration in the
+Compose manifest; `environment.source` selects the driver and its configuration, not a Dockerfile.
+For inline services, build the image separately and reference it with `image:`. A step provider
+implements assertions or protocol operations against the exported bindings; it does not add an
+image builder or an environment driver. The
+[Compose orders sample](https://samples.vouchfx.io/samples/orders-dotnet-compose/README.html)
+uses an application built from source with PostgreSQL and Kafka assertions.
+
 ## The Seven-Stage Journey
 
 | Stage | Page | Topics |

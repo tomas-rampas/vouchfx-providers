@@ -26,6 +26,12 @@ Protocol assertions use compatible Core or custom step providers. See
 [Owned Docker Compose environments](https://vouchfx.io/compose-environments/) for configuration,
 readiness and ownership limits.
 
+For a backend built from your own Dockerfile, declare `build.context` and optional
+`build.dockerfile` in the Compose manifest. Native Compose builds it during startup; no new step
+provider is needed to build or start it. An inline service instead uses an image you build first.
+The [Compose orders sample](https://samples.vouchfx.io/samples/orders-dotnet-compose/README.html)
+shows how application builds and protocol assertions fit together.
+
 A provider is a compile-time, source-level plugin to the vouchfx engine. It exposes a new **step type** (a capability, like asserting a database state or publishing a message) by implementing four required interfaces from the `Vouchfx.Sdk`:
 
 - **`IStepProvider`** — your provider's identity and metadata
