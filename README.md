@@ -15,6 +15,14 @@ A vouchfx *provider* is a `<family>.<provider>` step type (e.g. `db-assert.postg
 1. **Community Provider Index** — a registry of providers authored by the community, vetted only for Apache-2.0 compliance and the reflective-discovery contract.
 2. **Hosted Community Providers** — a PR-gated hub where community members can host their providers; the Vouched badge offers optional post-listing platform-team endorsement.
 
+## .NET compatibility
+
+Current source supports .NET 8, 9 and 10 SDKs. Provider packages retain their
+`net8.0` asset baseline so applications on all three versions can reference them.
+The [compatibility matrix](https://github.com/tomas-rampas/vouchfx-providers/blob/main/.github/workflows/dotnet-compatibility.yml) builds and
+runs template and community conformance tests with each SDK/runtime installed in
+isolation. This runtime matrix is separate from the Vouched engine-version rubric.
+
 ## What is a Provider?
 
 Providers implement test steps; they are distinct from the mechanism that starts an environment.
