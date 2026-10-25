@@ -27,7 +27,8 @@ cd src/YourOrg.Steps.YourKind
 Your provider project must:
 - Reference **only** `Vouchfx.Sdk` (use the published SDK version selected in `Directory.Build.props`)
 - Use a **non-reserved namespace** (never `Vouchfx.Engine.*` or `Vouchfx.Steps.*`)
-- Target `.NET 8.0`
+- Target `.NET 8.0` for compatibility with all supported engine runtimes (.NET 8, 9 and 10).
+  Build with the .NET 8, 9 or 10 SDK; the `net8.0` SDK package also works in .NET 9 and 10 projects.
 
 The example targets the published Vouchfx.Sdk 1.2.0 package. Its supporting SDK
 closure packages are also published on NuGet.org, so public consumers can restore this
