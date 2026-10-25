@@ -73,4 +73,3 @@ jobs:
 
       - name: Template and community provider conformance tests
         run: dotnet test vouchfx-providers.sln -c Release --no-build
-
