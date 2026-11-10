@@ -86,7 +86,7 @@ Fork this repository, add an entry to `registry/community-providers.json` (follo
 
 **Option 3: Submit your provider as source (hub hosting)**
 
-Open a PR adding `community/<YourProvider>/` (+ its `.Tests` project) and a registry entry with `"hosting": "hub"` — no NuGet package required. Use the [community submission template](.github/PULL_REQUEST_TEMPLATE/community-submission.md); the merge bar is licence/DCO/namespace hygiene and a green conformance lane, not a code review. See [CONTRIBUTING.md](CONTRIBUTING.md) for the step-by-step.
+Open a PR adding `community/<YourProvider>/` (+ its `.Tests` project) and a registry entry with `"hosting": "hub"` — no NuGet package required. Use the [community submission template](.github/PULL_REQUEST_TEMPLATE/community-submission.md); the merge bar is licence/namespace hygiene and a green conformance lane, not a code review. See [CONTRIBUTING.md](CONTRIBUTING.md) for the step-by-step.
 
 ### Earning the Vouched Badge
 
@@ -100,7 +100,7 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
    - Integration-test fixture passes on the engine main branch + two preceding minors
    - README with ≥3 worked examples + known-limitations section
    - Security sign-off (credentials, transitive CVEs, TLS, no telemetry, package signature)
-   - Apache-2.0 + DCO sign-off
+   - Apache-2.0 licence
    - `MinEngineVersion` declared in provider metadata
    - CSX reviewed for §13.3.1 conformance
 

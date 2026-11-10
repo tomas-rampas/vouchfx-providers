@@ -116,6 +116,7 @@ for that provider.
   focused stage pages: `provider-project-setup.md`, `provider-contract.md`,
   `provider-csx-composition.md`, `provider-testing.md` and `provider-publishing.md`, ending at the
   registry and the Vouched checklist. Every page carries a stage breadcrumb and a "Next" link.
+- Vouched rubric item 4 is now "Apache-2.0 licence". Commits no longer need a DCO `Signed-off-by` trailer, and the DCO check workflow is removed. Existing badges are unaffected.
 
 ### Added
 
