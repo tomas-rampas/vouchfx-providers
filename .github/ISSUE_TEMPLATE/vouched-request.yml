@@ -54,7 +54,7 @@ body:
         1. Integration-test fixture passes on the official matrix (engine main + 2 preceding minors)
         2. README with ≥3 use cases and known-limitations section
         3. Security sign-off (credentials, transitive CVEs, TLS, no telemetry, signature)
-        4. Apache-2.0 + DCO sign-off
+        4. Apache-2.0 licence
         5. MinEngineVersion declared
         6. CSX reviewed for §13.3.1 conformance
 
@@ -64,7 +64,7 @@ body:
         1. Conformance matrix: ...
         2. README: ...
         3. Security sign-off: see Security Review Evidence below
-        4. Licence/DCO: ...
+        4. Licence: ...
         5. MinEngineVersion: ...
         6. CSX §13.3.1: see CSX Review Evidence below
     validations:

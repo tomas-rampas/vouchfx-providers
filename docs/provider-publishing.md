@@ -23,7 +23,7 @@ Once your provider is tested and documented, you have two hosting options for li
 
 ## Community Tier — Hub Hosting
 
-**When to choose this:** You do not have (or want) a NuGet account, or you want your provider's tests running in the hub's CI. Hosting here is **not** endorsement — the merge bar is hygiene (Apache-2.0, DCO, namespace rules, green conformance lane), not a code review.
+**When to choose this:** You do not have (or want) a NuGet account, or you want your provider's tests running in the hub's CI. Hosting here is **not** endorsement — the merge bar is hygiene (Apache-2.0, namespace rules, green conformance lane), not a code review.
 
 ### How to Submit
 
@@ -38,7 +38,7 @@ Open one pull request adding `community/<YourProvider>/` + `community/<YourProvi
 1. Integration-test fixture passes on the engine main branch plus two preceding minors
 2. README with ≥3 worked examples plus a known-limitations section
 3. Security sign-off: credentials, transitive CVEs, TLS, no telemetry, package signature
-4. Apache-2.0 licence plus all commits signed off via DCO (`git commit -s`)
+4. Apache-2.0 licence
 5. `MinEngineVersion` declared in provider metadata
 6. CSX code reviewed for composition-rule conformance by a maintainer
 
@@ -84,7 +84,6 @@ Before opening a Community submission or requesting the Vouched badge:
   - [ ] Known limitations are documented
   - [ ] The provider's step type, model shape, and typical use cases are clear
 - [ ] **Licensing:** My provider is Apache-2.0 licensed (or compatible)
-- [ ] **Commits:** All commits are signed off via DCO: `git commit -s`
 - [ ] **Build:** My provider builds with zero warnings: `dotnet build /p:TreatWarningsAsErrors=true`
 - [ ] **Metadata:** `MinEngineVersion` is declared in provider metadata
 

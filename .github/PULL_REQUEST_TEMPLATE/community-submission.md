@@ -3,7 +3,7 @@ Community-tier SOURCE submission — a provider contributed into this repository
 community/ directory. Use this template when your PR adds community/<YourProvider>/
 (+ its .Tests sibling) and a registry entry.
 
-The merge bar is HYGIENE, not review: licence, DCO, namespace rules, and a green
+The merge bar is HYGIENE, not review: licence, namespace rules, and a green
 conformance lane. Merging your provider is NOT an endorsement — that is what the
 Vouched badge review is for. You remain the owner of your provider's
 folder (a CODEOWNERS line is added at merge).
@@ -18,7 +18,7 @@ folder (a CODEOWNERS line is added at merge).
 ## Submission checklist
 
 - [ ] **Licence** — Apache-2.0; every source file carries the licence header.
-- [ ] **DCO** — every commit is signed off (`git commit -s`).
+- [ ] **Contribution terms** — I have the right to submit this code and agree it is contributed under Apache-2.0.
 - [ ] **Namespace hygiene** — the provider does **not** declare `Vouchfx.Engine.*` or
       `Vouchfx.Steps.*` (reserved; the engine refuses them at startup). The
       `Vouchfx.Community.<Name>` convention is recommended.

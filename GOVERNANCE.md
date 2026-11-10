@@ -35,12 +35,12 @@ Community providers are listed in the curated community index but are not endors
 **Hosting is not endorsement.** The Vouched badge's meaning is *trust*; the Community tier's meaning is *availability*. A provider living under `community/` in this repository carries exactly the same no-endorsement status as one living in its author's repository—every hub-hosted provider's README opens with the Community-tier notice, and the merge bar for accepting one is hygiene, not review.
 
 **Requirements:**
-- Apache-2.0 licensed (or compatible); for hub-hosted submissions, all commits signed off via DCO
+- Apache-2.0 licensed (or compatible)
 - Follows the reflective-discovery contract (implements `[StepProvider]` attribute, four required interfaces, uses non-reserved namespaces)
 - For hub-hosted submissions: builds standalone against the packed SDK and its conformance lane is green
 - No code review or rubric validation by the platform team (that is the Vouched badge gate)
 
-**Decision maker:** Any contributor. Providers are listed by the community via issue or pull request; the gatekeeping is Apache-2.0 compliance, and—for hub-hosted source—DCO, namespace hygiene, and a green conformance lane.
+**Decision maker:** Any contributor. Providers are listed by the community via issue or pull request; the gatekeeping is Apache-2.0 compliance, and—for hub-hosted source—namespace hygiene and a green conformance lane.
 
 **Delisting (hub-hosted):** A hub-hosted provider whose conformance lane rots and whose author is unresponsive may be delisted—its registry entry removed and its folder archived out of CI—never silently adopted or maintained by the platform team. The source history remains available; the author can resubmit at any time.
 
@@ -64,7 +64,7 @@ The Vouched badge is a registry metadata flag (`"vouched": true`) that signals p
 1. Conformance matrix: integration tests pass on engine main + two preceding minor versions
 2. Documentation: README with ≥3 use cases and known-limitations section
 3. Security sign-off: credentials, transitive CVEs, TLS defaults, telemetry, package signature
-4. Apache-2.0 licence and DCO sign-off
+4. Apache-2.0 licence
 5. MinEngineVersion declared
 6. CSX conforms to §13.3.1 of the architecture blueprint
 
@@ -122,8 +122,8 @@ The Vouched checklist is published as a detailed rubric, not as prose, because c
 ### 3. Sustainable Triage Budget
 The vouchfx maintainers allocate **one half-day per week** (4 hours) for provider community support: reviewing issues, triaging submissions, and helping new authors. This is a ringfenced, sustainable rate. For urgent issues outside that window, open a GitHub issue.
 
-### 4. DCO Sign-Off, Not CLA
-Contributors sign off via the Developer Certificate of Origin (DCO) rather than a Contributor Licence Agreement. The DCO is lighter-weight, requires no separate signing infrastructure, integrates with GitHub, and is consistent with the .NET Foundation's practice. You sign off by committing with `git commit -s` or using the GitHub web UI "Sign off" checkbox.
+### 4. No CLA
+Contributions are accepted under Apache-2.0 (inbound = outbound). No Contributor Licence Agreement and no `Signed-off-by` trailer is required.
 
 ### 5. Feedback, Not Rejection
 If a provider does not meet the Vouched rubric, it remains in Community with no implied criticism. The published rubric is the actionable feedback for what is needed to earn the badge. Authors are welcome to ask for help or guidance.

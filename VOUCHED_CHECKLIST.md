@@ -106,9 +106,9 @@ A maintainer must sign off on your provider's security posture. This is **not** 
 
 ---
 
-### 4. Licence and DCO Sign-Off
+### 4. Licence
 
-Your provider must be Apache-2.0 licensed (or compatible), and you must sign off via the Developer Certificate of Origin.
+Your provider must be Apache-2.0 licensed (or compatible).
 
 **Requirements:**
 1. Your provider repository must include a `LICENSE` file with the Apache-2.0 text (or link to the SPDX text).
@@ -118,20 +118,8 @@ Your provider must be Apache-2.0 licensed (or compatible), and you must sign off
      <License>Apache-2.0</License>
    </PropertyGroup>
    ```
-3. All commits in your work must be signed off: use `git commit -s` or the GitHub web UI "Sign off" checkbox. The sign-off text should read:
-   ```
-   Signed-off-by: Your Name <your.email@example.com>
-   ```
 
-**How DCO sign-off works:**
-- When you commit with `git commit -s`, Git appends your sign-off line to the commit message.
-- When you push a PR or open an issue, a GitHub bot checks that all relevant commits are signed off.
-- You can sign off retroactively: `git rebase -i main` and amend each commit to add the sign-off line, then force-push to your PR branch.
-
-**Why DCO matters:**
-The DCO confirms that you have the legal right to license your work under Apache-2.0 and that you have read and understood the Developer Certificate of Origin.
-
-**Failure mode:** If any commit is not signed off, the DCO check will flag it and the badge cannot be awarded.
+**Failure mode:** If the provider is not Apache-2.0 licensed (or compatible), the badge cannot be awarded.
 
 ---
 
@@ -233,7 +221,6 @@ Use this checklist when you open a Vouched request issue to request the badge fo
 - [ ] **Documentation:** README with ≥3 use cases and known-limitations section
 - [ ] **Security:** Credentials reviewed, transitive CVEs scanned, TLS defaults checked, no telemetry, signature noted
 - [ ] **Licence:** Apache-2.0 license in provider repository and `.csproj`
-- [ ] **DCO:** All commits signed off (`git commit -s`)
 - [ ] **MinEngineVersion:** Declared in the provider's `Metadata` property (`ProviderMetadata.MinEngineVersion`)
 - [ ] **CSX:** Representative steps reviewed against §13.3.1 (verified by a maintainer during review)
 

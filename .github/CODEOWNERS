@@ -10,7 +10,7 @@
 *                    @tomas-rampas
 
 # Community-tier source submissions — a maintainer gates the INITIAL merge
-# (licence/DCO/namespace hygiene/conformance only — not a code review; hosting
+# (licence/namespace hygiene/conformance only — not a code review; hosting
 # is not endorsement). When a submission merges, append a line here giving the
 # author ownership of their folder, e.g.:
 #   /community/Vouchfx.Community.Foo/  @their-github-handle

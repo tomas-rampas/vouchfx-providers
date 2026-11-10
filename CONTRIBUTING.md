@@ -16,7 +16,7 @@ All providers in this repository must meet these baseline requirements:
 
 ### Licensing and Attribution
 - **Apache-2.0 license** (or compatible). The vouchfx engine and all Core providers are Apache-2.0; all community providers must be compatible.
-- **Developer Certificate of Origin (DCO) sign-off.** Commits must be signed off with `git commit -s` or the GitHub web UI "Sign off" checkbox. The DCO confirms you have the right to license your work. It is lighter-weight than a Contributor Licence Agreement and is industry standard.
+- **Contributions are accepted under Apache-2.0 (inbound = outbound).** No Contributor Licence Agreement and no `Signed-off-by` trailer is required.
 
 ### The Provider Contract
 - Your provider must implement the four required interfaces from `Vouchfx.Sdk`: `IStepProvider`, `IStepBinder<TModel>`, `IStepValidator<TModel>`, and `IStepCompiler<TModel>`.
@@ -58,9 +58,9 @@ All Community-tier providers follow one contribution flow with two hosting choic
 2. Name your projects `community/<YourProvider>/` + `community/<YourProvider>.Tests/`; use a non-reserved namespace (the `Vouchfx.Community.<Name>` convention is recommended — never `Vouchfx.Engine.*`/`Vouchfx.Steps.*`).
 3. Build standalone against the pinned SDK (see "Building against the SDK" below). Your projects do **not** need to join the `.sln` — CI discovers `community/**/*.Tests.csproj` by glob and runs each submission in its own step. Every public member of your provider must have an XML-doc comment (CS1591 enforced by the repo's TreatWarningsAsErrors setting); the reference provider [`Vouchfx.Community.JsonRpc`](community/Vouchfx.Community.JsonRpc) demonstrates this quality bar. When you publish to NuGet, the pack gate validates per-provider metadata: `Description` (not the MSBuild default), `PackageTags`, `PackageReadmeFile` + a packaged `README.md` file; `PackageId`, repository URL, and Apache-2.0 licence expression are set automatically from `community/Directory.Build.props`.
 4. Add your registry entry with `"hosting": "hub"`. If your provider will be published to NuGet (recommended for discoverability), set `nuget` to the provider directory name (e.g. `nuget: "Vouchfx.Community.JsonRpc"` for `community/Vouchfx.Community.JsonRpc`); the publish workflow requires this field to cut a release tag (`<Provider>/vX.Y.Z`). **Release timing:** no `<Provider>/vX.Y.Z` tag may be cut until your provider's `Vouchfx.Sdk` dependency pin is publicly restorable from NuGet.org. The publish workflow enforces this with a dependency-resolvability preflight check — publishing an unrestorable package would burn an immutable version number. If your SDK dependency is a pre-release, use a pre-release provider version: NuGet's NU5104 rule prevents a stable package from carrying a pre-release dependency. The published `Vouchfx.Sdk` 1.2.0 dependency supports stable provider releases; `Vouchfx.Community.JsonRpc/v1.0.0` is the hub's historical stable release example built before this SDK repin. Its earlier `1.0.0-alpha.1` release remains historical. Any future package built from the current JsonRpc source must use a new provider version; do not reuse the immutable 1.0.0 version.
-5. Open the PR using the [community submission template](.github/PULL_REQUEST_TEMPLATE/community-submission.md), with every commit DCO-signed (`git commit -s`).
+5. Open the PR using the [community submission template](.github/PULL_REQUEST_TEMPLATE/community-submission.md).
 
-The merge bar for Option B is **hygiene, not review**: Apache-2.0 licence, DCO, namespace rules, no step-kind collision, and a green conformance lane. **Hosting in this repository is not endorsement** — your provider's README must open with the Community-tier notice, and you remain the owner of your folder (a CODEOWNERS line is added at merge). The published Vouched rubric is the feedback for what is needed to work towards the Vouched badge.
+The merge bar for Option B is **hygiene, not review**: Apache-2.0 licence, namespace rules, no step-kind collision, and a green conformance lane. **Hosting in this repository is not endorsement** — your provider's README must open with the Community-tier notice, and you remain the owner of your folder (a CODEOWNERS line is added at merge). The published Vouched rubric is the feedback for what is needed to work towards the Vouched badge.
 
 ## Building against the SDK
 
@@ -114,7 +114,7 @@ After your Community provider is listed in the registry (via Option A or Option 
    - Integration-test fixture passes on engine main + two preceding minors
    - README with ≥3 use cases + known-limitations section
    - Security sign-off: credentials, transitive CVEs, TLS, no telemetry, signature
-   - Apache-2.0 + DCO sign-off
+   - Apache-2.0 licence
    - MinEngineVersion declared
    - CSX reviewed for §13.3.1 conformance by a maintainer
 
@@ -127,7 +127,7 @@ For the complete checklist, see [`VOUCHED_CHECKLIST.md`](VOUCHED_CHECKLIST.md). 
 1. Integration-test fixture passes on main + two preceding minors
 2. README with ≥3 use cases + known-limitations section
 3. Security sign-off: credentials, transitive CVEs, TLS, no telemetry, signature
-4. Apache-2.0 + DCO sign-off
+4. Apache-2.0 licence
 5. MinEngineVersion declared
 6. CSX reviewed for §13.3.1 conformance by a maintainer
 
