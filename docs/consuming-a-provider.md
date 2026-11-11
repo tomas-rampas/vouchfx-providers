@@ -200,7 +200,7 @@ vouchfx providers uninstall Vouchfx.Community.JsonRpc
 - **Feed.** NuGet.org by default. `--source` selects another HTTPS NuGet v3 feed or a local feed directory, and only that source is consulted for the package and its dependencies, so it must carry both. The registry carries no feed information, so a provider hosted elsewhere needs `--source` and its exact package ID.
 - **Trust.** A provider runs as trusted code inside the CLI process, with no sandbox. The installer records SHA-256 hashes of what it downloads but does not verify package signatures, and a registry listing is not an endorsement: only the Vouched badge is. Read a provider's source and README before installing it.
 
-The installed provider must still satisfy its `MinEngineVersion`; the CLI checks this at startup, before the provider contributes anything.
+The installed provider must still satisfy its `MinEngineVersion`; the CLI checks this at startup, before the provider contributes anything. The comparison uses the `VouchfxEngineVersion` capability stamp on `Vouchfx.Engine.Runtime`, not the informational version that `vouchfx --version` prints. A CLI built with a plain `dotnet build` from engine source between v1.2.0 and [vouchfx#666](https://github.com/tomas-rampas/vouchfx/pull/666) carries a stale stamp, so it refuses providers built from this hub's current source and loaded from a provider directory: every command that discovers providers (`run`, `validate`, `list`, `schema`, `scaffold`, `plan`) stops with `Provider registration refused` and exit code 3. Rebuild from engine source that includes that fix. See [Provider requires a newer engine](https://vouchfx.io/troubleshooting/#provider-requires-a-newer-engine) in the engine documentation.
 
 ---
 

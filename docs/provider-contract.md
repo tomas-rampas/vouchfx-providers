@@ -31,6 +31,8 @@ public sealed class MyKindProvider
 
 Starting with Core 1.0.7, the CLI and shared runtime hosts validate a provider’s `MinEngineVersion` before evaluating its schema. Use a strict semantic version such as `1.0.7` and declare the oldest engine version that actually supports the APIs your provider uses. An invalid declaration or a requirement newer than the running engine rejects the provider before schema admission. This host check does not require a new provider interface.
 
+The host version in that comparison is the `VouchfxEngineVersion` capability stamp on `Vouchfx.Engine.Runtime`, not the informational version `vouchfx --version` prints. A release build stamps its release version; a source build uses a fallback that the engine keeps at or above the newest version heading in its `CHANGELOG.md`. See [Provider requires a newer engine](https://vouchfx.io/troubleshooting/#provider-requires-a-newer-engine) in the engine documentation for the refusal message and its fixes.
+
 For the contract and compatibility details, see [Core provider architecture (§13.3)](https://github.com/tomas-rampas/vouchfx/blob/main/docs/01_Technical_Architecture_and_Engineering_Blueprint.md#133-the-provider-contract) and [versioning and minimum-engine rules (§13.8)](https://github.com/tomas-rampas/vouchfx/blob/main/docs/01_Technical_Architecture_and_Engineering_Blueprint.md#138-versioning-capability-declaration-and-deprecation).
 
 Security-confirmation records are emitted by the engine’s existing transport probes; community providers do not need to add an event producer for this feature.
