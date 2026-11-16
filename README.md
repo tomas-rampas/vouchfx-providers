@@ -19,9 +19,14 @@ A vouchfx *provider* is a `<family>.<provider>` step type (e.g. `db-assert.postg
 
 Build this repository with the .NET 10 SDK (`global.json` pins it). Provider
 assemblies still target `net8.0`: that is the v1 provider contract target, which the
-engine's `vouchfx provider install` requires, and it is a build target rather than a
+engine's `vouchfx providers install` installs (it installs only net8.0-compatible assets;
+the hub requires exactly `lib/net8.0`), and it is a build target rather than a
 runtime requirement. Providers run inside the engine, so the runtime you need is the
 engine's: from the engine release that moves to .NET 10, that is the .NET 10 runtime.
+Until that engine release, the published CLI is a net8.0 build; on a .NET 10-only machine
+install it with `dotnet tool install -g vouchfx --version 1.2.0 --allow-roll-forward` (or set
+`DOTNET_ROLL_FORWARD=Major` for the command). `dotnet tool update` has no
+`--allow-roll-forward`, so to change version uninstall the tool, then install it again.
 Test projects target `net10.0`. The
 [compatibility lane](https://github.com/tomas-rampas/vouchfx-providers/blob/main/.github/workflows/dotnet-compatibility.yml) builds and
 runs template and community conformance tests with only the .NET 10 SDK/runtime installed,

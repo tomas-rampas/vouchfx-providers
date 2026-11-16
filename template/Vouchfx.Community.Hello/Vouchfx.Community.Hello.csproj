@@ -46,7 +46,7 @@
          - TargetFramework is REQUIRED for `dotnet restore` to even start — without it,
            NuGet's target-framework inference fails outright (NETSDK1013), before
            PackageReference versions are ever considered. net8.0 is the provider contract
-           target (the engine's `vouchfx provider install` accepts only net8.0 assets,
+           target (the engine's `vouchfx providers install` installs only net8.0-compatible assets,
            and Vouchfx.Sdk is net8.0); it is a build target, not a runtime requirement,
            and must not be raised.
          - ImplicitUsings is REQUIRED for this file to compile as written: it has no

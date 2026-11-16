@@ -143,7 +143,8 @@ jobs:
       # The SDK is .NET 10, and the test projects target net10.0, but every provider
       # library (each non-*.Tests project under template/ and community/) must keep
       # targeting net8.0: that is the v1 provider contract target, and the engine's
-      # `vouchfx provider install` accepts only net8.0 assets. A repo-wide "bump
+      # `vouchfx providers install` installs only net8.0-compatible assets (the hub requires
+      # exactly lib/net8.0). A repo-wide "bump
       # everything to net10.0" change fails here, loudly, instead of publishing
       # packages the installer rejects. The target is read from MSBuild's evaluated
       # TargetFramework in the SAME configuration the build, the pack gate and
@@ -154,6 +155,8 @@ jobs:
       # check that does not depend on how the property was set.
       # A project under community/ that packs (IsPackable true) is held to net8.0
       # whatever its name, so a provider called Foo.Tests cannot dodge the guard.
+      # Every other *.Tests project must evaluate to net10.0, and no project may set
+      # TargetFrameworks (plural), which would hide a multi-target behind the props.
       - name: Guard — provider assemblies target net8.0
         shell: bash
         run: |
@@ -161,14 +164,28 @@ jobs:
           shopt -s globstar nullglob
           found=0
           for csproj in template/**/*.csproj community/**/*.csproj; do
-            tfm="$(dotnet msbuild "$csproj" -p:Configuration=Release -getProperty:TargetFramework -nologo)"
-            packable="$(dotnet msbuild "$csproj" -p:Configuration=Release -getProperty:IsPackable -nologo)"
-            echo "$csproj -> TargetFramework=$tfm IsPackable=$packable"
+            # One evaluation returns all three properties as JSON. python3 (on the hosted
+            # runner) parses it; any parse problem fails the step rather than passing it.
+            props_json="$(dotnet msbuild "$csproj" -p:Configuration=Release -getProperty:TargetFramework -getProperty:TargetFrameworks -getProperty:IsPackable -nologo)"
+            if ! parsed="$(python3 -I -c 'import json,sys; p=json.load(sys.stdin)["Properties"]; print("|".join(str(p[k]) for k in ("TargetFramework", "TargetFrameworks", "IsPackable")))' <<<"$props_json")"; then
+              echo "::error::$csproj — could not read TargetFramework/TargetFrameworks/IsPackable from MSBuild output: $props_json"
+              exit 1
+            fi
+            IFS='|' read -r tfm tfms packable <<<"$parsed"
+            echo "$csproj -> TargetFramework=$tfm TargetFrameworks=$tfms IsPackable=$packable"
+            if [[ -n "$tfms" ]]; then
+              echo "::error::$csproj sets TargetFrameworks ('$tfms'). Multi-targeting is not allowed: providers target net8.0 only and test projects net10.0 only."
+              exit 1
+            fi
             if [[ "$csproj" == *.Tests.csproj && ! ( "$csproj" == community/* && "${packable,,}" == "true" ) ]]; then
+              if [[ "$tfm" != "net10.0" ]]; then
+                echo "::error::$csproj is a test project and targets '$tfm'. Test projects must target net10.0 (no roll-forward; a net8.0 test host needs the out-of-support .NET 8 runtime)."
+                exit 1
+              fi
               continue
             fi
             if [[ "$tfm" != "net8.0" ]]; then
-              echo "::error::$csproj targets '$tfm'. Provider assemblies must target net8.0: it is the v1 provider contract target (the engine's provider install accepts only net8.0 assets) and must not be raised."
+              echo "::error::$csproj targets '$tfm'. Provider assemblies must target net8.0: it is the v1 provider contract target (the engine's providers install installs only net8.0-compatible assets; the hub requires exactly lib/net8.0) and must not be raised."
               exit 1
             fi
             found=1
@@ -450,7 +467,7 @@ jobs:
       # entire objects and its NuGet ID rule is broader than the CLI's rule.
       - name: Validate — released CLI registry contract
         run: |
-          python3 -m unittest discover -s scripts -p 'test_check_registry.py'
+          python3 -m unittest discover -s scripts -p 'test_*.py'
           python3 scripts/check_registry.py
 
       # ── Step 6c: Tripwire — vouched badge changes are maintainer-only ───────

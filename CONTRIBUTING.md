@@ -64,6 +64,8 @@ The merge bar for Option B is **hygiene, not review**: Apache-2.0 licence, names
 
 ## Building against the SDK
 
+Prerequisite: the **.NET 10 SDK** (`global.json` pins `10.0.100`, `rollForward: latestFeature`). Provider assemblies still target `net8.0`; test projects target `net10.0`.
+
 The `Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` `1.2.0` packages and their dependency closure are published to [NuGet.org](https://www.nuget.org). `Directory.Build.props` selects this version via the `$(VouchfxSdkVersion)` property. The Release build, Hello tests (5/5), JsonRpc tests (24/24), and formatting check passed against SDK 1.2.0; both current source providers also passed a two-step runtime suite on the stock Core 1.2.0 CLI, which loaded them from a `--providers` directory. To build:
 
 ```bash

@@ -27,11 +27,17 @@ cd src/YourOrg.Steps.YourKind
 Your provider project must:
 - Reference **only** `Vouchfx.Sdk` (use the published SDK version selected in `Directory.Build.props`)
 - Use a **non-reserved namespace** (never `Vouchfx.Engine.*` or `Vouchfx.Steps.*`)
-- Target `net8.0`. It is the v1 provider contract target: the engine's `vouchfx provider install`
-  accepts only `net8.0` assets, and `Vouchfx.Sdk` is `net8.0`. It is a build target, not a runtime
+- Target `net8.0`. It is the v1 provider contract target: the engine's `vouchfx providers install`
+  installs only `net8.0`-compatible assets (the hub requires exactly `lib/net8.0`), and
+  `Vouchfx.Sdk` is `net8.0`. It is a build target, not a runtime
   requirement, so do not raise it. Build with the .NET 10 SDK. Providers run inside the engine,
-  which needs .NET 10 from the engine release that moves to it. Your test project can target
-  `net10.0` and still reference the `net8.0` provider library and `Vouchfx.Sdk.Testing`.
+  which needs .NET 10 from the engine release that moves to it. Until that engine release, the
+  published CLI is a net8.0 build; on a .NET 10-only machine install it with
+  `dotnet tool install -g vouchfx --version 1.2.0 --allow-roll-forward` (or set
+  `DOTNET_ROLL_FORWARD=Major` for the command). `dotnet tool update` has no
+  `--allow-roll-forward`, so to change version uninstall the tool, then install it again.
+  Your test project should target `net10.0` (the hub's test projects do, without roll-forward)
+  and can still reference the `net8.0` provider library and `Vouchfx.Sdk.Testing`.
 
 The example targets the published Vouchfx.Sdk 1.2.0 package. Its supporting SDK
 closure packages are also published on NuGet.org, so public consumers can restore this
@@ -47,7 +53,7 @@ Here is the minimal structure:
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>YourOrg.Steps.YourKind</RootNamespace>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>12.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>

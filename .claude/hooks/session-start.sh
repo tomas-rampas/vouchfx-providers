@@ -96,9 +96,9 @@ REPO_DIR="${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && p
 VOUCHFX_TOOL="${DOTNET_CLI_HOME:-$HOME}/.dotnet/tools/vouchfx"
 
 # A NuGet config that holds nuget.org and nothing else, for the one install below.
-# `dotnet tool install` has no --source on this SDK, and --add-source only ADDS nuget.org
-# beside every feed already configured (machine, user, and any nuget.config above the
-# working directory), any of which could serve a same-version `vouchfx`. Measured on the
+# `--add-source` only adds nuget.org beside every configured feed (machine, user, and any
+# nuget.config above the working directory), any of which could serve a same-version
+# `vouchfx`; `--configfile` with this file pins the source set. Measured on the
 # .NET 8 SDK: a fake 1.0.0-rc.5 packed into a folder feed that a local nuget.config named was
 # installed instead of nuget.org's under --add-source, and nuget.org's was installed under
 # --configfile with this file. The version check after the install proves only the commit
@@ -137,7 +137,8 @@ install_cli() {
   fi
   log "Installing vouchfx ${want}."
   local cfg status=0
-  cfg="$(nuget_org_only_config)"
+  cfg="$(nuget_org_only_config)" || return 1
+  [ -s "$cfg/nuget.config" ] || return 1
   "$DOTNET_DIR/dotnet" tool install -g vouchfx --version "$want" --allow-roll-forward --configfile "$cfg/nuget.config" >/dev/null || status=$?
   rm -rf "$cfg"
   return "$status"
@@ -165,11 +166,18 @@ is_root() { [ "$(id -u)" -eq 0 ]; }
 # whose keys are among "version", "rollForward" and "allowPrerelease" with plain values.
 # Anything else, "paths" and "errorMessage" included, and anything this cannot classify
 # (comments, a BOM, other top-level keys, malformed JSON, an unreadable file), is refused.
-# Needs only bash and tr: python3 and jq are not guaranteed in a web container.
+# Adopting another global.json key (for example "test": {"runner"} or "msbuild-sdks") needs
+# the allowlist below extended on purpose, never with "paths" or "errorMessage".
+# A missing file is accepted. Anything that is not a regular file (a symlink, /dev/zero, a
+# FIFO) is refused, and so is a file over 64 KiB: the read is capped so a hostile path
+# cannot hang the hook.
+# Needs only bash, head and tr: python3 and jq are not guaranteed in a web container.
 global_json_safe() {
   local file="$1" flat kv re
-  [ -e "$file" ] || return 0
-  flat="$(tr -d ' \t\r\n' <"$file")" || return 1
+  [ -e "$file" ] || [ -L "$file" ] || return 0
+  { [ -f "$file" ] && [ ! -L "$file" ]; } || return 1
+  [ "$(stat -c %s "$file")" -le 65536 ] || return 1
+  flat="$(head -c 65536 "$file" | tr -d ' \t\r\n')" || return 1
   kv='("version":"[0-9A-Za-z.+-]+"|"rollForward":"[A-Za-z]+"|"allowPrerelease":(true|false))'
   re="^\\{\"sdk\":\\{${kv}(,${kv})*\\}\\}\$"
   [[ "$flat" =~ $re ]]
@@ -309,12 +317,16 @@ write_profile() {
   # The marker is the block's first line and names the dotnet root, so a block an earlier
   # version wrote for another root does not count as present and a new one is appended.
   marker="# Written by .claude/hooks/session-start.sh (Claude Code on the web); DOTNET_ROOT=${DOTNET_DIR}."
-  body='export DOTNET_ROOT=/usr/lib/dotnet
-case ":$PATH:" in *":/usr/lib/dotnet:"*) ;; *) PATH="/usr/lib/dotnet:$PATH" ;; esac
-case ":$PATH:" in *":${DOTNET_CLI_HOME:-$HOME}/.dotnet/tools:"*) ;; *) PATH="$PATH:${DOTNET_CLI_HOME:-$HOME}/.dotnet/tools" ;; esac
-export PATH
-export DOTNET_CLI_TELEMETRY_OPTOUT=1
-export DOTNET_NOLOGO=1'
+  # Single-quoted so $PATH and friends expand when the profile is sourced; only the dotnet
+  # root is interpolated here.
+  body="export DOTNET_ROOT=${DOTNET_DIR}"$'\n'
+  # shellcheck disable=SC2016 # single quotes on purpose: expanded when the profile is sourced
+  body+='case ":$PATH:" in *":'"${DOTNET_DIR}"':"*) ;; *) PATH="'"${DOTNET_DIR}"':$PATH" ;; esac'$'\n'
+  # shellcheck disable=SC2016 # single quotes on purpose: expanded when the profile is sourced
+  body+='case ":$PATH:" in *":${DOTNET_CLI_HOME:-$HOME}/.dotnet/tools:"*) ;; *) PATH="$PATH:${DOTNET_CLI_HOME:-$HOME}/.dotnet/tools" ;; esac'$'\n'
+  body+='export PATH'$'\n'
+  body+='export DOTNET_CLI_TELEMETRY_OPTOUT=1'$'\n'
+  body+='export DOTNET_NOLOGO=1'
   want="${marker}"$'\n'"${body}"
   if is_root && [ "$(cat "$profile" 2>/dev/null)" != "$want" ]; then
     printf '%s\n' "$want" >"$profile"
@@ -340,7 +352,8 @@ fi
 # first): refuse a global.json that can steer the host to code in the branch (see the
 # trust model in the header).
 if ! global_json_safe "$REPO_DIR/global.json"; then
-  log "ERROR: ${REPO_DIR}/global.json is not a plain {\"sdk\": {version, rollForward, allowPrerelease}} object (it may carry \"paths\", \"errorMessage\" or something this hook cannot classify). The .NET host would honour it as root, so nothing was run. Review global.json."
+  log "ERROR: ${REPO_DIR}/global.json is not a plain {\"sdk\": {version, rollForward, allowPrerelease}} object (it may carry \"paths\", \"errorMessage\", be a symlink or oversized, or hold something this hook cannot classify). The .NET host would honour it as root, so nothing was run. Review global.json."
+  echo "global.json refused by the session hook: do not run dotnet in this checkout until it is reviewed"
   exit 1
 fi
 if ! sdk_ok; then
@@ -363,6 +376,10 @@ export DOTNET_ROOT="$DOTNET_DIR" DOTNET_CLI_TELEMETRY_OPTOUT=1 DOTNET_NOLOGO=1
 # scratch directory, so no file in the branch's working tree can steer the host.
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
+# The host also reads global.json from every parent directory (/tmp/global.json,
+# /global.json, sdk.paths included), so give the scratch directory an empty one of its own
+# before any dotnet call from it: the nearest file wins.
+printf '{}\n' >"$WORK_DIR/global.json"
 cd "$WORK_DIR"
 purge_note=""
 if [ "$PURGED_COUNT" -gt 0 ]; then
@@ -394,4 +411,4 @@ if [[ "$pin_ver" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.]+)?$ ]]; then
 else
   log "WARNING: no usable <VouchfxSdkVersion> in Directory.Build.props; skipping the CLI install."
 fi
-echo "session-start: .NET SDK $("$DOTNET_DIR/dotnet" --version) ready (global.json floor 10.0.100)${purge_note}; ${summary_cli}."
+echo "session-start: .NET SDK $("$DOTNET_DIR/dotnet" --version) ready (resolved from global.json)${purge_note}; ${summary_cli}."

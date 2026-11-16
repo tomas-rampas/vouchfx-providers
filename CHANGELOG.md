@@ -17,8 +17,11 @@ for that provider.
   (`rollForward: latestFeature`), the test projects target `net10.0` and run without
   roll-forward, and the `.NET 8.0` and `.NET 9.0` compatibility lanes are removed. Provider
   libraries keep `net8.0`: it is the frozen v1 provider contract target and the only asset
-  framework the engine's `vouchfx provider install` accepts. A new conformance step fails the
-  build if any provider project stops targeting `net8.0`. Published package versions and
+  framework the engine's `vouchfx providers install` installs (it installs only net8.0-compatible
+  assets; the hub requires exactly `lib/net8.0`). A new conformance step fails the
+  build if any provider project stops targeting `net8.0`, or any test project stops targeting
+  `net10.0`, and the pack gate and publish job reject any package whose `lib/` assets or nuspec
+  groups are not `net8.0`. Published package versions and
   registry entries are unchanged. Providers run inside the engine, which needs .NET 10 from the
   engine release that moves to it.
 
