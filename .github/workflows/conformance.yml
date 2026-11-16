@@ -110,10 +110,16 @@ jobs:
 
     steps:
       # ── Step 1: Checkout this repo (vouchfx-providers) ───────────────────────
+      # persist-credentials: false keeps the token out of .git/config while PR code
+      # runs in this job. The only later git use is the tripwire's read-only fetch of
+      # the base branch, which needs no credentials because this repository is public.
       - name: Checkout vouchfx-providers
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      # ── Step 2: Set up .NET SDK (version from global.json: 10.0.100, rolling forward to the latest 10.0 feature band) ──────────
+      # ── Step 2: Set up .NET SDK (reads global.json) ──────────────────────────
+      # global.json pins 10.0.100 and rolls forward to the latest 10.0 feature band.
       - name: Set up .NET SDK (reads global.json)
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
@@ -140,7 +146,14 @@ jobs:
       # `vouchfx provider install` accepts only net8.0 assets. A repo-wide "bump
       # everything to net10.0" change fails here, loudly, instead of publishing
       # packages the installer rejects. The target is read from MSBuild's evaluated
-      # TargetFramework, so it holds however the property is set.
+      # TargetFramework in the SAME configuration the build, the pack gate and
+      # publish-provider.yml use (Release), so a Release-only override is seen. A
+      # project that evaluates differently in some other way, or under some other
+      # configuration, is still caught at the artefact: the pack gate and the publish
+      # job run scripts/check-nupkg-target.sh on the finished .nupkg, which is the
+      # check that does not depend on how the property was set.
+      # A project under community/ that packs (IsPackable true) is held to net8.0
+      # whatever its name, so a provider called Foo.Tests cannot dodge the guard.
       - name: Guard — provider assemblies target net8.0
         shell: bash
         run: |
@@ -148,9 +161,12 @@ jobs:
           shopt -s globstar nullglob
           found=0
           for csproj in template/**/*.csproj community/**/*.csproj; do
-            [[ "$csproj" == *.Tests.csproj ]] && continue
-            tfm="$(dotnet msbuild "$csproj" -getProperty:TargetFramework -nologo)"
-            echo "$csproj -> $tfm"
+            tfm="$(dotnet msbuild "$csproj" -p:Configuration=Release -getProperty:TargetFramework -nologo)"
+            packable="$(dotnet msbuild "$csproj" -p:Configuration=Release -getProperty:IsPackable -nologo)"
+            echo "$csproj -> TargetFramework=$tfm IsPackable=$packable"
+            if [[ "$csproj" == *.Tests.csproj && ! ( "$csproj" == community/* && "${packable,,}" == "true" ) ]]; then
+              continue
+            fi
             if [[ "$tfm" != "net8.0" ]]; then
               echo "::error::$csproj targets '$tfm'. Provider assemblies must target net8.0: it is the v1 provider contract target (the engine's provider install accepts only net8.0 assets) and must not be raised."
               exit 1
@@ -263,6 +279,12 @@ jobs:
             if [[ -z "$nuspec_content" ]]; then
               echo "::error::$nupkg — could not read $nuspec_path from the package (nuspec missing or misnamed)."
               return 1
+            fi
+
+            # Artefact-level target check: every lib/ entry under lib/net8.0/ and
+            # every nuspec dependency group net8.0. Shared with publish-provider.yml.
+            if ! bash scripts/check-nupkg-target.sh "$nupkg"; then
+              failed=1
             fi
 
             # -Z1 (zipinfo, names only) gives exact archive entry paths, one
@@ -583,7 +605,8 @@ jobs:
           ref: ${{ steps.engine-ref.outputs.sha }}
           path: engine
 
-      # ── Step 3: Set up .NET SDK (version from global.json: 10.0.100, rolling forward to the latest 10.0 feature band) ──────────
+      # ── Step 3: Set up .NET SDK (reads global.json) ──────────────────────────
+      # global.json pins 10.0.100 and rolls forward to the latest 10.0 feature band.
       - name: Set up .NET SDK (reads global.json)
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:

@@ -310,7 +310,10 @@ jobs:
       # Package-metadata validation (license/readme/description/repository/
       # tags/id — the pack gate) is enforced at PR time on main by
       # conformance.yml; the ancestry gate above guarantees the tagged commit
-      # already passed it, so this step does not re-validate metadata.
+      # already passed it, so this step does not re-validate metadata. It DOES
+      # check the target of the package that is about to ship: the packed
+      # assemblies must sit under lib/net8.0/ (the frozen v1 provider contract
+      # target), the same artefact check the pack gate runs.
       - name: Pack the provider
         run: |
           set -euo pipefail
@@ -319,6 +322,13 @@ jobs:
             -p:Version="$VERSION" \
             -o artifacts/nuget
           ls -lh artifacts/nuget/
+          shopt -s nullglob
+          packed=(artifacts/nuget/*.nupkg)
+          if [[ "${#packed[@]}" -ne 1 ]]; then
+            echo "::error::Expected exactly one .nupkg in artifacts/nuget/ after packing $PROVIDER, found ${#packed[@]}."
+            exit 1
+          fi
+          bash scripts/check-nupkg-target.sh "${packed[0]}"
 
       # ── Step 6b: Preflight — dependency resolvability on nuget.org (push-only) ─
       # PRECONDITION (see this file's header): this step's value depends on
