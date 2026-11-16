@@ -12,6 +12,16 @@ for that provider.
 
 ### Changed
 
+- **Build, CI and tooling move to the .NET 10 SDK; provider assemblies stay `net8.0`.**
+  .NET 8 reached end of support on 10 November 2026. `global.json` now pins `10.0.100`
+  (`rollForward: latestFeature`), the test projects target `net10.0` and run without
+  roll-forward, and the `.NET 8.0` and `.NET 9.0` compatibility lanes are removed. Provider
+  libraries keep `net8.0`: it is the frozen v1 provider contract target and the only asset
+  framework the engine's `vouchfx provider install` accepts. A new conformance step fails the
+  build if any provider project stops targeting `net8.0`. Published package versions and
+  registry entries are unchanged. Providers run inside the engine, which needs .NET 10 from the
+  engine release that moves to it.
+
 - **Published SDK pin advanced to `1.2.0`.** `$(VouchfxSdkVersion)` in
   `Directory.Build.props` moves from `1.0.5` to `1.2.0`
   (`0af21de5bd0a4e91ca002e03e6c256bc4e8ca4e8`). `Vouchfx.Sdk`, `Vouchfx.Sdk.Testing` and the

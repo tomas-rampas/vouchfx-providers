@@ -113,7 +113,7 @@ jobs:
       - name: Checkout vouchfx-providers
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
-      # ── Step 2: Set up .NET SDK (version from global.json: 8.0.424) ──────────
+      # ── Step 2: Set up .NET SDK (version from global.json: 10.0.100, rolling forward to the latest 10.0 feature band) ──────────
       - name: Set up .NET SDK (reads global.json)
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
@@ -132,6 +132,35 @@ jobs:
       # is added here as belt-and-suspenders per the CI contract.
       - name: Build (Release, 0-warning gate)
         run: dotnet build vouchfx-providers.sln -c Release --no-restore -warnaserror
+
+      # ── Step 4a: Guard — provider assemblies stay net8.0 ─────────────────────
+      # The SDK is .NET 10, and the test projects target net10.0, but every provider
+      # library (each non-*.Tests project under template/ and community/) must keep
+      # targeting net8.0: that is the v1 provider contract target, and the engine's
+      # `vouchfx provider install` accepts only net8.0 assets. A repo-wide "bump
+      # everything to net10.0" change fails here, loudly, instead of publishing
+      # packages the installer rejects. The target is read from MSBuild's evaluated
+      # TargetFramework, so it holds however the property is set.
+      - name: Guard — provider assemblies target net8.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          found=0
+          for csproj in template/**/*.csproj community/**/*.csproj; do
+            [[ "$csproj" == *.Tests.csproj ]] && continue
+            tfm="$(dotnet msbuild "$csproj" -getProperty:TargetFramework -nologo)"
+            echo "$csproj -> $tfm"
+            if [[ "$tfm" != "net8.0" ]]; then
+              echo "::error::$csproj targets '$tfm'. Provider assemblies must target net8.0: it is the v1 provider contract target (the engine's provider install accepts only net8.0 assets) and must not be raised."
+              exit 1
+            fi
+            found=1
+          done
+          if [[ "$found" -eq 0 ]]; then
+            echo "::error::No provider project found under template/ or community/."
+            exit 1
+          fi
 
       # ── Step 5: Format gate ───────────────────────────────────────────────────
       - name: Format gate (dotnet format --verify-no-changes)
@@ -554,7 +583,7 @@ jobs:
           ref: ${{ steps.engine-ref.outputs.sha }}
           path: engine
 
-      # ── Step 3: Set up .NET SDK (version from global.json: 8.0.424) ──────────
+      # ── Step 3: Set up .NET SDK (version from global.json: 10.0.100, rolling forward to the latest 10.0 feature band) ──────────
       - name: Set up .NET SDK (reads global.json)
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:

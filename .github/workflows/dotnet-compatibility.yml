@@ -1,6 +1,8 @@
-# The net8.0 compatibility baseline must build and execute without a .NET 8
-# installation on the .NET 9 and 10 lanes. The existing CI retains Docker and
-# release checks; this matrix exercises the source and Docker-free runtime paths.
+# The repository must build (net8.0 provider libraries, net10.0 test projects) and its
+# tests must execute on a machine that has only the .NET 10 SDK and runtime installed,
+# with no other SDK or runtime to fall back on. The existing CI retains Docker and
+# release checks; this lane exercises the source and Docker-free runtime paths. The
+# matrix is kept (with one entry) so the check name stays ".NET 10.0 compatibility".
 name: .NET compatibility
 
 on:
@@ -25,7 +27,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        dotnet: ['8.0', '9.0', '10.0']
+        dotnet: ['10.0']
     env:
       DOTNET_MULTILEVEL_LOOKUP: '0'
       DOTNET_NOLOGO: 'true'
@@ -40,7 +42,7 @@ jobs:
           persist-credentials: false
 
       # A fresh directory prevents preinstalled SDKs/runtimes from satisfying
-      # global.json or a net8.0 testhost on a newer-runtime lane.
+      # global.json or a test host.
       - name: Configure isolated SDK installation
         run: printf 'DOTNET_INSTALL_DIR=%s/dotnet-compatibility\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
 

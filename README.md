@@ -17,11 +17,16 @@ A vouchfx *provider* is a `<family>.<provider>` step type (e.g. `db-assert.postg
 
 ## .NET compatibility
 
-Current source supports .NET 8, 9 and 10 SDKs. Provider packages retain their
-`net8.0` asset baseline so applications on all three versions can reference them.
-The [compatibility matrix](https://github.com/tomas-rampas/vouchfx-providers/blob/main/.github/workflows/dotnet-compatibility.yml) builds and
-runs template and community conformance tests with each SDK/runtime installed in
-isolation. This runtime matrix is separate from the Vouched engine-version rubric.
+Build this repository with the .NET 10 SDK (`global.json` pins it). Provider
+assemblies still target `net8.0`: that is the v1 provider contract target, which the
+engine's `vouchfx provider install` requires, and it is a build target rather than a
+runtime requirement. Providers run inside the engine, so the runtime you need is the
+engine's: from the engine release that moves to .NET 10, that is the .NET 10 runtime.
+Test projects target `net10.0`. The
+[compatibility lane](https://github.com/tomas-rampas/vouchfx-providers/blob/main/.github/workflows/dotnet-compatibility.yml) builds and
+runs template and community conformance tests with only the .NET 10 SDK/runtime installed,
+and the conformance workflow fails if a provider assembly stops targeting `net8.0`.
+This is separate from the Vouched engine-version rubric.
 
 ## What is a Provider?
 

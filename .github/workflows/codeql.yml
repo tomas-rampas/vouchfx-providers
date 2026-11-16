@@ -4,7 +4,7 @@
 # vouchfx-mcp codeql.yml (same structure, same SHA-pinned codeql-action).
 #
 # Languages scanned:
-#   - csharp: the template/ and community/ provider projects (net8.0).
+#   - csharp: the template/ and community/ provider projects (net8.0, the provider contract target).
 #   - python: scripts/check_registry.py, scripts/build_site.py and their tests.
 #   - actions: the workflow files themselves (script injection, over-broad
 #     token permissions, untrusted checkout in privileged triggers, etc.).

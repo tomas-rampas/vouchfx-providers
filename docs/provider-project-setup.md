@@ -27,8 +27,11 @@ cd src/YourOrg.Steps.YourKind
 Your provider project must:
 - Reference **only** `Vouchfx.Sdk` (use the published SDK version selected in `Directory.Build.props`)
 - Use a **non-reserved namespace** (never `Vouchfx.Engine.*` or `Vouchfx.Steps.*`)
-- Target `.NET 8.0` for compatibility with all supported engine runtimes (.NET 8, 9 and 10).
-  Build with the .NET 8, 9 or 10 SDK; the `net8.0` SDK package also works in .NET 9 and 10 projects.
+- Target `net8.0`. It is the v1 provider contract target: the engine's `vouchfx provider install`
+  accepts only `net8.0` assets, and `Vouchfx.Sdk` is `net8.0`. It is a build target, not a runtime
+  requirement, so do not raise it. Build with the .NET 10 SDK. Providers run inside the engine,
+  which needs .NET 10 from the engine release that moves to it. Your test project can target
+  `net10.0` and still reference the `net8.0` provider library and `Vouchfx.Sdk.Testing`.
 
 The example targets the published Vouchfx.Sdk 1.2.0 package. Its supporting SDK
 closure packages are also published on NuGet.org, so public consumers can restore this
