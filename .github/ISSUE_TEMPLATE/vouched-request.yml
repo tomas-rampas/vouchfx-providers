@@ -104,7 +104,7 @@ body:
         // Representative step: SnowflakeAssertCompiler for a SELECT query assertion
         var fragment = new CsxFragment(
             RequiredUsings: new[] { "System", "System.Data", "Snowflake.Data.Client" },
-            RequiredHelpers: new[] { "static class DbAssertSnowflake_Helpers { ... }" },
+            RequiredHelpers: new[] { "static class DbAssertSnowflake_Helpers { ... }", SecretHelper.Source },
             StatementBlock: $$"""
             {
                 var __conn_{{safeId}} = Secret_Helpers.ResolveTemplate(Secrets, Vars, {{connectionTemplateLiteral}});

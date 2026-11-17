@@ -479,11 +479,11 @@ jobs:
       # policy, not CI — NEVER --admin-merge a PR that touches the vouched /
       # vouchedVersion fields. This step's job is to make an out-of-policy
       # change LOUD (a failed check + an ::error:: annotation) so it
-      # can't slip past maintainer eyeballing unnoticed. Pair it with
-      # branch-protection code-owner review requiring @tomas-rampas approval
-      # on /registry/ paths (see .github/CODEOWNERS) — that is the actual
-      # enforcement; this step is the tripwire that fires if that review is
-      # ever skipped or bypassed.
+      # can't slip past maintainer eyeballing unnoticed. Branch protection
+      # requiring @tomas-rampas code-owner review on /registry/ paths (see
+      # .github/CODEOWNERS) would be the actual enforcement; main has no such
+      # rule today, so maintainer policy is the control and this step is the
+      # tripwire that fires when that policy is skipped.
       #
       # Scope: the comparison below considers ONLY entries that already carry
       # (or newly carry) endorsement state — vouched:true or a non-empty
