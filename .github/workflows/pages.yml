@@ -31,8 +31,7 @@ on:
       - '.github/workflows/pages.yml'
   # Manual runs (any branch) for previewing before a change reaches main.
   # Ecosystem fan-out: a sibling repo's docs merge triggers a rebuild here so
-  # build-time facts re-resolve against the live APIs (fact injection arrives
-  # with the H4 retrofit; the rebuild also picks up upstream content changes).
+  # build-time facts ({{fact:...}} tokens) re-resolve against the live APIs.
   repository_dispatch:
     types: [ecosystem-docs-updated]
   # Weekly belt-and-braces rebuild (staggered per repo).

@@ -37,7 +37,7 @@ Community providers are listed in the curated community index but are not endors
 **Requirements:**
 - Apache-2.0 licensed (or compatible)
 - Follows the reflective-discovery contract (implements `[StepProvider]` attribute, four required interfaces, uses non-reserved namespaces)
-- For hub-hosted submissions: builds standalone against the packed SDK and its conformance lane is green
+- For hub-hosted submissions: builds standalone against the published SDK pinned by the hub and its conformance lane is green
 - No code review or rubric validation by the platform team (that is the Vouched badge gate)
 
 **Decision maker:** Any contributor. Providers are listed by the community via issue or pull request; the gatekeeping is Apache-2.0 compliance, and—for hub-hosted source—namespace hygiene and a green conformance lane.
@@ -196,4 +196,4 @@ The former Verified tier — a separate submission lane under `verified/` with i
 - [`registry/README.md`](registry/README.md) — how the registry works and how to add entries
 - Engine [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) — how to write a provider
 - Engine [`GOVERNANCE.md`](https://github.com/tomas-rampas/vouchfx/blob/main/GOVERNANCE.md) — the project's overall governance model
-- Engine [`docs/roadmap.md`](https://github.com/tomas-rampas/vouchfx/blob/main/docs/roadmap.md) — public roadmap including provider discovery tooling
+- Engine [roadmap](https://vouchfx.io/roadmap/) — public roadmap including provider distribution and discovery

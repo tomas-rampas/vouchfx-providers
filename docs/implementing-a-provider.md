@@ -93,7 +93,7 @@ If you are new to provider authoring:
 
 1. **See what a provider looks like:** The [`rpc.json-rpc`](../community/Vouchfx.Community.JsonRpc/README.md) provider is the hub-hosted reference implementation, and it doubles as the worked example the guide walks through.
 2. **Understand how to consume providers:** See [Consuming a Provider](consuming-a-provider.md) to understand the compilation model and the three ways a provider reaches a run: installed with the engine CLI, referenced by a custom runner, or built from source.
-3. **Read the engine's contract:** The engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) and [`docs/01`](https://github.com/tomas-rampas/vouchfx/blob/main/docs/01_Technical_Architecture_and_Engineering_Blueprint.md) § 13 are the authoritative statements of the frozen v1 SDK contract.
+3. **Read the engine's contract:** The engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) and the [architecture blueprint](https://vouchfx.io/01_Technical_Architecture_and_Engineering_Blueprint/) § 13 are the authoritative statements of the frozen v1 SDK contract.
 
 ## Navigation
 

@@ -201,6 +201,7 @@ For infrastructure providers, create integration tests that start a real Docker 
 
 ```csharp
 [Collection("Docker")]  // Serialise Docker tests
+[Trait("requires", "docker")]  // Lets `--filter "requires!=docker"` skip them
 public sealed class MyKindProviderIntegrationTests : IAsyncLifetime
 {
     // Container start-up/teardown is your own choice of tooling — not
@@ -232,7 +233,8 @@ public sealed class MyKindProviderIntegrationTests : IAsyncLifetime
 # All tests (including Docker)
 dotnet test your-provider.Tests
 
-# Only non-Docker tests (for CI-free iteration)
+# Only non-Docker tests (for CI-free iteration); this relies on the
+# [Trait("requires", "docker")] attribute shown above on every Docker-dependent test
 dotnet test your-provider.Tests -c Release --filter "requires!=docker"
 ```
 

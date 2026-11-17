@@ -30,7 +30,6 @@ The registry is stored in two files:
 The registry is human-readable and machine-consumable. It powers:
 - Community discoverability — this rendered page and the JSON file itself are the browsable index
 - `vouchfx providers install` and `vouchfx providers list` in engine 1.2.0 and later, which read this file directly (see [Engine compatibility](#engine-compatibility) below)
-- Planned tooling for a generated provider-listing page on the project website (part of the engine roadmap)
 
 The first entry is [`rpc.json-rpc`](../community/Vouchfx.Community.JsonRpc/README.md) — the reference Community-tier provider, hosted in this repository under `community/`. Its NuGet package [`Vouchfx.Community.JsonRpc`](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc) (version 1.0.0) is published from this repository's CI pipeline and ready to consume. Its earlier `1.0.0-alpha.1` release remains historical.
 
@@ -125,9 +124,7 @@ For a live example, see the first entry in [`community-providers.json`](communit
 
 ## Validation
 
-Before submitting an entry, validate it against the schema:
-
-Also run the released-CLI contract check and its regression tests (Python standard library only):
+Before submitting an entry, validate it against the schema (options below), and run the released-CLI contract check and its regression tests (Python standard library only):
 
 ```sh
 python3 scripts/check_registry.py

@@ -41,7 +41,7 @@
 # All access to issue data goes through the actions/github-script JavaScript
 # context object (context.payload.issue.*) which treats values as data, not
 # as shell commands.  This exactly mirrors the class of injection the
-# peer-review-critic caught on the engine's release.yml version step.
+# review caught on the engine's release.yml version step.
 
 name: Triage — auto-close off-topic issues
 
@@ -109,8 +109,8 @@ jobs:
               '| Engine bug or defect | [tomas-rampas/vouchfx → Issues](https://github.com/tomas-rampas/vouchfx/issues/new/choose) |',
               '| Feature request for the engine | [tomas-rampas/vouchfx → Issues](https://github.com/tomas-rampas/vouchfx/issues/new/choose) |',
               '| Questions about writing a provider | [tomas-rampas/vouchfx → Discussions](https://github.com/tomas-rampas/vouchfx/discussions) |',
-              '| List a community provider | Use the [Provider Listing form](../../issues/new?template=provider-listing.yml) |',
-              '| Request the Vouched badge | Use the [Vouched request form](../../issues/new?template=vouched-request.yml) |',
+              '| List a community provider | Use the [Provider Listing form](https://github.com/tomas-rampas/vouchfx-providers/issues/new?template=provider-listing.yml) |',
+              '| Request the Vouched badge | Use the [Vouched request form](https://github.com/tomas-rampas/vouchfx-providers/issues/new?template=vouched-request.yml) |',
               '',
               'This issue has been closed automatically. Feel free to re-open it in the correct repository.',
             ].join('\n');

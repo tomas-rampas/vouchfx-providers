@@ -43,9 +43,9 @@
 # workflow's "Pack the provider" step below always passes an explicit
 # -p:Version="$VERSION" from the tag, which overrides that default — so a
 # stable tag fails NU5104 there, by design: a stable provider version would
-# otherwise force every consumer's restore onto a pre-release SDK. Stable
-# provider versions become possible once Vouchfx.Sdk 1.0.0 final ships at
-# GA and <VouchfxSdkVersion> is repinned to a stable version.
+# otherwise force every consumer's restore onto a pre-release SDK. With the
+# stable 1.2.0 pin, stable provider versions are allowed; a pre-release tag is
+# needed only again if the pin is moved to a pre-release SDK.
 #
 # ProviderDirName must equal the provider's directory name under community/
 # (which is also its PackageId — see community/Directory.Build.props and the

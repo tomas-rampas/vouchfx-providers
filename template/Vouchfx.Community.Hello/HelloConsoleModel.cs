@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// COPYABLE TEMPLATE — Community provider starter (S12-F-01).
+// COPYABLE TEMPLATE — Community provider starter.
 //
 // This file is the model for the `hello.console` template step kind.
 // When you copy this project to start your own provider:

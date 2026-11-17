@@ -12,6 +12,17 @@ for that provider.
 
 ### Changed
 
+- **Documentation and site inputs brought up to date.** The Vouched checklist and the Vouched
+  request form now name the real secrets mechanism (`${secret:source/path}` resolved by
+  `Secret_Helpers.ResolveTemplate`, not `Vars.Secrets`) and a dependency scan that finds
+  vulnerabilities (`dotnet list package --vulnerable --include-transitive`, not `--outdated`).
+  The issue forms link to absolute URLs, because relative links do not resolve on an issue form.
+  The measured pass counts that were restated in four documents now live only in this changelog,
+  the testing guide's Docker example carries the `requires` trait its filter relies on, the
+  site's last-known-good facts track the newest published engine and SDK release, and the
+  landing page and README describe the engine CLI install route alongside the other two. The
+  registry entry for `rpc.json-rpc` is unchanged: its `minEngineVersion` of `1.0.0` is what the
+  published `1.0.0` package declares.
 - **Build, CI and tooling move to the .NET 10 SDK; provider assemblies stay `net8.0`.**
   .NET 8 reached end of support on 10 November 2026. `global.json` now pins `10.0.100`
   (`rollForward: latestFeature`), the test projects target `net10.0` and run without
@@ -135,8 +146,8 @@ for that provider.
 
 - **`docs/consuming-a-provider.md`** — the consumer-side guide: the NuGet path (exact pre-release
   pinning and NuGet's NU5104 rule), the source-build path for unpublished providers, the
-  `ledger-jsonrpc` sample as the canonical worked example, and the planned
-  `vouchfx providers install` experience.
+  `ledger-jsonrpc` sample as the canonical worked example, and the engine CLI's
+  `vouchfx providers install` route (Path C, available since engine 1.2.0).
 - **This changelog.**
 
 ## 2026-07-11

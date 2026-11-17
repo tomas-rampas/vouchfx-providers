@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────────────────────
-// COPYABLE TEMPLATE — Community provider starter (S12-F-01).
+// COPYABLE TEMPLATE — Community provider starter.
 //
 // `hello.console` is the smallest meaningful step kind: it emits a message and
 // asserts it equals a constant.  It has NO infrastructure dependency, so the

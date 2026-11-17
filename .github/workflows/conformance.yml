@@ -24,7 +24,8 @@
 #
 # TWO LANES
 # ---------
-# Lane A (job `conformance`, the required merge-gate check) restores
+# Lane A (job `conformance`, the merge-gate lane: maintainers merge only on green;
+# main has no branch rule that enforces it) restores
 # Vouchfx.Sdk / Vouchfx.Sdk.Testing from nuget.org at the
 # $(VouchfxSdkVersion) pin (root MSBuild property, consumed by every
 # SDK-closure PackageReference — six across the four consuming projects)
@@ -61,19 +62,21 @@
 # for OUT-OF-REPO consumers who cannot inherit the property — the samples in
 # docs/provider-project-setup.md and docs/consuming-a-provider.md, and the
 # conditioned fallback in the two template/Vouchfx.Community.Hello* csprojs.
-# Move the other literals that name the pin with them: site/facts-fallback.json
-# (engine_release, sdk_version), the pin note in publish-provider.yml's header,
-# the SDK statements and measured results in README.md and CONTRIBUTING.md, and
-# the MinEngineVersion declared by the template and community provider sources
-# (docs/provider-contract.md explains why it follows the SDK's assembly identity).
-# The first two had silently drifted before they were listed here.
+# Move the other literals that name the pin with them: the pin note in
+# publish-provider.yml's header, the SDK statements in README.md, CONTRIBUTING.md
+# and docs/, and the MinEngineVersion declared by the template and community
+# provider sources (docs/provider-contract.md explains why it follows the SDK's
+# assembly identity). site/facts-fallback.json is different: its engine_release and
+# sdk_version are the newest PUBLISHED engine release and Vouchfx.Sdk (what the
+# site's build-time facts resolve live), not the pin, so refresh them whenever a
+# newer release is published, whether or not the pin moves.
 # Lane B resolves engine main once per run and checks out that immutable SHA;
 # no manual source repin is needed. Its logged SHA and SDK version identify
 # the exact compatibility input rather than a historical snapshot.
 #
 # NOTE ON VERSION MATRIX
 # ----------------------
-# Lane A (the required check) runs against the PUBLISHED pinned SDK
+# Lane A (the merge-gate lane) runs against the PUBLISHED pinned SDK
 # ($(VouchfxSdkVersion)); Lane B tracks the engine main SDK non-blockingly.
 # Neither lane is a version matrix: the Vouched badge rubric's
 # multi-version conformance matrix (a provider's integration-test fixture passing
@@ -472,10 +475,10 @@ jobs:
 
       # ── Step 6c: Tripwire — vouched badge changes are maintainer-only ───────
       # This is a TRIPWIRE, not a hard gate: `gh pr merge --admin` bypasses
-      # required status checks (this one included), so the real control is
+      # branch rules and status checks (this one included), so the real control is
       # policy, not CI — NEVER --admin-merge a PR that touches the vouched /
       # vouchedVersion fields. This step's job is to make an out-of-policy
-      # change LOUD (a failed required check + an ::error:: annotation) so it
+      # change LOUD (a failed check + an ::error:: annotation) so it
       # can't slip past maintainer eyeballing unnoticed. Pair it with
       # branch-protection code-owner review requiring @tomas-rampas approval
       # on /registry/ paths (see .github/CODEOWNERS) — that is the actual
@@ -577,7 +580,7 @@ jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   # Lane B — early-warning: build/test against the engine's CURRENT main SHA
   # ═══════════════════════════════════════════════════════════════════════════
-  # NOT a required merge-gate check (see conformance.yml header). Proves
+  # NOT the merge-gate lane (see the header above). Proves
   # providers still build and pass their tests against unreleased engine
   # changes, well ahead of the next tagged SDK release. Deliberately keeps
   # the engine-checkout + source-pack pattern that Lane A no longer needs.

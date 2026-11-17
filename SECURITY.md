@@ -122,6 +122,4 @@ is a trust statement; weaknesses in that bar are security issues, not process ni
 ---
 
 _This policy is a living document, aligned with the vouchfx engine's
-[security policy](https://github.com/tomas-rampas/vouchfx/blob/main/SECURITY.md).
-The security contact and the disclosure SLAs will be confirmed as the project moves
-from adoption stage to a stable v1 release._
+[security policy](https://github.com/tomas-rampas/vouchfx/blob/main/SECURITY.md)._

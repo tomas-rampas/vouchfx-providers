@@ -24,7 +24,7 @@ the hub requires exactly `lib/net8.0`), and it is a build target rather than a
 runtime requirement. Providers run inside the engine, so the runtime you need is the
 engine's: from the engine release that moves to .NET 10, that is the .NET 10 runtime.
 Until that engine release, the published CLI is a net8.0 build; on a .NET 10-only machine
-install it with `dotnet tool install -g vouchfx --version 1.2.0 --allow-roll-forward` (or set
+install it with `dotnet tool install -g vouchfx --allow-roll-forward` (or set
 `DOTNET_ROLL_FORWARD=Major` for the command). `dotnet tool update` has no
 `--allow-roll-forward`, so to change version uninstall the tool, then install it again.
 Test projects target `net10.0`. The
@@ -76,11 +76,11 @@ After a Community provider is listed in the registry, a maintainer can award the
 
 ## How to Use Community Providers Today
 
-Community providers are distributed as **NuGet packages** — hub-hosted providers publish from this hub's CI, externally hosted providers publish from their own repositories. For example, [`Vouchfx.Community.JsonRpc` 1.0.0](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc/1.0.0) is published on NuGet.org — the canonical worked example of consuming a community provider is the [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) sample application in vouchfx-samples.
+Community providers are distributed as **NuGet packages** — hub-hosted providers publish from this hub's CI, externally hosted providers publish from their own repositories. For example, [`Vouchfx.Community.JsonRpc` 1.0.0](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc/1.0.0) is published on NuGet.org. Since engine 1.2.0 the stock CLI can install a published provider with `vouchfx providers install <step-kind or package ID>` and load it at startup. If you own the host application, reference the package from a custom runner instead; the canonical worked example is the [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) sample application in vouchfx-samples.
 
 For unpublished or hub-hosted providers without a NuGet package yet, consume via **source-level build**: clone the provider repository (or reference `community/<Provider>` in this hub), add the project to your build, and rebuild your application host to integrate the provider at compile time.
 
-**See [`docs/consuming-a-provider.md`](docs/consuming-a-provider.md)** for the complete guide to both consumption paths, exact version pinning, optional pre-release dependencies, and the worked example.
+**See [`docs/consuming-a-provider.md`](docs/consuming-a-provider.md)** for the complete guide to all three consumption paths (engine CLI install, NuGet reference, source build), exact version pinning, optional pre-release dependencies, and the worked example.
 
 ## How to Get Your Provider Listed
 
@@ -129,17 +129,16 @@ If your Community provider meets the [Vouched rubric](VOUCHED_CHECKLIST.md), you
 
 - **Registry schema validation** — the entry must match `registry/community-providers.schema.json`. This does not run an externally hosted provider's test suite.
 
-**Note:** For hub-hosted submissions, the required CI lane runs your conformance tests against the pinned SDK (`$(VouchfxSdkVersion)`); public consumers and that lane require the SDK closure to be available on NuGet.org. Private candidate-feed validation does not establish public restore availability. A separate non-blocking lane also builds against the engine's `main` branch as an early warning. The Vouched rubric additionally requires your integration-test fixture to pass on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers during the Vouched review, not an automated CI check.
+**Note:** For hub-hosted submissions, the Conformance workflow (green before a maintainer merges) runs your conformance tests against the pinned SDK (`$(VouchfxSdkVersion)`); public consumers and that lane require the SDK closure to be available on NuGet.org. Private candidate-feed validation does not establish public restore availability. A separate non-blocking lane also builds against the engine's `main` branch as an early warning. The Vouched rubric additionally requires your integration-test fixture to pass on the engine main branch plus the two preceding minor releases; that multi-version validation is a human-review requirement verified by maintainers during the Vouched review, not an automated CI check.
 
 ## Building against the SDK
 
 The published `Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` `1.2.0` packages and their
 dependency closure are available on NuGet.org. `Directory.Build.props` selects
 this SDK version through `$(VouchfxSdkVersion)`; `nuget.config` routes its package
-IDs to NuGet.org. The Release build, template tests (5/5), JsonRpc tests (24/24),
-and formatting check passed against SDK 1.2.0. The stock Core 1.2.0 CLI also loaded
-the current Hello and JsonRpc source providers from a `--providers` directory and ran
-them successfully (2/2 steps); a copied Hello template consumer passed 5/5 tests.
+IDs to NuGet.org. The [Conformance workflow](.github/workflows/conformance.yml) runs
+the equivalent of the commands below on every push and pull request to `main`; the dated
+[CHANGELOG](CHANGELOG.md) entry records what was measured when the pin moved to 1.2.0.
 From the repository root:
 
 ```bash
@@ -197,7 +196,7 @@ The vouchfx maintainers allocate **one half-day per week** (4 hours) for provide
 - **[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md)** — our community standards (Contributor Covenant 2.1)
 - **[`registry/community-providers.json`](registry/community-providers.json)** — the curated index of Community-tier providers
 - **Engine [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md)** — complete guide to writing a provider (contract, examples, testing, hard rules)
-- **Engine [`docs/01`](https://github.com/tomas-rampas/vouchfx/blob/main/docs/01_Technical_Architecture_and_Engineering_Blueprint.md)** § 13 — provider architecture, CsxFragment composition rules (§13.3.1), reserved namespaces (§5.6)
+- **Engine [architecture blueprint](https://vouchfx.io/01_Technical_Architecture_and_Engineering_Blueprint/)** § 13 — provider architecture, CsxFragment composition rules (§13.3.1), reserved namespaces (§5.6)
 
 ## Directory Layout
 
@@ -208,20 +207,26 @@ The vouchfx maintainers allocate **one half-day per week** (4 hours) for provide
 |-- GOVERNANCE.md                       (tier model and Vouched badge)
 |-- VOUCHED_CHECKLIST.md                (Vouched rubric)
 |-- CODE_OF_CONDUCT.md                  (community standards)
+|-- CHANGELOG.md                        (hub change history)
+|-- SECURITY.md                         (how to report a vulnerability)
+|-- docs/                               (provider authoring journey and consuming guide)
 |-- registry/
 |   |-- README.md                       (how to add entries)
 |   |-- community-providers.json        (the index)
 |   `-- community-providers.schema.json (JSON Schema)
-|-- template/                           (starter provider scaffold)
+|-- template/                           (starter provider scaffold: Vouchfx.Community.Hello + tests)
 |-- community/                          (hub-hosted Community-tier providers, hub-CI-tested)
 |   `-- Vouchfx.Community.JsonRpc/      (rpc.json-rpc — the first community provider; see its README)
+|-- scripts/                            (site build, registry checks, package-target guard and their tests)
+|-- site/                               (landing page and static inputs for providers.vouchfx.io)
 |-- packages-local/                     (local SDK feed for optional engine-main builds; used by CI Lane B)
 `-- .github/
     |-- ISSUE_TEMPLATE/
     |   |-- provider-listing.yml        (Community listing form)
     |   `-- vouched-request.yml         (Vouched badge request form)
-    `-- PULL_REQUEST_TEMPLATE/
-        `-- community-submission.md     (Community hub-hosted submission checklist)
+    |-- PULL_REQUEST_TEMPLATE/
+    |   `-- community-submission.md     (Community hub-hosted submission checklist)
+    `-- workflows/                      (conformance, publish, docs, Pages, compatibility, triage, CodeQL)
 ```
 
 ## Licence

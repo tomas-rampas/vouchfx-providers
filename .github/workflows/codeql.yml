@@ -1,11 +1,13 @@
 # .github/workflows/codeql.yml — CodeQL static analysis
 # =============================================================================
 # Code scanning for vouchfx-providers, aligned with the sibling vouchfx and
-# vouchfx-mcp codeql.yml (same structure, same SHA-pinned codeql-action).
+# vouchfx-mcp codeql.yml (same structure, SHA-pinned codeql-action that Dependabot
+# keeps current, so the pinned release can differ between repositories).
 #
 # Languages scanned:
-#   - csharp: the template/ and community/ provider projects (net8.0, the provider contract target).
-#   - python: scripts/check_registry.py, scripts/build_site.py and their tests.
+#   - csharp: the template/ and community/ projects (providers target net8.0, the provider
+#     contract target; their test projects target net10.0).
+#   - python: the scripts/*.py files (check_registry.py, build_site.py and the tests).
 #   - actions: the workflow files themselves (script injection, over-broad
 #     token permissions, untrusted checkout in privileged triggers, etc.).
 #
