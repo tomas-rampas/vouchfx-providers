@@ -10,15 +10,15 @@ body:
         # Vouched Badge Request
 
         Use this form to request the **Vouched** badge for a provider that is already listed in
-        [`registry/community-providers.json`](../registry/community-providers.json).
+        [`registry/community-providers.json`](https://github.com/tomas-rampas/vouchfx-providers/blob/main/registry/community-providers.json).
 
         **Prerequisite:** your provider must already have a registry entry (hosted externally or
         on the hub) before you request Vouched review. If it is not yet listed, open a
-        [Provider Listing request](../../issues/new?template=provider-listing.yml) first —
+        [Provider Listing request](https://github.com/tomas-rampas/vouchfx-providers/issues/new?template=provider-listing.yml) first —
         **this issue will be closed if the provider cannot be found in the registry.**
 
         A maintainer reviews the evidence you provide below against
-        [`VOUCHED_CHECKLIST.md`](../VOUCHED_CHECKLIST.md). On success, the maintainer opens a
+        [`VOUCHED_CHECKLIST.md`](https://github.com/tomas-rampas/vouchfx-providers/blob/main/VOUCHED_CHECKLIST.md). On success, the maintainer opens a
         one-line registry PR setting `"vouched": true` for your entry — you do not open that PR
         yourself.
 
@@ -49,7 +49,7 @@ body:
       label: Vouched Rubric Evidence
       description: |
         Provide evidence for each of the six rubric items in
-        [`VOUCHED_CHECKLIST.md`](../VOUCHED_CHECKLIST.md):
+        [`VOUCHED_CHECKLIST.md`](https://github.com/tomas-rampas/vouchfx-providers/blob/main/VOUCHED_CHECKLIST.md):
 
         1. Integration-test fixture passes on the official matrix (engine main + 2 preceding minors)
         2. README with ≥3 use cases and known-limitations section
@@ -78,13 +78,13 @@ body:
         Provide the following for security sign-off (rubric item 3):
 
         - Credential handling strategy
-        - Transitive dependency scan result (e.g. `dotnet list package --outdated`, zero high-severity CVEs)
+        - Transitive dependency scan result (e.g. `dotnet list package --vulnerable --include-transitive`, zero high-severity CVEs)
         - TLS defaults
         - Telemetry statement (no phone-home / exfiltration beyond the target service)
         - NuGet package signature status
       placeholder: |
-        - Credential handling: Credentials are read from `Vars.Secrets.Resolve(ref)` and passed to Npgsql; no secrets are logged.
-        - Transitive dependency scan: Ran `dotnet list package --outdated` — zero high-severity CVEs.
+        - Credential handling: The connection string is a `${secret:env/DB_PASSWORD}` template resolved by `Secret_Helpers.ResolveTemplate` inside the emitted step and passed to Npgsql; no secrets are logged.
+        - Transitive dependency scan: Ran `dotnet list package --vulnerable --include-transitive` — zero high-severity CVEs.
         - TLS defaults: Connections default to SSL=Require; unsecured connections are not supported.
         - Telemetry: No outbound connections beyond the target service; no telemetry or analytics.
         - NuGet signature: Package is signed with a code-signing certificate from Acme Corp.
@@ -104,10 +104,10 @@ body:
         // Representative step: SnowflakeAssertCompiler for a SELECT query assertion
         var fragment = new CsxFragment(
             RequiredUsings: new[] { "System", "System.Data", "Snowflake.Data.Client" },
-            RequiredHelpers: new[] { "static class DbAssertSnowflake_Helpers { ... }" },
+            RequiredHelpers: new[] { "static class DbAssertSnowflake_Helpers { ... }", SecretHelper.Source },
             StatementBlock: $$"""
             {
-                var __secret_{{safeId}} = Vars.Secrets.Resolve({{secretRefLiteral}});
+                var __conn_{{safeId}} = Secret_Helpers.ResolveTemplate(Secrets, Vars, {{connectionTemplateLiteral}});
                 ...
             }
             """
@@ -135,7 +135,7 @@ body:
       options:
         - label: My provider is already listed in `registry/community-providers.json`
           required: true
-        - label: I have read the [`VOUCHED_CHECKLIST.md`](../VOUCHED_CHECKLIST.md) and understand what is required
+        - label: I have read the [`VOUCHED_CHECKLIST.md`](https://github.com/tomas-rampas/vouchfx-providers/blob/main/VOUCHED_CHECKLIST.md) and understand what is required
           required: true
         - label: I have read the engine's [`CONTRIBUTING.md`](https://github.com/tomas-rampas/vouchfx/blob/main/CONTRIBUTING.md) and the provider authoring guide
           required: true

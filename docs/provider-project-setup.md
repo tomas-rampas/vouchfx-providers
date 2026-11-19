@@ -25,16 +25,23 @@ cd src/YourOrg.Steps.YourKind
 ### The `.csproj` File
 
 Your provider project must:
-- Reference **only** `Vouchfx.Sdk` (use the published SDK version selected in `Directory.Build.props`)
+- Reference `Vouchfx.Sdk` (use the published SDK version selected in `Directory.Build.props`) and no `Vouchfx.Engine.*` package. Add a third-party package only when your emitted code needs one: `Vouchfx.Community.JsonRpc` also references `JsonPath.Net`, and pairs it with `ICompileReferenceContributor` (see [the contract guide](provider-contract.md))
 - Use a **non-reserved namespace** (never `Vouchfx.Engine.*` or `Vouchfx.Steps.*`)
-- Target `.NET 8.0` for compatibility with all supported engine runtimes (.NET 8, 9 and 10).
-  Build with the .NET 8, 9 or 10 SDK; the `net8.0` SDK package also works in .NET 9 and 10 projects.
+- Target `net8.0`. It is the v1 provider contract target: the engine's `vouchfx providers install`
+  installs only `net8.0`-compatible assets (the hub requires exactly `lib/net8.0`), and
+  `Vouchfx.Sdk` is `net8.0`. It is a build target, not a runtime
+  requirement, so do not raise it. Build with the .NET 10 SDK. Providers run inside the engine,
+  which needs .NET 10 from the engine release that moves to it. Until that engine release, the
+  published CLI is a net8.0 build; on a .NET 10-only machine install it with
+  `dotnet tool install -g vouchfx --allow-roll-forward` (or set
+  `DOTNET_ROLL_FORWARD=Major` for the command). `dotnet tool update` has no
+  `--allow-roll-forward`, so to change version uninstall the tool, then install it again.
+  Your test project should target `net10.0` (the hub's test projects do, without roll-forward)
+  and can still reference the `net8.0` provider library and `Vouchfx.Sdk.Testing`.
 
 The example targets the published Vouchfx.Sdk 1.2.0 package. Its supporting SDK
 closure packages are also published on NuGet.org, so public consumers can restore this
-exact version. The repository Release build and both provider test suites passed against
-SDK 1.2.0. Both current source providers passed a two-step runtime suite on the stock
-Core 1.2.0 CLI, and the copied Hello template passed 5/5 consumer tests.
+exact version.
 
 Here is the minimal structure:
 
@@ -44,7 +51,7 @@ Here is the minimal structure:
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <RootNamespace>YourOrg.Steps.YourKind</RootNamespace>
-    <LangVersion>latest</LangVersion>
+    <LangVersion>12.0</LangVersion>
   </PropertyGroup>
 
   <ItemGroup>
@@ -71,13 +78,13 @@ Use your own namespace: `MyOrg.Steps.Kafka` or `Example.Steps.Hello` for externa
 
 ### Build Warnings
 
-The engine's `Directory.Build.props` sets strict compiler flags:
+This hub's root `Directory.Build.props` sets `TreatWarningsAsErrors` for every project. In your own repository, request the same strictness explicitly:
 
 ```bash
 dotnet build your-provider.csproj /p:TreatWarningsAsErrors=true
 ```
 
-Your provider must build with **zero warnings**. This is enforced by CI for all hub submissions.
+Your provider must build with **zero warnings**. The conformance workflow enforces this for all hub submissions.
 
 ## The Model — Strongly-Typed Step Shape
 

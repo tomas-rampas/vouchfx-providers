@@ -21,12 +21,8 @@ What changed in engine 1.2.0 is who supplies the assemblies. The stock `vouchfx`
 The canonical worked example is the [`ledger-jsonrpc`](https://samples.vouchfx.io/samples/ledger-jsonrpc/README.html) sample application in vouchfx-samples. It consumes the published [`Vouchfx.Community.JsonRpc` 1.0.0](https://www.nuget.org/packages/Vouchfx.Community.JsonRpc/1.0.0) package.
 
 `Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` `1.2.0` and their dependency closure are
-published on NuGet.org. The provider Release build, Hello tests (5/5), JsonRpc tests
-(24/24), and formatting check passed against this SDK version.
-The current Hello and JsonRpc source providers also passed a two-step suite on the stock
-Core 1.2.0 CLI, which loaded them from a `--providers` directory. A copied Hello template
-restored outside the repository and passed 5/5 consumer tests against the published SDK
-1.2.0 packages.
+published on NuGet.org, and the hub's [Conformance workflow](https://github.com/tomas-rampas/vouchfx-providers/blob/main/.github/workflows/conformance.yml)
+builds and tests against that version.
 The already-published JsonRpc 1.0.0 package keeps its original package and registry
 metadata. The current hub source has been updated for SDK 1.2.0 and declares a 1.2.0
 engine floor; that source change does not alter the immutable 1.0.0 package. Do not

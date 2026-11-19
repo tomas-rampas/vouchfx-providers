@@ -20,8 +20,8 @@
 # Vouched badge awards: a PR setting "vouched": true on an entry may only
 # merge with maintainer approval. The vouched/vouchedVersion fields are the
 # endorsement trust surface: merges touching them must NEVER use the
-# `gh pr merge --admin` bypass (a required-check tripwire in conformance.yml
-# flags such changes, but it cannot itself block an --admin merge). Branch
+# `gh pr merge --admin` bypass (a tripwire in conformance.yml flags such
+# changes, but it cannot itself block an --admin merge). Branch
 # protection should require code-owner review for /registry/ paths so this
 # rule is actually enforced, not merely advisory.
 /registry/           @tomas-rampas
@@ -29,9 +29,6 @@
 # Governance and CI/CD changes — workflows, templates, CODEOWNERS, labels.
 /.github/            @tomas-rampas
 
-# Claude Code on the web bootstrap. .claude/settings.json registers
-# .claude/hooks/session-start.sh as a SessionStart hook, so a web session runs the
-# checked-out branch's copy of it, as root, before anyone has read the diff: the
-# same supply-chain class as the workflows. Web sessions should be opened only on
-# branches you trust.
-/.claude/            @tomas-rampas
+# global.json selects the SDK every build and workflow uses (the .NET host honours
+# "sdk.paths" there), so it is in the same supply-chain class as the workflows.
+/global.json        @tomas-rampas

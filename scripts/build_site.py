@@ -323,7 +323,7 @@ PORTAL = """<!DOCTYPE html>
       {{fact:community_jsonrpc_version}}.</p>
     <div class="doc-cards">
       <a class="doc-card" href="https://vouchfx.io/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">ENGINE</span><h3>Engine project site</h3><p>The architecture blueprint, the YAML DSL specification, user guides, language reference, and the Core provider catalogue.</p></a>
-      <a class="doc-card" href="https://samples.vouchfx.io/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">SAMPLES</span><h3>Samples site</h3><p>End-to-end test suites for sample applications (C#, Python, Java) demonstrating the engine and community providers. Includes the <code>ledger-jsonrpc</code> worked example.</p></a>
+      <a class="doc-card" href="https://samples.vouchfx.io/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">SAMPLES</span><h3>Samples site</h3><p>End-to-end test suites for sample applications (C#, Python, Node.js, Java) demonstrating the engine and community providers. Includes the <code>ledger-jsonrpc</code> worked example.</p></a>
       <a class="doc-card" href="https://telemetry.vouchfx.io/" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">TELEMETRY</span><h3>Telemetry backend</h3><p>The opt-in telemetry story — why, what is (and is not) collected, how to verify it locally, and how to self-host the backend.</p></a>
       <a class="doc-card" href="https://github.com/tomas-rampas/vouchfx" target="_blank" rel="noopener noreferrer"><span class="doc-card__k">REPO</span><h3>Engine repository</h3><p>The engine, the Provider SDK sources, and the in-repo Example.Steps.Echo / Hello templates.</p></a>
     </div>
@@ -374,7 +374,7 @@ CONFIG = SiteConfig(
     fact_overrides={"community_provider_count": _local_community_provider_count},
     semantic_headings=True,
     # Verbatim from site/index.html's existing <meta name="description"> — one paragraph,
-    # British English, no newly written copy (specs/seo-fleet-audit.md, B3/REQ-005).
+    # British English, no newly written copy.
     llms_summary=(
         "The vouchfx community provider hub — step providers (plugins) extending the "
         "end-to-end integration testing framework. Vouched badge for verified quality."

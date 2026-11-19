@@ -10,16 +10,16 @@
   </ItemGroup>
 
   <!-- Out-of-repo fallbacks. Inside this hub, the root Directory.Build.props defines
-       ALL FOUR properties below before the project body is evaluated, so every
+       ALL THREE properties below before the project body is evaluated, so every
        Condition here is always false and these fallbacks are skipped. Once this
        template is copied OUT of the repo, there is no root Directory.Build.props to
        inherit from:
          - TargetFramework is REQUIRED for `dotnet restore` to even start — without it,
            NuGet's target-framework inference fails outright (NETSDK1013), before
-           PackageReference versions are ever considered. net8.0 matches the hub's own
-           pin.
-         - RollForward allows the copied net8.0 test host to run when only .NET 9 or
-           10 is installed, matching the hub's runtime compatibility policy.
+           PackageReference versions are ever considered. net10.0 matches the hub's own
+           test projects: the tests run on the current .NET and consume the net8.0
+           provider library and the net8.0 Vouchfx.Sdk.Testing package. Only the
+           provider library itself must stay net8.0 (the provider contract target).
          - ImplicitUsings is REQUIRED for this test project's files to compile as
            written: they have no explicit `using` statements and rely on the SDK's
            implicit global usings — without it, restore succeeds but the build fails.
@@ -29,11 +29,10 @@
            the hub's own $(VouchfxSdkVersion) moves.
        Other root-only properties (LangVersion, Nullable, TreatWarningsAsErrors, ...)
        fall back to the .NET SDK's own defaults once copied out of the repo — different
-       from the hub's settings, but not a runtime/build requirement like the four above, so no
+       from the hub's settings, but not a runtime/build requirement like the three above, so no
        fallback is provided for those here. -->
   <PropertyGroup>
-    <TargetFramework Condition="'$(TargetFramework)' == ''">net8.0</TargetFramework>
-    <RollForward Condition="'$(RollForward)' == ''">Major</RollForward>
+    <TargetFramework Condition="'$(TargetFramework)' == ''">net10.0</TargetFramework>
     <ImplicitUsings Condition="'$(ImplicitUsings)' == ''">enable</ImplicitUsings>
     <VouchfxSdkVersion Condition="'$(VouchfxSdkVersion)' == ''">1.2.0</VouchfxSdkVersion>
   </PropertyGroup>

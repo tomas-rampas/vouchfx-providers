@@ -22,7 +22,7 @@ All providers in this repository must meet these baseline requirements:
 - Your provider must implement the four required interfaces from `Vouchfx.Sdk`: `IStepProvider`, `IStepBinder<TModel>`, `IStepValidator<TModel>`, and `IStepCompiler<TModel>`.
 - Your model must be a strongly-typed record (never `Dictionary<string,object>`).
 - You must NOT use the reserved namespace prefixes: `Vouchfx.Engine.*` or `Vouchfx.Steps.*`. Use your own namespace (e.g. `MyOrg.Steps.Kafka`, `Vouchfx.Community.Snowflake`).
-- Decorate your provider class with `[StepProvider]` and supply its assembly to `StepKindRegistry.BuildAndFreeze` in your custom runner. The registry discovers providers reflectively from those assemblies; a package reference alone does not register them.
+- Decorate your provider class with `[StepProvider]`. The registry discovers providers reflectively from the assemblies a host supplies: your custom runner passes yours to `StepKindRegistry.BuildAndFreeze`, and the stock CLI (engine 1.2.0 and later) loads it from a provider directory. A package reference alone does not register them.
 
 ### CsxFragment Composition
 When your `IStepCompiler<TModel>` emits a `CsxFragment`, you must follow the strict rules in the engine's architecture blueprint (§13.3.1):
@@ -64,7 +64,9 @@ The merge bar for Option B is **hygiene, not review**: Apache-2.0 licence, names
 
 ## Building against the SDK
 
-The `Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` `1.2.0` packages and their dependency closure are published to [NuGet.org](https://www.nuget.org). `Directory.Build.props` selects this version via the `$(VouchfxSdkVersion)` property. The Release build, Hello tests (5/5), JsonRpc tests (24/24), and formatting check passed against SDK 1.2.0; both current source providers also passed a two-step runtime suite on the stock Core 1.2.0 CLI, which loaded them from a `--providers` directory. To build:
+Prerequisite: the **.NET 10 SDK** (`global.json` pins `10.0.100`, `rollForward: latestFeature`). Provider assemblies still target `net8.0`; test projects target `net10.0`.
+
+The `Vouchfx.Sdk` and `Vouchfx.Sdk.Testing` `1.2.0` packages and their dependency closure are published to [NuGet.org](https://www.nuget.org). `Directory.Build.props` selects this version via the `$(VouchfxSdkVersion)` property. The [Conformance workflow](.github/workflows/conformance.yml) builds, formats and tests against this pin on every push and pull request. To build:
 
 ```bash
 dotnet restore

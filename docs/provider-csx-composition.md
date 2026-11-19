@@ -139,7 +139,7 @@ var block = $$"""
 """;
 ```
 
-The Roslyn script parser does not support `using var` syntax (even though the host application is .NET 8). Always use plain `var` and explicit disposal.
+The Roslyn script parser does not support `using var` syntax (whichever .NET runtime hosts the script). Always use plain `var` and explicit disposal.
 
 ### Engine Type References
 

@@ -1,8 +1,14 @@
 <Project>
   <PropertyGroup>
-    <TargetFramework>net8.0</TargetFramework>
-    <!-- Keep the .NET 8 binary baseline; test hosts can use .NET 9 or 10 when 8 is absent. -->
-    <RollForward>Major</RollForward>
+    <!-- Provider libraries (every project that is not a *.Tests project) target net8.0.
+         That is the frozen v1 provider contract target: `vouchfx providers install` installs
+         only net8.0-compatible assets (the hub requires exactly lib/net8.0), and Vouchfx.Sdk / Vouchfx.Sdk.Testing are net8.0. It is a build
+         target, not a runtime requirement, and it must NOT be raised. The conformance
+         workflow's "Guard — provider assemblies target net8.0" step fails the build if it is,
+         and its pack gate checks the packed .nupkg for lib/net8.0/ as well.
+         Test projects run on the current .NET (10), which can consume net8.0 libraries. -->
+    <TargetFramework Condition="!$(MSBuildProjectName.EndsWith('.Tests'))">net8.0</TargetFramework>
+    <TargetFramework Condition="$(MSBuildProjectName.EndsWith('.Tests'))">net10.0</TargetFramework>
     <LangVersion>12.0</LangVersion>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>

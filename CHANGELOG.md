@@ -12,6 +12,30 @@ for that provider.
 
 ### Changed
 
+- **Documentation and site inputs brought up to date.** The Vouched checklist and the Vouched
+  request form now name the real secrets mechanism (`${secret:source/path}` resolved by
+  `Secret_Helpers.ResolveTemplate`, not `Vars.Secrets`) and a dependency scan that finds
+  vulnerabilities (`dotnet list package --vulnerable --include-transitive`, not `--outdated`).
+  The issue forms link to absolute URLs, because relative links do not resolve on an issue form.
+  The measured pass counts that were restated in four documents now live only in this changelog,
+  the testing guide's Docker example carries the `requires` trait its filter relies on, the
+  site's last-known-good facts track the newest published engine and SDK release, and the
+  landing page and README describe the engine CLI install route alongside the other two. The
+  registry entry for `rpc.json-rpc` is unchanged: its `minEngineVersion` of `1.0.0` is what the
+  published `1.0.0` package declares.
+- **Build, CI and tooling move to the .NET 10 SDK; provider assemblies stay `net8.0`.**
+  .NET 8 reached end of support on 10 November 2026. `global.json` now pins `10.0.100`
+  (`rollForward: latestFeature`), the test projects target `net10.0` and run without
+  roll-forward, and the `.NET 8.0` and `.NET 9.0` compatibility lanes are removed. Provider
+  libraries keep `net8.0`: it is the frozen v1 provider contract target and the only asset
+  framework the engine's `vouchfx providers install` installs (it installs only net8.0-compatible
+  assets; the hub requires exactly `lib/net8.0`). A new conformance step fails the
+  build if any provider project stops targeting `net8.0`, or any test project stops targeting
+  `net10.0`, and the pack gate and publish job reject any package whose `lib/` assets or nuspec
+  groups are not `net8.0`. Published package versions and
+  registry entries are unchanged. Providers run inside the engine, which needs .NET 10 from the
+  engine release that moves to it.
+
 - **Published SDK pin advanced to `1.2.0`.** `$(VouchfxSdkVersion)` in
   `Directory.Build.props` moves from `1.0.5` to `1.2.0`
   (`0af21de5bd0a4e91ca002e03e6c256bc4e8ca4e8`). `Vouchfx.Sdk`, `Vouchfx.Sdk.Testing` and the
@@ -122,8 +146,8 @@ for that provider.
 
 - **`docs/consuming-a-provider.md`** — the consumer-side guide: the NuGet path (exact pre-release
   pinning and NuGet's NU5104 rule), the source-build path for unpublished providers, the
-  `ledger-jsonrpc` sample as the canonical worked example, and the planned
-  `vouchfx providers install` experience.
+  `ledger-jsonrpc` sample as the canonical worked example, and the engine CLI's
+  `vouchfx providers install` route (Path C, available since engine 1.2.0).
 - **This changelog.**
 
 ## 2026-07-11

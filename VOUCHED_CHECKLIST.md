@@ -71,15 +71,15 @@ A maintainer must sign off on your provider's security posture. This is **not** 
 **Requirements:**
 1. **Credential handling:** Credentials (database passwords, API keys, etc.) must be:
    - Never hardcoded in your provider code or examples
-   - Resolved via the vouchfx `Vars.Secrets` mechanism at step execution time
+   - Resolved at step execution time through the engine's secrets subsystem (`${secret:source/path}` tokens resolved by `Secret_Helpers.ResolveTemplate`; see the [CSX composition guide](docs/provider-csx-composition.md))
    - Never logged or printed to stdout/stderr
    - Transmitted over TLS where applicable (database connections, HTTP, etc.)
    
-   **What to provide:** A brief note describing how credentials are handled (e.g. "Credentials are read from `Vars.Secrets.Resolve(ref)` and passed to Npgsql.NpgsqlConnectionStringBuilder; no secrets are logged.")
+   **What to provide:** A brief note describing how credentials are handled (e.g. "The connection string is a `${secret:env/DB_PASSWORD}` template resolved by `Secret_Helpers.ResolveTemplate` inside the emitted step and passed to Npgsql.NpgsqlConnectionStringBuilder; no secrets are logged.")
 
 2. **Transitive dependency vulnerabilities:** Your provider's NuGet package must have zero high-severity CVEs at the time the badge is awarded.
    
-   **What to provide:** Run `dotnet list package --outdated` and confirm there are no vulnerabilities. If you use a vulnerable transitive dependency, document your mitigation (e.g. "Direct dependency X has a CVE in transitive Y, but Y is not reachable in our code path because…").
+   **What to provide:** Run `dotnet list package --vulnerable --include-transitive` and confirm it reports no vulnerable packages. If you use a vulnerable transitive dependency, document your mitigation (e.g. "Direct dependency X has a CVE in transitive Y, but Y is not reachable in our code path because…").
 
 3. **TLS defaults:** Connections to external services (databases, brokers, APIs) must use TLS by default. If a provider supports unencrypted connections, they must be:
    - Opt-in only (not the default)
@@ -129,8 +129,8 @@ Your provider must declare which version(s) of the vouchfx engine it is compatib
 
 **Requirements:**
 1. Your `IStepProvider` implementation must declare a `MinEngineVersion` in the `ProviderMetadata` record.
-2. The version should be compatible with the engine's current major version. For example, if the latest engine is `1.0.x`, your `MinEngineVersion` might be `1.0.0` (if you support the current release).
-3. Ensure your provider's API surface aligns with the declared version. If you use an interface that was introduced in engine v1.1, set `MinEngineVersion` to `1.1.0`.
+2. Declare the oldest engine version that actually supports the APIs your provider uses, within the engine's current major version. A provider compiled against `Vouchfx.Sdk` 1.2.0 cannot declare less than `1.2.0`; see [the contract guide](docs/provider-contract.md#minimum-engine-version).
+3. Ensure your provider's API surface aligns with the declared version. If you use an interface that was introduced in a later engine release, set `MinEngineVersion` to that release.
 
 **How to declare it:**
 In your provider class, implement `IStepProvider` with the frozen v1 contract:
@@ -142,7 +142,7 @@ public sealed class MyProvider : IStepProvider
 
     public ProviderMetadata Metadata { get; } = new ProviderMetadata(
         Version: "1.0.0",
-        MinEngineVersion: "1.0.0",
+        MinEngineVersion: "1.2.0",
         License: "Apache-2.0",
         Authors: new[] { "your-name" }
     );

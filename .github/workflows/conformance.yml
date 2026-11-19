@@ -24,7 +24,8 @@
 #
 # TWO LANES
 # ---------
-# Lane A (job `conformance`, the required merge-gate check) restores
+# Lane A (job `conformance`, the merge-gate lane: maintainers merge only on green;
+# main has no branch rule that enforces it) restores
 # Vouchfx.Sdk / Vouchfx.Sdk.Testing from nuget.org at the
 # $(VouchfxSdkVersion) pin (root MSBuild property, consumed by every
 # SDK-closure PackageReference — six across the four consuming projects)
@@ -61,19 +62,21 @@
 # for OUT-OF-REPO consumers who cannot inherit the property — the samples in
 # docs/provider-project-setup.md and docs/consuming-a-provider.md, and the
 # conditioned fallback in the two template/Vouchfx.Community.Hello* csprojs.
-# Move the other literals that name the pin with them: site/facts-fallback.json
-# (engine_release, sdk_version), the pin note in publish-provider.yml's header,
-# the SDK statements and measured results in README.md and CONTRIBUTING.md, and
-# the MinEngineVersion declared by the template and community provider sources
-# (docs/provider-contract.md explains why it follows the SDK's assembly identity).
-# The first two had silently drifted before they were listed here.
+# Move the other literals that name the pin with them: the pin note in
+# publish-provider.yml's header, the SDK statements in README.md, CONTRIBUTING.md
+# and docs/, and the MinEngineVersion declared by the template and community
+# provider sources (docs/provider-contract.md explains why it follows the SDK's
+# assembly identity). site/facts-fallback.json is different: its engine_release and
+# sdk_version are the newest PUBLISHED engine release and Vouchfx.Sdk (what the
+# site's build-time facts resolve live), not the pin, so refresh them whenever a
+# newer release is published, whether or not the pin moves.
 # Lane B resolves engine main once per run and checks out that immutable SHA;
 # no manual source repin is needed. Its logged SHA and SDK version identify
 # the exact compatibility input rather than a historical snapshot.
 #
 # NOTE ON VERSION MATRIX
 # ----------------------
-# Lane A (the required check) runs against the PUBLISHED pinned SDK
+# Lane A (the merge-gate lane) runs against the PUBLISHED pinned SDK
 # ($(VouchfxSdkVersion)); Lane B tracks the engine main SDK non-blockingly.
 # Neither lane is a version matrix: the Vouched badge rubric's
 # multi-version conformance matrix (a provider's integration-test fixture passing
@@ -110,10 +113,16 @@ jobs:
 
     steps:
       # ── Step 1: Checkout this repo (vouchfx-providers) ───────────────────────
+      # persist-credentials: false keeps the token out of .git/config while PR code
+      # runs in this job. The only later git use is the tripwire's read-only fetch of
+      # the base branch, which needs no credentials because this repository is public.
       - name: Checkout vouchfx-providers
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
 
-      # ── Step 2: Set up .NET SDK (version from global.json: 8.0.424) ──────────
+      # ── Step 2: Set up .NET SDK (reads global.json) ──────────────────────────
+      # global.json pins 10.0.100 and rolls forward to the latest 10.0 feature band.
       - name: Set up .NET SDK (reads global.json)
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
@@ -132,6 +141,62 @@ jobs:
       # is added here as belt-and-suspenders per the CI contract.
       - name: Build (Release, 0-warning gate)
         run: dotnet build vouchfx-providers.sln -c Release --no-restore -warnaserror
+
+      # ── Step 4a: Guard — provider assemblies stay net8.0 ─────────────────────
+      # The SDK is .NET 10, and the test projects target net10.0, but every provider
+      # library (each non-*.Tests project under template/ and community/) must keep
+      # targeting net8.0: that is the v1 provider contract target, and the engine's
+      # `vouchfx providers install` installs only net8.0-compatible assets (the hub requires
+      # exactly lib/net8.0). A repo-wide "bump
+      # everything to net10.0" change fails here, loudly, instead of publishing
+      # packages the installer rejects. The target is read from MSBuild's evaluated
+      # TargetFramework in the SAME configuration the build, the pack gate and
+      # publish-provider.yml use (Release), so a Release-only override is seen. A
+      # project that evaluates differently in some other way, or under some other
+      # configuration, is still caught at the artefact: the pack gate and the publish
+      # job run scripts/check-nupkg-target.sh on the finished .nupkg, which is the
+      # check that does not depend on how the property was set.
+      # A project under community/ that packs (IsPackable true) is held to net8.0
+      # whatever its name, so a provider called Foo.Tests cannot dodge the guard.
+      # Every other *.Tests project must evaluate to net10.0, and no project may set
+      # TargetFrameworks (plural), which would hide a multi-target behind the props.
+      - name: Guard — provider assemblies target net8.0
+        shell: bash
+        run: |
+          set -euo pipefail
+          shopt -s globstar nullglob
+          found=0
+          for csproj in template/**/*.csproj community/**/*.csproj; do
+            # One evaluation returns all three properties as JSON. python3 (on the hosted
+            # runner) parses it; any parse problem fails the step rather than passing it.
+            props_json="$(dotnet msbuild "$csproj" -p:Configuration=Release -getProperty:TargetFramework -getProperty:TargetFrameworks -getProperty:IsPackable -nologo)"
+            if ! parsed="$(python3 -I -c 'import json,sys; p=json.load(sys.stdin)["Properties"]; print("|".join(str(p[k]) for k in ("TargetFramework", "TargetFrameworks", "IsPackable")))' <<<"$props_json")"; then
+              echo "::error::$csproj — could not read TargetFramework/TargetFrameworks/IsPackable from MSBuild output: $props_json"
+              exit 1
+            fi
+            IFS='|' read -r tfm tfms packable <<<"$parsed"
+            echo "$csproj -> TargetFramework=$tfm TargetFrameworks=$tfms IsPackable=$packable"
+            if [[ -n "$tfms" ]]; then
+              echo "::error::$csproj sets TargetFrameworks ('$tfms'). Multi-targeting is not allowed: providers target net8.0 only and test projects net10.0 only."
+              exit 1
+            fi
+            if [[ "$csproj" == *.Tests.csproj && ! ( "$csproj" == community/* && "${packable,,}" == "true" ) ]]; then
+              if [[ "$tfm" != "net10.0" ]]; then
+                echo "::error::$csproj is a test project and targets '$tfm'. Test projects must target net10.0 (no roll-forward; a net8.0 test host needs the out-of-support .NET 8 runtime)."
+                exit 1
+              fi
+              continue
+            fi
+            if [[ "$tfm" != "net8.0" ]]; then
+              echo "::error::$csproj targets '$tfm'. Provider assemblies must target net8.0: it is the v1 provider contract target (the engine's providers install installs only net8.0-compatible assets; the hub requires exactly lib/net8.0) and must not be raised."
+              exit 1
+            fi
+            found=1
+          done
+          if [[ "$found" -eq 0 ]]; then
+            echo "::error::No provider project found under template/ or community/."
+            exit 1
+          fi
 
       # ── Step 5: Format gate ───────────────────────────────────────────────────
       - name: Format gate (dotnet format --verify-no-changes)
@@ -234,6 +299,12 @@ jobs:
             if [[ -z "$nuspec_content" ]]; then
               echo "::error::$nupkg — could not read $nuspec_path from the package (nuspec missing or misnamed)."
               return 1
+            fi
+
+            # Artefact-level target check: every lib/ entry under lib/net8.0/ and
+            # every nuspec dependency group net8.0. Shared with publish-provider.yml.
+            if ! bash scripts/check-nupkg-target.sh "$nupkg"; then
+              failed=1
             fi
 
             # -Z1 (zipinfo, names only) gives exact archive entry paths, one
@@ -399,20 +470,20 @@ jobs:
       # entire objects and its NuGet ID rule is broader than the CLI's rule.
       - name: Validate — released CLI registry contract
         run: |
-          python3 -m unittest discover -s scripts -p 'test_check_registry.py'
+          python3 -m unittest discover -s scripts -p 'test_*.py'
           python3 scripts/check_registry.py
 
       # ── Step 6c: Tripwire — vouched badge changes are maintainer-only ───────
       # This is a TRIPWIRE, not a hard gate: `gh pr merge --admin` bypasses
-      # required status checks (this one included), so the real control is
+      # branch rules and status checks (this one included), so the real control is
       # policy, not CI — NEVER --admin-merge a PR that touches the vouched /
       # vouchedVersion fields. This step's job is to make an out-of-policy
-      # change LOUD (a failed required check + an ::error:: annotation) so it
-      # can't slip past maintainer eyeballing unnoticed. Pair it with
-      # branch-protection code-owner review requiring @tomas-rampas approval
-      # on /registry/ paths (see .github/CODEOWNERS) — that is the actual
-      # enforcement; this step is the tripwire that fires if that review is
-      # ever skipped or bypassed.
+      # change LOUD (a failed check + an ::error:: annotation) so it
+      # can't slip past maintainer eyeballing unnoticed. Branch protection
+      # requiring @tomas-rampas code-owner review on /registry/ paths (see
+      # .github/CODEOWNERS) would be the actual enforcement; main has no such
+      # rule today, so maintainer policy is the control and this step is the
+      # tripwire that fires when that policy is skipped.
       #
       # Scope: the comparison below considers ONLY entries that already carry
       # (or newly carry) endorsement state — vouched:true or a non-empty
@@ -509,7 +580,7 @@ jobs:
   # ═══════════════════════════════════════════════════════════════════════════
   # Lane B — early-warning: build/test against the engine's CURRENT main SHA
   # ═══════════════════════════════════════════════════════════════════════════
-  # NOT a required merge-gate check (see conformance.yml header). Proves
+  # NOT the merge-gate lane (see the header above). Proves
   # providers still build and pass their tests against unreleased engine
   # changes, well ahead of the next tagged SDK release. Deliberately keeps
   # the engine-checkout + source-pack pattern that Lane A no longer needs.
@@ -554,7 +625,8 @@ jobs:
           ref: ${{ steps.engine-ref.outputs.sha }}
           path: engine
 
-      # ── Step 3: Set up .NET SDK (version from global.json: 8.0.424) ──────────
+      # ── Step 3: Set up .NET SDK (reads global.json) ──────────────────────────
+      # global.json pins 10.0.100 and rolls forward to the latest 10.0 feature band.
       - name: Set up .NET SDK (reads global.json)
         uses: actions/setup-dotnet@0f4a354dd5547a28c70b7853dbd95d5b67886e73 # v6.1.0
         with:
